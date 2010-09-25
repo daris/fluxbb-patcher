@@ -1,0 +1,39 @@
+
+.tcl .mod-tools {
+	float: right;
+	opacity: 0.3;
+}
+
+.tcl .mod-tools:hover {
+	opacity: 1;
+}
+
+.mod-tools span {
+	padding: 2px 8px;
+	background-repeat: no-repeat;
+	background-position: top left;
+}
+
+.mod-tools .t-close {
+	background-image: url(../../img/quick_mod_tools/lock.png);
+}
+
+.mod-tools .t-open {
+	background-image: url(../../img/quick_mod_tools/lock_open.png);
+}
+
+.mod-tools .t-stick {
+	background-image: url(../../img/quick_mod_tools/award.png);
+}
+
+.mod-tools .t-unstick {
+	background-image: url(../../img/quick_mod_tools/award_delete.png);
+}
+
+.mod-tools .t-delete {
+	background-image: url(../../img/quick_mod_tools/delete.png);
+}
+
+.mod-tools .t-edit {
+	background-image: url(../../img/quick_mod_tools/textfield_rename.png);
+}
