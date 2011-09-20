@@ -1,0 +1,3 @@
+[submodule "mods/ajax-post-edit"]
+	path = mods/ajax-post-edit
+	url = git@github.com:daris/fluxbb-ajax-post-edit.git
