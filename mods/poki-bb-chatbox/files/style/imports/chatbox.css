@@ -1,0 +1,35 @@
+
+#chatbox {
+	border: 1px solid #ddd;
+	overflow: auto;
+	padding: 5px;
+	height: 400px;
+}
+
+.pun .chatbox .conr {
+	float: right;
+}
+
+.pun .chatbox h2 #loading {
+	position: absolute;
+}
+
+#chatbox p, #chatbox .msg strong, #chatbox .error strong {
+	display: inline;
+}
+
+#chatbox .msg, #chatbox .error {
+	clear: both;
+}
+
+.pun .chatbox .posted {
+	color: gray;
+}
+
+.pun .chatbox .guest {
+	color: gray;
+}
+
+.pun .chatbox form label {
+	display: inline;
+}

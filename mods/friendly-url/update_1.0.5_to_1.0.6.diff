@@ -1,0 +1,441 @@
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/db_update.php fluxbb-test2/db_update.php
+--- fluxbb-test/db_update.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/db_update.php	Mon May 30 11:01:05 2011
+@@ -34,8 +34,7 @@
+ if (!function_exists('version_compare') || version_compare(PHP_VERSION, MIN_PHP_VERSION, '<'))
+ 	exit('You are running PHP version '.PHP_VERSION.'. FluxBB '.UPDATE_TO.' requires at least PHP '.MIN_PHP_VERSION.' to run properly. You must upgrade your PHP installation before you can continue.');
+ 
+-if (!defined('PUN_ROOT'))
+-	define('PUN_ROOT', dirname(__FILE__).'/');
++define('PUN_ROOT', dirname(__FILE__).'/');
+ 
+ // Attempt to load the configuration file config.php
+ if (file_exists(PUN_ROOT.'config.php'))
+@@ -48,7 +47,7 @@
+ // If PUN isn't defined, config.php is missing or corrupt
+ if (!defined('PUN'))
+ {
+-	header('Location: '.forum_link('install.php'));
++	header('Location: install.php');
+ 	exit;
+ }
+ 
+@@ -468,7 +467,7 @@
+ <head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <title><?php echo $lang_update['Update'] ?></title>
+-<link rel="stylesheet" type="text/css" href="<?php echo forum_link('style/'.$default_style.'.css') ?>" />
++<link rel="stylesheet" type="text/css" href="style/<?php echo $default_style ?>.css" />
+ </head>
+ <body onload="document.getElementById('install').req_db_type.focus();document.getElementById('install').start.disabled=false;">
+ 
+@@ -489,7 +488,7 @@
+ <div class="blockform">
+ 	<h2><span><?php echo $lang_update['Update'] ?></span></h2>
+ 	<div class="box">
+-		<form method="post" action="<?php echo forum_link('db_update.php') ?>">
++		<form method="post" action="db_update.php">
+ 			<input type="hidden" name="stage" value="start" />
+ 			<div class="inform">
+ 				<fieldset>
+@@ -1556,7 +1555,7 @@
+ <head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <title><?php echo $lang_update['Update'] ?></title>
+-<link rel="stylesheet" type="text/css" href="<?php echo forum_link('style/'.$default_style.'.css') ?>" />
++<link rel="stylesheet" type="text/css" href="style/<?php echo $default_style ?>.css" />
+ </head>
+ <body>
+ 
+@@ -1567,7 +1566,7 @@
+ <div class="blockform">
+ 	<h2><span><?php echo $lang_update['Error converting users'] ?></span></h2>
+ 	<div class="box">
+-		<form method="post" action="<?php echo forum_link('db_update.php?stage=conv_users_dupe&amp;uid='.$uid) ?>">
++		<form method="post" action="db_update.php?stage=conv_users_dupe&amp;uid=<?php echo $uid ?>">
+ 			<input type="hidden" name="form_sent" value="1" />
+ 			<div class="inform">
+ 				<div class="forminfo">
+@@ -1793,7 +1792,7 @@
+ <head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <title><?php echo $lang_update['Update'] ?></title>
+-<link rel="stylesheet" type="text/css" href="<?php echo forum_link('style/'.$default_style.'.css') ?>" />
++<link rel="stylesheet" type="text/css" href="style/<?php echo $default_style ?>.css" />
+ </head>
+ <body>
+ 
+@@ -1807,7 +1806,7 @@
+ 		<div class="fakeform">
+ 			<div class="inform">
+ 				<div class="forminfo">
+-					<p style="font-size: 1.1em"><?php printf($lang_update['Successfully updated'], sprintf('<a href="'.forum_link($GLOBALS['forum_url']['index']).'">%s</a>', $lang_update['go to index'])) ?></p>
++					<p style="font-size: 1.1em"><?php printf($lang_update['Successfully updated'], sprintf('<a href="index.php">%s</a>', $lang_update['go to index'])) ?></p>
+ 				</div>
+ 			</div>
+ 		</div>
+@@ -1829,4 +1828,4 @@
+ $db->close();
+ 
+ if ($query_str != '')
+-	exit('<script type="text/javascript">window.location="db_update.php'.$query_str.'&uid='.$uid.'"</script><noscript>'.sprintf($lang_update['JavaScript disabled'], sprintf('<a href="'.forum_link('db_update.php'.$query_str.'&uid='.$uid).'">%s</a>', $lang_update['Click here to continue'])).'</noscript>');
++	exit('<script type="text/javascript">window.location="db_update.php'.$query_str.'&uid='.$uid.'"</script><noscript>'.sprintf($lang_update['JavaScript disabled'], sprintf('<a href="db_update.php'.$query_str.'&uid='.$uid.'">%s</a>', $lang_update['Click here to continue'])).'</noscript>');
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/include/common.php fluxbb-test2/include/common.php
+--- fluxbb-test/include/common.php	Sun May 29 09:28:54 2011
++++ fluxbb-test2/include/common.php	Mon May 30 11:01:16 2011
+@@ -144,23 +144,21 @@
+ 		ob_start();
+ }
+ 
++if (!isset($pun_config['o_sef']))
++	error('Friendly URL mod is not installed');
++
+ // Setup the URL rewriting scheme
+ if (file_exists(PUN_ROOT.'include/url/'.$pun_config['o_sef'].'/forum_urls.php'))
+ 	require PUN_ROOT.'include/url/'.$pun_config['o_sef'].'/forum_urls.php';
+ else
+ 	require PUN_ROOT.'include/url/Default/forum_urls.php';
+-	
+-if (!session_id())
+-	session_start();
+-
+-// Workaround for HTTP_REFERER
+-$http_referer = '';
+-if (isset($_SESSION['HTTP_REFERER']))
+-	$http_referer = $_SESSION['HTTP_REFERER'];
+-elseif (isset($_SERVER['HTTP_REFERER']))
+-	$http_referer = $_SERVER['HTTP_REFERER'];
+ 
+-unset($_SESSION['HTTP_REFERER']);
++// Convert rewritten url back to normal url
++if (isset($_SERVER['HTTP_REFERER']))
++{
++	$_SERVER['HTTP_REFERER_REWRITTEN'] = $_SERVER['HTTP_REFERER'];
++	$_SERVER['HTTP_REFERER'] = fix_referer();
++}
+ 
+ // Define standard date/time formats
+ $forum_time_formats = array($pun_config['o_time_format'], 'H:i:s', 'H:i', 'g:i:s a', 'g:i a');
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/include/friendly_url.php fluxbb-test2/include/friendly_url.php
+--- fluxbb-test/include/friendly_url.php	Sun May 29 09:28:46 2011
++++ fluxbb-test2/include/friendly_url.php	Mon May 30 11:01:12 2011
+@@ -1,6 +1,5 @@
+ <?php
+ 
+-
+ // Generate a hyperlink with parameters and anchor
+ function forum_link($link, $args = null)
+ {
+@@ -83,6 +82,7 @@
+ 	return $str;
+ }
+ 
++// Get topic/forum title
+ function sef_name($type, $id)
+ {
+ 	global $db;
+@@ -94,4 +94,34 @@
+ 		$result = $db->query('SELECT subject FROM '.$db->prefix.'topics WHERE id='.$id) or error('Unable to fetch topic subject', __FILE__, __LINE__, $db->error());
+ 
+ 	return ($db->num_rows($result)) ? sef_friendly($db->result($result)) : '';
+-}
+\ No newline at end of file
++}
++
++// Convert rewritten url back to normal url
++function fix_referer()
++{
++	global $forum_rewrite_rules, $pun_config;
++	
++	if (!isset($_SERVER['HTTP_REFERER']))
++		return '';
++
++	if (!isset($forum_rewrite_rules))
++	{
++		// Bring in all the rewrite rules
++		if (file_exists(PUN_ROOT.'include/url/'.$pun_config['o_sef'].'/rewrite_rules.php'))
++			require PUN_ROOT.'include/url/'.$pun_config['o_sef'].'/rewrite_rules.php';
++		else
++			require PUN_ROOT.'include/url/Default/rewrite_rules.php';
++	}
++	
++	// Revove base_url from referer
++	$referer = str_replace(get_base_url(true).'/', '', $_SERVER['HTTP_REFERER']);
++	
++	// We go through every rewrite rule
++	foreach ($forum_rewrite_rules as $rule => $rewrite_to)
++	{
++		// We have a match!
++		if (preg_match($rule, $referer))
++			return forum_link(preg_replace($rule, $rewrite_to, $referer));
++	}
++	return $_SERVER['HTTP_REFERER'];
++}
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/include/functions.php fluxbb-test2/include/functions.php
+--- fluxbb-test/include/functions.php	Sun May 29 09:28:54 2011
++++ fluxbb-test2/include/functions.php	Mon May 30 11:01:16 2011
+@@ -548,7 +548,7 @@
+ 
+ 		if (file_exists(PUN_ROOT.$path) && $img_size = getimagesize(PUN_ROOT.$path))
+ 		{
+-			$avatar_markup = '<img src="'.forum_link(pun_htmlspecialchars('/'.$path.'?m='.filemtime(PUN_ROOT.$path))).'" '.$img_size[3].' alt="" />';
++			$avatar_markup = '<img src="'.forum_link(pun_htmlspecialchars($path.'?m='.filemtime(PUN_ROOT.$path))).'" '.$img_size[3].' alt="" />';
+ 			break;
+ 		}
+ 	}
+@@ -1034,18 +1034,18 @@
+ //
+ function confirm_referrer($script, $error_msg = false)
+ {
+-	global $pun_config, $lang_common, $http_referer;
++	global $pun_config, $lang_common;
+ 
+ 	// There is no referrer
+-	if (empty($http_referer))
++	if (empty($_SERVER['HTTP_REFERER']))
+ 		message($error_msg ? $error_msg : $lang_common['Bad referrer']);
+ 
+-	$referrer = parse_url(strtolower($http_referer));
++	$referrer = parse_url(strtolower($_SERVER['HTTP_REFERER']));
+ 	// Remove www subdomain if it exists
+ 	if (strpos($referrer['host'], 'www.') === 0)
+ 		$referrer['host'] = substr($referrer['host'], 4);
+ 
+-	$valid = parse_url(strtolower(get_base_url().'/'.$script));
++	$valid = parse_url(strtolower(forum_link($script)));
+ 	// Remove www subdomain if it exists
+ 	if (strpos($valid['host'], 'www.') === 0)
+ 		$valid['host'] = substr($valid['host'], 4);
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/include/parser.php fluxbb-test2/include/parser.php
+--- fluxbb-test/include/parser.php	Sun May 29 09:28:54 2011
++++ fluxbb-test2/include/parser.php	Mon May 30 11:01:16 2011
+@@ -803,7 +803,7 @@
+ 	foreach ($smilies as $smiley_text => $smiley_img)
+ 	{
+ 		if (strpos($text, $smiley_text) !== false)
+-			$text = ucp_preg_replace('#(?<=[>\s])'.preg_quote($smiley_text, '#').'(?=[^\p{L}\p{N}])#um', '<img src="'.forum_link(pun_htmlspecialchars('/img/smilies/'.$smiley_img)).'" width="15" height="15" alt="'.substr($smiley_img, 0, strrpos($smiley_img, '.')).'" />', $text);
++			$text = ucp_preg_replace('#(?<=[>\s])'.preg_quote($smiley_text, '#').'(?=[^\p{L}\p{N}])#um', '<img src="'.forum_link(pun_htmlspecialchars('img/smilies/'.$smiley_img)).'" width="15" height="15" alt="'.substr($smiley_img, 0, strrpos($smiley_img, '.')).'" />', $text);
+ 	}
+ 
+ 	return substr($text, 1, -1);
+Only in fluxbb-test2/include/url/Default: forum_urls0.php
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/include/url/Folder_based_(fancy)_pl/rewrite_rules.php fluxbb-test2/include/url/Folder_based_(fancy)_pl/rewrite_rules.php
+--- fluxbb-test/include/url/Folder_based_(fancy)_pl/rewrite_rules.php	Sun May 29 09:28:47 2011
++++ fluxbb-test2/include/url/Folder_based_(fancy)_pl/rewrite_rules.php	Mon May 30 11:01:12 2011
+@@ -45,25 +45,25 @@
+ 	'/^(zmien)[\/_-]?(haslo)[\/_-]?([0-9]+)[\/_-]([a-zA-Z0-9]+)(\.html?|\/)?$/i'											=>	'profile.php?action=change_pass&id=$3&key=$4',
+ 	'/^(zmien)[\/_-]?(haslo)[\/_-]?([0-9]+)(\.html?|\/)?$/i'																=>	'profile.php?action=change_pass&id=$3',
+ 	'/^szukaj[\/_-]?(nowe)[\/_-]([0-9-]+)(\.html?|\/)?$/i'																	=>	'search.php?action=show_new&forum=$2',
+-	'/^szukaj[\/_-]?(nowe)[\/_-]([0-9-]+)[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'										=>	'search.php?action=show_new&forum=$2&p=$4',
++	'/^szukaj[\/_-]?(nowe)[\/_-]([0-9-]+)[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'										=>	'search.php?action=show_new&forum=$2&p=$4',
+ 	'/^szukaj[\/_-]?(ostatnie)[\/_-]([0-9]+)(\.html?|\/)?$/i'																=>	'search.php?action=show_recent&value=$2',
+-	'/^szukaj[\/_-]?(ostatnie)[\/_-]([0-9]+)[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'									=>	'search.php?action=show_recent&value=$2&p=$4',
++	'/^szukaj[\/_-]?(ostatnie)[\/_-]([0-9]+)[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'									=>	'search.php?action=show_recent&value=$2&p=$4',
+ 	'/^szukaj[\/_-]?nowe(\.html?|\/)?$/i'																					=>	'search.php?action=show_new',
+-	'/^szukaj[\/_-]?nowe[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'														=>	'search.php?action=show_new&p=$3',
++	'/^szukaj[\/_-]?nowe[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'														=>	'search.php?action=show_new&p=$3',
+ 	'/^szukaj[\/_-]?ostatnie(\.html?|\/)?$/i'																				=>	'search.php?action=show_recent',
+-	'/^szukaj[\/_-]?ostatnie[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?action=show_recent&p=$3',
++	'/^szukaj[\/_-]?ostatnie[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?action=show_recent&p=$3',
+ 	'/^szukaj[\/_-]?twoje-odpowiedzi(\.html?|\/)?$/i'																		=>	'search.php?action=show_replies',
+-	'/^szukaj[\/_-]?twoje-odpowiedzi[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'											=>	'search.php?action=show_replies&p=$3',
++	'/^szukaj[\/_-]?twoje-odpowiedzi[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'											=>	'search.php?action=show_replies&p=$3',
+ 	'/^szukaj[\/_-]?bez-odpowiedzi(\.html?|\/)?$/i'																			=>	'search.php?action=show_unanswered',
+-	'/^szukaj[\/_-]?bez-odpowiedzi[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'												=>	'search.php?action=show_unanswered&p=$3',
++	'/^szukaj[\/_-]?bez-odpowiedzi[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'												=>	'search.php?action=show_unanswered&p=$3',
+ 	'/^szukaj[\/_-]?subskrybcje[\/_-]?([0-9]+)(\.html?|\/)?$/i'																=>	'search.php?action=show_subscriptions&user_id=$1',
+-	'/^szukaj[\/_-]?subskrybcje[\/_-]?([0-9]+)[\/_-]p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'									=>	'search.php?action=show_subscriptions&user_id=$1&p=$3',
++	'/^szukaj[\/_-]?subskrybcje[\/_-]?([0-9]+)[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'									=>	'search.php?action=show_subscriptions&user_id=$1&p=$3',
+ 	'/^szukaj[\/_-]?([0-9]+)(\.html?|\/)?$/i'																				=>	'search.php?search_id=$1',
+-	'/^szukaj[\/_-]?([0-9]+)[\/_-]?p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?search_id=$1&p=$3',
++	'/^szukaj[\/_-]?([0-9]+)[\/_-]?s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?search_id=$1&p=$3',
+ 	'/^szukaj[\/_-]?posty[\/_-]?uzytkownika[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?action=show_user_posts&user_id=$1',
+-	'/^szukaj[\/_-]?posty[\/_-]?uzytkownika[\/_-]?([0-9]+)[\/_-]?p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'					=>	'search.php?action=show_user_posts&user_id=$1&p=$3',
++	'/^szukaj[\/_-]?posty[\/_-]?uzytkownika[\/_-]?([0-9]+)[\/_-]?s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'					=>	'search.php?action=show_user_posts&user_id=$1&p=$3',
+ 	'/^szukaj[\/_-]?watki[\/_-]?uzytkownika[\/_-]?([0-9]+)(\.html?|\/)?$/i'													=>	'search.php?action=show_user_topics&user_id=$1',
+-	'/^szukaj[\/_-]?watki[\/_-]?uzytkownika[\/_-]?([0-9]+)[\/_-]?p(age)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'					=>	'search.php?action=show_user_topics&user_id=$1&p=$3',	
++	'/^szukaj[\/_-]?watki[\/_-]?uzytkownika[\/_-]?([0-9]+)[\/_-]?s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'					=>	'search.php?action=show_user_topics&user_id=$1&p=$3',	
+ 	'/^uzytkownicy(\.html?|\/)?$/i'																							=>	'userlist.php',
+ 	'/^uzytkownicy\/(.*)\/([0-9-]+)\/?([a-z_]+)[\/_-]([a-zA-Z]+)[\/_-]s(trona)?[\/_-]?([0-9]+)(\.html?|\/)?$/i'				=>	'userlist.php?username=$1&show_group=$2&sort_by=$3&sort_dir=$4&p=$6', 
+ 	'/^uzytkownicy\/(.*)\/([0-9-]+)\/?([a-z_]+)[\/_-]([a-zA-Z]+)(\.html?|\/)?$/i'											=>	'userlist.php?username=$1&show_group=$2&sort_by=$3&sort_dir=$4', 
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/login.php fluxbb-test2/login.php
+--- fluxbb-test/login.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/login.php	Mon May 30 11:01:15 2011
+@@ -160,7 +160,7 @@
+ 
+ 					// Do the user specific replacements to the template
+ 					$cur_mail_message = str_replace('<username>', $cur_hit['username'], $mail_message);
+-					$cur_mail_message = str_replace('<activation_url>', get_base_url().'/profile.php?id='.$cur_hit['id'].'&action=change_pass&key='.$new_password_key, $cur_mail_message);
++					$cur_mail_message = str_replace('<activation_url>', forum_link($GLOBALS['forum_url']['change_password_key'], array($cur_hit['id'], $new_password_key)), $cur_mail_message);
+ 					$cur_mail_message = str_replace('<new_password>', $new_password, $cur_mail_message);
+ 
+ 					pun_mail($email, $mail_subject, $cur_mail_message);
+@@ -232,9 +232,9 @@
+ 	header('Location: '.forum_link($GLOBALS['forum_url']['index']));
+ 
+ // Try to determine if the data in HTTP_REFERER is valid (if not, we redirect to index.php after login)
+-if (!empty($_SERVER['HTTP_REFERER']))
++if (!empty($_SERVER['HTTP_REFERER_REWRITTEN']))
+ {
+-	$referrer = parse_url($_SERVER['HTTP_REFERER']);
++	$referrer = parse_url($_SERVER['HTTP_REFERER_REWRITTEN']);
+ 	// Remove www subdomain if it exists
+ 	if (strpos($referrer['host'], 'www.') === 0)
+ 		$referrer['host'] = substr($referrer['host'], 4);
+@@ -252,8 +252,8 @@
+ 	if (!isset($valid['path']))
+ 		$valid['path'] = '';
+ 
+-	if ($referrer['host'] == $valid['host'] && preg_match('#^'.preg_quote($valid['path']).'/(.*?)\.php#i', $referrer['path']))
+-		$redirect_url = $_SERVER['HTTP_REFERER'];
++	if ($referrer['host'] == $valid['host'] && preg_match('#^'.preg_quote($valid['path']).'/#i', $referrer['path']))
++		$redirect_url = $_SERVER['HTTP_REFERER_REWRITTEN'];
+ }
+ 
+ if (!isset($redirect_url))
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/misc.php fluxbb-test2/misc.php
+--- fluxbb-test/misc.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/misc.php	Mon May 30 11:01:15 2011
+@@ -239,7 +239,7 @@
+ 			if ($pun_config['o_mailing_list'] != '')
+ 			{
+ 				$mail_subject = sprintf($lang_common['Report notification'], $forum_id, $subject);
+-				$mail_message = sprintf($lang_common['Report message 1'], $pun_user['username'], get_base_url().'/viewtopic.php?pid='.$post_id.'#p'.$post_id)."\n";
++				$mail_message = sprintf($lang_common['Report message 1'], $pun_user['username'], forum_link($GLOBALS['forum_url']['post'], $post_id))."\n";
+ 				$mail_message .= sprintf($lang_common['Report message 2'], $reason)."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/post.php fluxbb-test2/post.php
+--- fluxbb-test/post.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/post.php	Mon May 30 11:01:16 2011
+@@ -246,16 +246,16 @@
+ 								$mail_subject = str_replace('<topic_subject>', $cur_posting['subject'], $mail_subject);
+ 								$mail_message = str_replace('<topic_subject>', $cur_posting['subject'], $mail_message);
+ 								$mail_message = str_replace('<replier>', $username, $mail_message);
+-								$mail_message = str_replace('<post_url>', get_base_url().'/viewtopic.php?pid='.$new_pid.'#p'.$new_pid, $mail_message);
+-								$mail_message = str_replace('<unsubscribe_url>', get_base_url().'/misc.php?action=unsubscribe&tid='.$tid, $mail_message);
++								$mail_message = str_replace('<post_url>', forum_link($GLOBALS['forum_url']['post'], $new_pid), $mail_message);
++								$mail_message = str_replace('<unsubscribe_url>', forum_link($GLOBALS['forum_url']['unsubscribe_topic'], $tid), $mail_message);
+ 								$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+ 
+ 								$mail_subject_full = str_replace('<topic_subject>', $cur_posting['subject'], $mail_subject_full);
+ 								$mail_message_full = str_replace('<topic_subject>', $cur_posting['subject'], $mail_message_full);
+ 								$mail_message_full = str_replace('<replier>', $username, $mail_message_full);
+ 								$mail_message_full = str_replace('<message>', $pun_config['o_censoring'] == '1' ? $censored_message : $message, $mail_message_full);
+-								$mail_message_full = str_replace('<post_url>', get_base_url().'/viewtopic.php?pid='.$new_pid.'#p'.$new_pid, $mail_message_full);
+-								$mail_message_full = str_replace('<unsubscribe_url>', get_base_url().'/misc.php?action=unsubscribe&tid='.$tid, $mail_message_full);
++								$mail_message_full = str_replace('<post_url>', forum_link($GLOBALS['forum_url']['post'], $new_pid), $mail_message_full);
++								$mail_message_full = str_replace('<unsubscribe_url>', forum_link($GLOBALS['forum_url']['unsubscribe_topic'], $tid), $mail_message_full);
+ 								$mail_message_full = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message_full);
+ 
+ 								$notification_emails[$cur_subscriber['language']][0] = $mail_subject;
+@@ -348,8 +348,8 @@
+ 								$mail_message = str_replace('<topic_subject>', $pun_config['o_censoring'] == '1' ? $censored_subject : $subject, $mail_message);
+ 								$mail_message = str_replace('<forum_name>', $cur_posting['forum_name'], $mail_message);
+ 								$mail_message = str_replace('<poster>', $username, $mail_message);
+-								$mail_message = str_replace('<topic_url>', get_base_url().'/viewtopic.php?id='.$new_tid, $mail_message);
+-								$mail_message = str_replace('<unsubscribe_url>', get_base_url().'/misc.php?action=unsubscribe&fid='.$cur_posting['id'], $mail_message);
++								$mail_message = str_replace('<topic_url>', forum_link($GLOBALS['forum_url']['topic'], array($new_tid, (isset($cur_posting['subject']) ? sef_friendly($cur_posting['subject']) : sef_name('t', $new_tid)))), $mail_message);
++								$mail_message = str_replace('<unsubscribe_url>', forum_link($GLOBALS['forum_url']['unsubscribe_forum'], $cur_posting['id']), $mail_message);
+ 								$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+ 
+ 								$mail_subject_full = str_replace('<forum_name>', $cur_posting['forum_name'], $mail_subject_full);
+@@ -357,8 +357,8 @@
+ 								$mail_message_full = str_replace('<forum_name>', $cur_posting['forum_name'], $mail_message_full);
+ 								$mail_message_full = str_replace('<poster>', $username, $mail_message_full);
+ 								$mail_message_full = str_replace('<message>', $pun_config['o_censoring'] == '1' ? $censored_message : $message, $mail_message_full);
+-								$mail_message_full = str_replace('<topic_url>', get_base_url().'/viewtopic.php?id='.$new_tid, $mail_message_full);
+-								$mail_message_full = str_replace('<unsubscribe_url>', get_base_url().'/misc.php?action=unsubscribe&fid='.$cur_posting['id'], $mail_message_full);
++								$mail_message_full = str_replace('<topic_url>', forum_link($GLOBALS['forum_url']['topic'], array($new_tid, (isset($cur_posting['subject']) ? sef_friendly($cur_posting['subject']) : sef_name('t', $new_tid)))), $mail_message_full);
++								$mail_message_full = str_replace('<unsubscribe_url>', forum_link($GLOBALS['forum_url']['unsubscribe_forum'], $cur_posting['id']), $mail_message_full);
+ 								$mail_message_full = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message_full);
+ 
+ 								$notification_emails[$cur_subscriber['language']][0] = $mail_subject;
+@@ -388,7 +388,7 @@
+ 		{
+ 			$mail_subject = $lang_common['Banned email notification'];
+ 			$mail_message = sprintf($lang_common['Banned email post message'], $username, $email)."\n";
+-			$mail_message .= sprintf($lang_common['Post URL'], get_base_url().'/viewtopic.php?pid='.$new_pid.'#p'.$new_pid)."\n";
++			$mail_message .= sprintf($lang_common['Post URL'], forum_link($GLOBALS['forum_url']['post'], $new_pid))."\n";
+ 			$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 			pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/profile.php fluxbb-test2/profile.php
+--- fluxbb-test/profile.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/profile.php	Mon May 30 11:01:16 2011
+@@ -213,7 +213,7 @@
+ 			{
+ 				$mail_subject = $lang_common['Banned email notification'];
+ 				$mail_message = sprintf($lang_common['Banned email change message'], $pun_user['username'], $new_email)."\n";
+-				$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$id)."\n";
++				$mail_message .= sprintf($lang_common['User profile'], forum_link($GLOBALS['forum_url']['user'], $id))."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 				pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+@@ -233,7 +233,7 @@
+ 
+ 				$mail_subject = $lang_common['Duplicate email notification'];
+ 				$mail_message = sprintf($lang_common['Duplicate email change message'], $pun_user['username'], implode(', ', $dupe_list))."\n";
+-				$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$id)."\n";
++				$mail_message .= sprintf($lang_common['User profile'], forum_link($GLOBALS['forum_url']['user'], $id))."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 				pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+@@ -255,7 +255,7 @@
+ 
+ 		$mail_message = str_replace('<username>', $pun_user['username'], $mail_message);
+ 		$mail_message = str_replace('<base_url>', get_base_url(), $mail_message);
+-		$mail_message = str_replace('<activation_url>', get_base_url().'/profile.php?action=change_email&id='.$id.'&key='.$new_email_key, $mail_message);
++		$mail_message = str_replace('<activation_url>', forum_link($GLOBALS['forum_url']['change_email_key'], array($id, $new_email_key)), $mail_message);
+ 		$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+ 
+ 		pun_mail($new_email, $mail_subject, $mail_message);
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/register.php fluxbb-test2/register.php
+--- fluxbb-test/register.php	Sun May 29 09:28:53 2011
++++ fluxbb-test2/register.php	Mon May 30 11:01:16 2011
+@@ -168,7 +168,7 @@
+ 			{
+ 				$mail_subject = $lang_common['Banned email notification'];
+ 				$mail_message = sprintf($lang_common['Banned email register message'], $username, $email1)."\n";
+-				$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$new_uid)."\n";
++				$mail_message .= sprintf($lang_common['User profile'], forum_link($GLOBALS['forum_url']['user'], $new_uid))."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 				pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+@@ -179,7 +179,7 @@
+ 			{
+ 				$mail_subject = $lang_common['Duplicate email notification'];
+ 				$mail_message = sprintf($lang_common['Duplicate email register message'], $username, implode(', ', $dupe_list))."\n";
+-				$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$new_uid)."\n";
++				$mail_message .= sprintf($lang_common['User profile'], forum_link($GLOBALS['forum_url']['user'], $new_uid))."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 				pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+@@ -190,7 +190,7 @@
+ 			{
+ 				$mail_subject = $lang_common['New user notification'];
+ 				$mail_message = sprintf($lang_common['New user message'], $username, get_base_url().'/')."\n";
+-				$mail_message .= sprintf($lang_common['User profile'], get_base_url().'/profile.php?id='.$new_uid)."\n";
++				$mail_message .= sprintf($lang_common['User profile'], forum_link($GLOBALS['forum_url']['user'], $new_uid))."\n";
+ 				$mail_message .= "\n".'--'."\n".$lang_common['Email signature'];
+ 
+ 				pun_mail($pun_config['o_mailing_list'], $mail_subject, $mail_message);
+@@ -212,7 +212,7 @@
+ 			$mail_message = str_replace('<base_url>', get_base_url().'/', $mail_message);
+ 			$mail_message = str_replace('<username>', $username, $mail_message);
+ 			$mail_message = str_replace('<password>', $password1, $mail_message);
+-			$mail_message = str_replace('<login_url>', get_base_url().'/login.php', $mail_message);
++			$mail_message = str_replace('<login_url>', forum_link($GLOBALS['forum_url']['login']), $mail_message);
+ 			$mail_message = str_replace('<board_mailer>', $pun_config['o_board_title'].' '.$lang_common['Mailer'], $mail_message);
+ 
+ 			pun_mail($email1, $mail_subject, $mail_message);
+diff -x cache -x mods.php -x config.php -x flux -ru fluxbb-test/rewrite.php fluxbb-test2/rewrite.php
+--- fluxbb-test/rewrite.php	Sun May 29 09:28:48 2011
++++ fluxbb-test2/rewrite.php	Mon May 30 11:01:12 2011
+@@ -84,6 +84,4 @@
+ // We change $_SERVER['PHP_SELF'] so that it reflects the file we're actually loading
+ $_SERVER['PHP_SELF'] = str_replace('rewrite.php', $url_parts[0], $_SERVER['PHP_SELF']);
+ 
+-$_SESSION['HTTP_REFERER'] = forum_link($rewritten_url);
+-
+ require PUN_ROOT.$url_parts[0];

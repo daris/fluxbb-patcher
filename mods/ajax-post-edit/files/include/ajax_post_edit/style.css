@@ -1,0 +1,47 @@
+
+.popup {
+	position: absolute;
+	box-shadow: 1px 1px 5px #000;
+	-moz-box-shadow: 1px 1px 5px #000;
+	font-family: Segoe UI, Tahoma, Arial;
+	font-size: 11px;
+	border: 1px solid #BCD4E3;
+	border-radius: 4px;
+	-moz-border-radius: 4px;
+	padding: 4px 0;
+	background: #E9F0F5;
+}
+
+.popup ul {
+	list-style: none;
+	padding-left: 0px !important;
+	margin: 0px !important;
+	padding: 0;
+}
+
+.popup li {
+}
+
+.popup a {
+	padding: 5px 10px 5px 10px;
+	display: block;
+	text-decoration: none;
+	color: #333;
+	text-shadow: 1px 1px #fff;
+}
+
+.popup a:hover {
+ 	background: #fff;
+}
+
+#ajax_post_edit #pun_bbcode_bar {
+	padding: 0;
+}
+
+.pun .form-ape label {
+	border: 0;
+}
+
+.pun .ape-label {
+	margin-top: 0.5em;
+}
