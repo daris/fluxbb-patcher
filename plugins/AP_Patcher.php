@@ -29,6 +29,9 @@ if (!defined('PUN_DEBUG'))
 // Get the patcher directories
 if (!defined('MODS_DIR'))
 	define('MODS_DIR', PUN_ROOT.'mods/');
+	
+if (!is_dir(MODS_DIR))
+	error('Mods directory does not exist');
 
 if (!defined('BACKUPS_DIR'))
 {
