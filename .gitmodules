@@ -4,3 +4,9 @@
 [submodule "mods/ajax-quick-post"]
 	path = mods/ajax-quick-post
 	url = git@github.com:daris/fluxbb-ajax-quick-post.git
+[submodule "mods/attachment-mod"]
+	path = mods/attachment-mod
+	url = git@github.com:daris/fluxbb-attachment-mod.git
+[submodule "mods/collapse-categories"]
+	path = mods/collapse-categories
+	url = git@github.com:daris/fluxbb-collapse-categories.git
