@@ -13,3 +13,30 @@
 [submodule "mods/colorize-groups"]
 	path = mods/colorize-groups
 	url = git@github.com:daris/fluxbb-colorize-groups.git
+[submodule "mods/easy-bbcode"]
+	path = mods/easy-bbcode
+	url = git@github.com:daris/fluxbb-easy-bbcode.git
+[submodule "mods/friendly-url"]
+	path = mods/friendly-url
+	url = git@github.com:daris/fluxbb-friendly-url.git
+[submodule "mods/last-topic-on-index"]
+	path = mods/last-topic-on-index
+	url = git@github.com:daris/fluxbb-last-topic-on-index.git
+[submodule "mods/most-users-online"]
+	path = mods/most-users-online
+	url = git@github.com:daris/fluxbb-most-users-online.git
+[submodule "mods/online-today"]
+	path = mods/online-today
+	url = git@github.com:daris/fluxbb-online-today.git
+[submodule "mods/rank-image"]
+	path = mods/rank-image
+	url = git@github.com:daris/fluxbb-rank-image.git
+[submodule "mods/sub-forum"]
+	path = mods/sub-forum
+	url = git@github.com:daris/fluxbb-sub-forum.git
+[submodule "mods/track-topics-in-database"]
+	path = mods/track-topics-in-database
+	url = git@github.com:daris/fluxbb-track-topics-in-database.git
+[submodule "mods/user-agent"]
+	path = mods/user-agent
+	url = git@github.com:daris/fluxbb-user-agent.git
