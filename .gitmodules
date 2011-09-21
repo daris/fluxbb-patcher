@@ -10,3 +10,6 @@
 [submodule "mods/collapse-categories"]
 	path = mods/collapse-categories
 	url = git@github.com:daris/fluxbb-collapse-categories.git
+[submodule "mods/colorize-groups"]
+	path = mods/colorize-groups
+	url = git@github.com:daris/fluxbb-colorize-groups.git
