@@ -163,6 +163,7 @@ class PATCHER
 				{
 					$this->command = $cur_step['command'];
 					$this->code = $cur_step['code'];
+					$this->comments = array();
 					
 					// Execute current step
 					$result = $this->$function();
@@ -171,6 +172,8 @@ class PATCHER
 						list($cur_step['status'], $cur_step['result']) = $result;
 					else
 						$cur_step['status'] = $result;
+						
+					$cur_step['comments'] = $this->comments;
 				}
 				
 				// Don't display Note message when uninstalling mod
@@ -255,8 +258,9 @@ class PATCHER
 		return !$failed;
 	}
 	
-	function preg_replace_code($find, $replace)
-	{		
+	
+	function replace_code($find, $replace)
+	{
 		// Undo changes?
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
@@ -274,9 +278,9 @@ class PATCHER
 			else
 			{
 				if ($this->command == 'AFTER ADD')
-					$this->code = "\n\n".$this->code;
+					$this->code = "\n".$this->code;
 				elseif ($this->command == 'BEFORE ADD')
-					$this->code .= "\n\n";
+					$this->code .= "\n";
 
 				if (!preg_match('#'.make_regexp(trim($this->code)).'#si', $this->cur_file))
 					return STATUS_ALREADY_REVERTED;
@@ -303,7 +307,9 @@ class PATCHER
 		}
 		
 		// not done yet
-		$second_part = preg_replace('#'.make_regexp($find).'#si', $replace, $second_part, 1);
+		//echo '<pre>'.htmlspecialchars(make_regexp($find)).'</pre>';
+		//$second_part = preg_replace('#'.make_regexp($find).'#si', $replace, $second_part, 1, $count);
+		$second_part = str_replace_once($find, $replace, $second_part);
 		$this->cur_file = $first_part.$second_part;
 		
 		$pos = strpos($second_part, trim($this->code));
@@ -321,7 +327,8 @@ class PATCHER
 			return STATUS_ALREADY_DONE;
 		}
 
-		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
+//		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
+		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
 		
 		$pos = strpos($this->cur_file, trim($this->code));
 		if ($pos !== false) // done
@@ -403,6 +410,9 @@ class PATCHER
 		
 		$this->cur_file = file_get_contents(PUN_ROOT.$this->code);
 		
+		// Convert EOL to Unix style
+		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
+		
 		// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
 		if (isset($this->installed_mods['friendly-url']) && !isset($this->installed_mods['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
 		{
@@ -471,7 +481,34 @@ class PATCHER
 	function step_find()
 	{
 		$this->find = $this->code;
-		return STATUS_UNKNOWN;
+		$reg = preg_quote($this->find, '#');
+		if (preg_match('#'.$reg.'#si', $this->cur_file))
+			return STATUS_UNKNOWN;
+			
+		// Code was not found
+		else
+		{
+			// Ignore multiple tab characters
+			$reg = preg_replace("#\t+#", '\t*', $reg);
+			$this->comments[] = 'Tabs ignored';
+			if (preg_match('#'.$reg.'#si', $this->cur_file, $matches))
+			{
+				$this->find = $this->code = $matches[0];
+				return STATUS_UNKNOWN;
+			}
+			
+			// Ignore spaces
+			$reg = preg_replace('#\s+#', '\s*', $reg);
+			$this->comments[] = 'Spaces ignored';
+			if (preg_match('#'.$reg.'#si', $this->cur_file, $matches))
+			{
+				$this->find = $this->code = $matches[0];
+				return STATUS_UNKNOWN;
+			}
+			//return STATUS_NOT_DONE;
+			return STATUS_UNKNOWN;
+		}
+		
 	}
 	
 	
@@ -495,7 +532,7 @@ class PATCHER
 			}
 		}
 
-		$status = $this->preg_replace_code(trim($this->find), trim($this->code));
+		$status = $this->replace_code(trim($this->find), trim($this->code));
 
 		// has query?
 		if (($status == STATUS_NOT_DONE || $status == STATUS_REVERTED || $status == STATUS_ALREADY_REVERTED) && strpos($this->find, 'query(') !== false)
@@ -549,7 +586,7 @@ class PATCHER
 			}
 
 			if (in_array($this->action, array('install', 'enable')) || strpos($this->cur_file, $this->code) !== false)
-				$status = $this->preg_replace_code(trim($this->find), trim($this->code));
+				$status = $this->replace_code(trim($this->find), trim($this->code));
 		}
 		$this->find = $this->code;
 		return $status;
@@ -562,7 +599,7 @@ class PATCHER
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 		
-		return $this->preg_replace_code($this->find, $this->find."\n\n".$this->code);
+		return $this->replace_code($this->find, $this->find."\n".$this->code);
 	}
 	
 	
@@ -571,7 +608,7 @@ class PATCHER
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 
-		return $this->preg_replace_code(trim($this->find), trim($this->code)."\n\n".$this->find);
+		return $this->replace_code($this->find, $this->code."\n".$this->find);
 	}
 	
 	

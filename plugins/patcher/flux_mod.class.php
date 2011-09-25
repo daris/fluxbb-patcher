@@ -472,6 +472,9 @@ class FLUX_MOD
 		// Mpok's style (first line - English, second - translation)
 		if (preg_match('/\]-+\s*\n#-+\[/si', $readme))
 			$readme = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $readme);
+			
+		// Convert EOL to Unix style
+		$readme = str_replace("\r\n", "\n", $readme);
 		
 		$readme .= '#--';
 		$do_inline_find = false;
@@ -552,10 +555,10 @@ class FLUX_MOD
 			// Remove blank string after # at start and at end
 			$cur_code = preg_replace('#^\#[ \r\t]*#', '', $cur_code);
 			$cur_code = preg_replace('#\s*\#\s*$#s', '', $cur_code);
-			
+
 			// Empty lines at start and at end
-			$cur_code = preg_replace('#^[\n\r]*[ \t]*[\n\r]+#', '', $cur_code);
-			$cur_code = preg_replace('#[\n\r]+[ \t]*[\n\r]*$#', '', $cur_code);
+			$cur_code = preg_replace('#^\n*[ \t]*\n+#', '', $cur_code);
+			$cur_code = preg_replace('#\n+[ \t]*\n*$#', '', $cur_code);
 
 			if ($cur_command == 'OPEN')
 			{

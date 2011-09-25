@@ -119,8 +119,20 @@ function make_regexp($string)
 	$string = preg_quote($string, '#');
 
 	// Replace tabs, spaces and newline characters with \s* matching one or more spaces
-	return preg_replace('#\s+#s', '\s*', $string);
+	return $string;// preg_replace('#\s+#s', '\s*', $string);
 }
+
+
+// Looks for the first occurence of $needle in $haystack and replaces it with $replace. 
+function str_replace_once($needle, $replace, $haystack)
+{ 
+	$pos = strpos($haystack, $needle); 
+	// Nothing found 
+    if ($pos === false)
+		return $haystack; 
+
+	return substr_replace($haystack, $replace, $pos, strlen($needle)); 
+} 
 
 
 /*
