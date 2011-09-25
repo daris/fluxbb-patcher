@@ -40,3 +40,6 @@
 [submodule "mods/user-agent"]
 	path = mods/user-agent
 	url = git@github.com:daris/fluxbb-user-agent.git
+[submodule "mods/poki-bb-chatbox"]
+	path = mods/poki-bb-chatbox
+	url = git@github.com:daris/fluxbb-poki-bb-chatbox.git
