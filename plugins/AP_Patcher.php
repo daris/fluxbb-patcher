@@ -16,7 +16,7 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
-define('PATCHER_VERSION', '1.2');
+define('PATCHER_VERSION', '1.99');
 
 require PATCHER_ROOT.'functions.php';
 require PATCHER_ROOT.'flux_mod.class.php';
