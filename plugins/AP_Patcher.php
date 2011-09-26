@@ -121,8 +121,18 @@ if (count($dirs_not_writable) > 0)
 
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
+	if (file_exists(PUN_ROOT.'mods.php'))
+		require PUN_ROOT.'mods.php';
+	else
+		$inst_mods = array();
+	
+	if ($action == 'install' && isset($inst_mods[$mod_id]))
+		message('Already installed');
+	if ($action == 'uninstall' && !isset($inst_mods[$mod_id]))
+		message('Already uninstalled');
+
 	// Do patching! :)
-	if (isset($_POST['install']))
+	if (isset($_POST['install'])/* || in_array($action, array('enable', 'disable'))*/) // Enable/Disable won't work as there are some files needed to be uploaded
 	{
 		$flux_mod = new FLUX_MOD($mod_id);
 
@@ -157,9 +167,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 				{
 					$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
 					if (in_array($action, array('disable', 'uninstall')))
-						$actions[] = array($lang_admin_plugin_patcher['Deleting files'], true, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
+						$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
 					else
-						$actions[] = array($lang_admin_plugin_patcher['Uploading files'], true, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
+						$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
 				}
 				elseif ($cur_step['command'] == 'OPEN')
 				{
@@ -187,7 +197,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 				}
 				elseif ($cur_step['command'] == 'RUN')
 				{
-					$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), true);
+					$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 					if (isset($cur_step['result']))
 					{
 						$result = $cur_step['result'];
@@ -198,7 +208,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					$actions[] = $new_action;
 				}
 				elseif ($cur_step['command'] == 'DELETE')
-					$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), true);
+					$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 				
 				elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
 					$notes[] = $cur_step['result'];

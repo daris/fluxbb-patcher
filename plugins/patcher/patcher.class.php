@@ -168,6 +168,10 @@ class PATCHER
 					// Execute current step
 					$result = $this->$function();
 					
+					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
+					if (in_array($this->action, array('uninstall', 'disable')) && $result > STATUS_NOT_DONE)
+						$result += 2; // :)
+					
 					if (is_array($result))
 						list($cur_step['status'], $cur_step['result']) = $result;
 					else
@@ -261,50 +265,58 @@ class PATCHER
 	
 	function replace_code($find, $replace)
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
+	
 		// Undo changes?
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			$count = 0;
-			if ($this->command == 'REPLACE')
-			{
-				if (!preg_match('#'.make_regexp(trim($replace)).'#si', $this->cur_file) && preg_match('#'.make_regexp(trim($find)).'#si', $this->cur_file))
-					return STATUS_ALREADY_REVERTED;
+			// $count = 0;
+			// if ($this->command == 'REPLACE')
+			// {
+				// // if (!preg_match('#'.make_regexp(trim($replace)).'#si', $this->cur_file) && preg_match('#'.make_regexp(trim($find)).'#si', $this->cur_file))
+					// // return STATUS_ALREADY_REVERTED;
 
-				$this->cur_file = preg_replace('#'.make_regexp($replace).'#si', preg_replace('#([\$\\\\]\d+)#', '\\\$1', $find), $this->cur_file, 1, $count);
+				// $this->cur_file = preg_replace('#'.make_regexp($replace).'#si', preg_replace('#([\$\\\\]\d+)#', '\\\$1', $find), $this->cur_file, 1, $count);
 
-				if ($count == 1)
-					return STATUS_REVERTED;
-			}
-			else
-			{
-				if ($this->command == 'AFTER ADD')
-					$this->code = "\n".$this->code;
-				elseif ($this->command == 'BEFORE ADD')
-					$this->code .= "\n";
+				// if ($count == 1)
+					// return STATUS_REVERTED;
+			// }
+			// else
+			// {
+				// if ($this->command == 'AFTER ADD')
+					// $this->code = "\n".$this->code;
+				// elseif ($this->command == 'BEFORE ADD')
+					// $this->code .= "\n";
 
-				if (!preg_match('#'.make_regexp(trim($this->code)).'#si', $this->cur_file))
-					return STATUS_ALREADY_REVERTED;
+				// // if (!preg_match('#'.make_regexp(trim($this->code)).'#si', $this->cur_file))
+					// // return STATUS_ALREADY_REVERTED;
 
-				$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
+				// $this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
 
-				if ($count == 1)
-					return STATUS_REVERTED;
-			}
+				// if ($count == 1)
+					// return STATUS_REVERTED;
+			// }
 			
-			return STATUS_NOT_DONE;
+			// return STATUS_NOT_DONE;
+			
+			$tmp = $find;
+			$find = $replace;
+			$replace = $tmp;
 		}
 		
 		$replace = preg_replace('#([\$\\\\]\d+)#', '\\\$1', $replace);
 
 		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
 		$second_part = substr($this->cur_file, $this->start_pos); // only replace this
-		$pos = strpos($second_part, trim($this->code));
+		// $pos = strpos($second_part, $replace);
 
-		if ($pos !== false) // already done
-		{
-			$this->start_pos = $this->start_pos + $pos + strlen(trim($this->code));
-			return STATUS_ALREADY_DONE;
-		}
+		// if ($pos !== false) // already done
+		// {
+			// $this->start_pos = $this->start_pos + $pos + strlen($replace);
+			// return STATUS_ALREADY_DONE;
+		// }
 		
 		// not done yet
 		//echo '<pre>'.htmlspecialchars(make_regexp($find)).'</pre>';
@@ -312,20 +324,20 @@ class PATCHER
 		$second_part = str_replace_once($find, $replace, $second_part);
 		$this->cur_file = $first_part.$second_part;
 		
-		$pos = strpos($second_part, trim($this->code));
+		$pos = strpos($second_part, $replace);
 		if ($pos !== false) // done
 		{
-			$this->start_pos = $this->start_pos + $pos + strlen(trim($this->code));
+			$this->start_pos = $this->start_pos + $pos + strlen($replace);
 			return STATUS_DONE;
 		}
 
 		// not done, try to find in whole file
-		$pos = strpos($this->cur_file, trim($this->code));
-		if ($pos !== false) // already done
-		{
+		// $pos = strpos($this->cur_file, trim($this->code));
+		// if ($pos !== false) // already done
+		// {
 	//		$this->start_pos = $pos + strlen(trim($this->code));
-			return STATUS_ALREADY_DONE;
-		}
+			// return STATUS_ALREADY_DONE;
+		// }
 
 //		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
 		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
@@ -345,11 +357,11 @@ class PATCHER
 	{
 		global $lang_admin_plugin_patcher;
 
-		// // Should never happen
-		// if (in_array($this->action, array('enable', 'disable')))
-			// return STATUS_DONE;
+		// Should never happen
+		if (in_array($this->action, array('enable', 'disable')))
+			return STATUS_DONE;
 		
-		if (in_array($this->action, array('uninstall', 'disable')))
+		if (in_array($this->action, array('uninstall')))
 		{
 			$directories = array();
 			foreach ($this->flux_mod->files_to_upload as $from => $to)
@@ -481,6 +493,11 @@ class PATCHER
 	function step_find()
 	{
 		$this->find = $this->code;
+		$this->find = "\n".$this->find;
+		
+		if (in_array($this->action, array('uninstall', 'disable')))
+			return STATUS_UNKNOWN;
+		
 		$reg = preg_quote($this->find, '#');
 		if (preg_match('#'.$reg.'#si', $this->cur_file))
 			return STATUS_UNKNOWN;
@@ -614,6 +631,10 @@ class PATCHER
 	
 	function step_at_the_end_of_file_add()
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
+	
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
 			// If it was already done
@@ -621,7 +642,7 @@ class PATCHER
 				return STATUS_ALREADY_REVERTED;
 
 			$count = 0;
-			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
+			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_REVERTED;
 		}
@@ -641,23 +662,27 @@ class PATCHER
 	
 	function step_add_new_elements_of_array()
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
+	
 		$count = 0;
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			if (strpos($this->cur_file, trim($this->code)) === false)
-				return STATUS_ALREADY_REVERTED;
+			// if (strpos($this->cur_file, trim($this->code)) === false)
+				// return STATUS_ALREADY_REVERTED;
 
-			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
+			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_REVERTED;
 		}
 		else
 		{
 			// If it was already done
-			if (strpos($this->cur_file, trim($this->code)) !== false)
-				return STATUS_ALREADY_DONE;
+			// if (strpos($this->cur_file, trim($this->code)) !== false)
+				// return STATUS_ALREADY_DONE;
 
-			$this->cur_file = preg_replace('#,?\s*\);#si', ','."\n\n".$this->code."\n".');', $this->cur_file, 1, $count);
+			$this->cur_file = preg_replace('#,?\s*\);#si', ','."\n\n".$this->code."\n".');', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_DONE;
 		}
@@ -738,6 +763,7 @@ class PATCHER
 		// if (in_array($this->action, array('enable', 'disable')))
 			// return STATUS_DONE;
 
+		// Delete step is usually for install_mod.php so when uninstalling that file does not exist
 		if ($this->action == 'uninstall')
 			return STATUS_UNKNOWN;
 		

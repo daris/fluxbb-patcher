@@ -186,7 +186,10 @@ class FLUX_MOD
 			$this->release_date = $mod_info['release date'];
 
 		if (isset($mod_info['works on fluxbb']))
+		{
+			$mod_info['works on fluxbb'] = str_replace(' and ', ', ', $mod_info['works on fluxbb']);
 			$this->works_on = array_map('trim', explode(',', $mod_info['works on fluxbb']));
+		}
 
 		if (isset($this->mod_author) && strpos($this->mod_author, ';') !== false)
 			$this->author = substr($this->author, 0, strpos($this->author, ';'));
