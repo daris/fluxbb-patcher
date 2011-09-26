@@ -377,13 +377,35 @@ class PATCHER
 				if (file_exists(PUN_ROOT.$to))
 					unlink(PUN_ROOT.$to);
 				
-				if (!in_array(dirname($to), $directories))
-					$directories[] = dirname($to);
+				$cur_path = '';
+				$dir_structure = explode('/', trim($to, '/'));
+				foreach ($dir_structure as $cur_dir)
+				{
+					$cur_path .= '/'.$cur_dir;
+					if (is_dir(PUN_ROOT.$cur_path) && !in_array($cur_path, $directories))
+						$directories[] = $cur_path;
+				}
 			}
 			rsort($directories);
 			foreach ($directories as $cur_dir)
-				@rmdir(PUN_ROOT.$cur_dir);
+			{
+				// Checking that current directory is empty as we can't remove directory that have some files/directories
+				$is_empty = true;
+				$d = dir(PUN_ROOT.$cur_dir);
+				while ($f = $d->read())
+				{
+					if ($f != '.' && $f != '..')
+					{
+						$is_empty = false;
+						break;
+					}
+				}
+				$d->close();
 				
+				if ($is_empty)
+					rmdir(PUN_ROOT.$cur_dir);
+			}
+			
 			return STATUS_REVERTED;
 		}
 		
