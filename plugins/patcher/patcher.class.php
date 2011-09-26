@@ -169,8 +169,13 @@ class PATCHER
 					$result = $this->$function();
 					
 					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
-					if (in_array($this->action, array('uninstall', 'disable')) && $result > STATUS_NOT_DONE)
-						$result += 2; // :)
+					if (in_array($this->action, array('uninstall', 'disable')))
+					{
+						if ($result == STATUS_DONE)
+							$result = STATUS_REVERTED;
+						elseif ($result == STATUS_ALREADY_DONE)
+							$result = STATUS_ALREADY_REVERTED;
+					}
 					
 					if (is_array($result))
 						list($cur_step['status'], $cur_step['result']) = $result;
