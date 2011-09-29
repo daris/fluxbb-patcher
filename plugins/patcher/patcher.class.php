@@ -95,7 +95,8 @@ class PATCHER
 			// Correct the order of steps
 			foreach ($steps as $cur_readme_file => &$step_list)
 			{
-				$run_steps_start = $run_steps_end = $upload_steps_end =  array();
+				$run_steps_start = $run_steps_end = $upload_steps_end = $new_step_list = array();
+				$find = '';
 				foreach ($step_list as $key => $cur_step)
 				{
 					if (in_array($cur_step['command'], array('RUN', 'DELETE')))
@@ -106,14 +107,14 @@ class PATCHER
 						if ($code == 'install_mod.php')
 						{
 							$run_steps_end[] = $cur_step;
-							unset($step_list[$key]);
+							//unset($step_list[$key]);
 						}
 						
 						// Other files (eg. gen.php) move to start
 						else
 						{
 							$run_steps_start[] = $cur_step;
-							unset($step_list[$key]);
+							//unset($step_list[$key]);
 						}
 					}
 					
@@ -121,12 +122,37 @@ class PATCHER
 					elseif ($cur_step['command'] == 'UPLOAD')
 					{
 						$upload_steps_end[] = $cur_step;
-						unset($step_list[$key]);
+						//unset($step_list[$key]);
+					}
+					
+					else
+					{
+						if ($cur_step['command'] == 'FIND')
+							$find = $cur_step['code'];
+						elseif ($cur_step['command'] == 'AFTER ADD')
+						{
+							$new_step_list[] = array('command' => 'FIND', 'code' => $find."\n".$cur_step['code']);
+							$new_step_list[] = array('command' => 'REPLACE', 'code' => $find);
+						}
+						elseif ($cur_step['command'] == 'BEFORE ADD')
+						{
+							$new_step_list[] = array('command' => 'FIND', 'code' => $cur_step['code']."\n".$find);
+							$new_step_list[] = array('command' => 'REPLACE', 'code' => $find);
+						}
+						elseif ($cur_step['command'] == 'REPLACE')
+						{
+							$new_step_list[] = array('command' => 'FIND', 'code' => $cur_step['code']);
+							$new_step_list[] = array('command' => 'REPLACE', 'code' => $find);
+						}
+						else
+							$new_step_list[] = array('command' => $cur_step['command'], 'code' => $cur_step['code']);
 					}
 				}
-				$step_list = array_merge($run_steps_start, $step_list, $run_steps_end, $upload_steps_end);
+				$step_list = array_merge($run_steps_start, $new_step_list, $run_steps_end, $upload_steps_end);
 			}
 		}
+		// print_r($steps);
+		// exit;
 
 		return $steps;
 	}
@@ -168,14 +194,15 @@ class PATCHER
 					// Execute current step
 					$result = $this->$function();
 					
+					$cur_step['code'] = $this->code;
 					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
-					if (in_array($this->action, array('uninstall', 'disable')))
-					{
-						if ($result == STATUS_DONE)
-							$result = STATUS_REVERTED;
-						elseif ($result == STATUS_ALREADY_DONE)
-							$result = STATUS_ALREADY_REVERTED;
-					}
+					// if (in_array($this->action, array('uninstall', 'disable')))
+					// {
+						// if ($result == STATUS_DONE)
+							// $result = STATUS_REVERTED;
+						// elseif ($result == STATUS_ALREADY_DONE)
+							// $result = STATUS_ALREADY_REVERTED;
+					// }
 					
 					if (is_array($result))
 						list($cur_step['status'], $cur_step['result']) = $result;
@@ -273,44 +300,7 @@ class PATCHER
 		// Mod was already disabled before
 		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
 			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
-	
-		// Undo changes?
-		if (in_array($this->action, array('uninstall', 'disable')))
-		{
-			// $count = 0;
-			// if ($this->command == 'REPLACE')
-			// {
-				// // if (!preg_match('#'.make_regexp(trim($replace)).'#si', $this->cur_file) && preg_match('#'.make_regexp(trim($find)).'#si', $this->cur_file))
-					// // return STATUS_ALREADY_REVERTED;
 
-				// $this->cur_file = preg_replace('#'.make_regexp($replace).'#si', preg_replace('#([\$\\\\]\d+)#', '\\\$1', $find), $this->cur_file, 1, $count);
-
-				// if ($count == 1)
-					// return STATUS_REVERTED;
-			// }
-			// else
-			// {
-				// if ($this->command == 'AFTER ADD')
-					// $this->code = "\n".$this->code;
-				// elseif ($this->command == 'BEFORE ADD')
-					// $this->code .= "\n";
-
-				// // if (!preg_match('#'.make_regexp(trim($this->code)).'#si', $this->cur_file))
-					// // return STATUS_ALREADY_REVERTED;
-
-				// $this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
-
-				// if ($count == 1)
-					// return STATUS_REVERTED;
-			// }
-			
-			// return STATUS_NOT_DONE;
-			
-			$tmp = $find;
-			$find = $replace;
-			$replace = $tmp;
-		}
-		
 		$replace = preg_replace('#([\$\\\\]\d+)#', '\\\$1', $replace);
 
 		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
@@ -522,8 +512,8 @@ class PATCHER
 		$this->find = $this->code;
 //		$this->find = "\n".$this->find;
 		
-		if (in_array($this->action, array('uninstall', 'disable')))
-			return STATUS_UNKNOWN;
+		// if (in_array($this->action, array('uninstall', 'disable')))
+			// return STATUS_UNKNOWN;
 		
 		$reg = preg_quote($this->find, '#');
 		if (preg_match('#'.$reg.'#si', $this->cur_file))
@@ -532,6 +522,21 @@ class PATCHER
 		// Code was not found
 		else
 		{
+			// Ignore multiple tab characters
+			$reg = preg_replace("#(query\\\\\(.*?)\n#", '$1 \/\/ QUERY ID: [a-f0-9]+'."\n", $reg."\n");
+			$reg = substr($reg, 0, -1);
+			// if ($this->action == 'uninstall')
+			// {
+				// echo $reg;
+				// exit;
+			// }
+			$this->comments[] = 'Query ID ignored';
+			if (preg_match('#'.$reg.'#si', $this->cur_file, $matches))
+			{
+				$this->find = $this->code = $matches[0];
+				return STATUS_UNKNOWN;
+			}
+		
 			// Ignore multiple tab characters
 			$reg = preg_replace("#\t+#", '\t*', $reg);
 			$this->comments[] = 'Tabs ignored';
