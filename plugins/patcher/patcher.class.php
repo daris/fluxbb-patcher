@@ -105,26 +105,17 @@ class PATCHER
 						
 						// Uninstall mod at the end
 						if ($code == 'install_mod.php')
-						{
 							$run_steps_end[] = $cur_step;
-							//unset($step_list[$key]);
-						}
 						
 						// Other files (eg. gen.php) move to start
 						else
-						{
 							$run_steps_start[] = $cur_step;
-							//unset($step_list[$key]);
-						}
 					}
 					
 					// Delete files at the end
 					elseif ($cur_step['command'] == 'UPLOAD')
-					{
 						$upload_steps_end[] = $cur_step;
-						//unset($step_list[$key]);
-					}
-					
+
 					else
 					{
 						if ($cur_step['command'] == 'FIND')
@@ -151,8 +142,6 @@ class PATCHER
 				$step_list = array_merge($run_steps_start, $new_step_list, $run_steps_end, $upload_steps_end);
 			}
 		}
-		// print_r($steps);
-		// exit;
 
 		return $steps;
 	}
@@ -195,15 +184,7 @@ class PATCHER
 					$result = $this->$function();
 					
 					$cur_step['code'] = $this->code;
-					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
-					// if (in_array($this->action, array('uninstall', 'disable')))
-					// {
-						// if ($result == STATUS_DONE)
-							// $result = STATUS_REVERTED;
-						// elseif ($result == STATUS_ALREADY_DONE)
-							// $result = STATUS_ALREADY_REVERTED;
-					// }
-					
+
 					if (is_array($result))
 						list($cur_step['status'], $cur_step['result']) = $result;
 					else
@@ -305,17 +286,7 @@ class PATCHER
 
 		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
 		$second_part = substr($this->cur_file, $this->start_pos); // only replace this
-		// $pos = strpos($second_part, $replace);
 
-		// if ($pos !== false) // already done
-		// {
-			// $this->start_pos = $this->start_pos + $pos + strlen($replace);
-			// return STATUS_ALREADY_DONE;
-		// }
-		
-		// not done yet
-		//echo '<pre>'.htmlspecialchars(make_regexp($find)).'</pre>';
-		//$second_part = preg_replace('#'.make_regexp($find).'#si', $replace, $second_part, 1, $count);
 		$second_part = str_replace_once($find, $replace, $second_part);
 		$this->cur_file = $first_part.$second_part;
 		
@@ -327,14 +298,6 @@ class PATCHER
 		}
 
 		// not done, try to find in whole file
-		// $pos = strpos($this->cur_file, trim($this->code));
-		// if ($pos !== false) // already done
-		// {
-	//		$this->start_pos = $pos + strlen(trim($this->code));
-			// return STATUS_ALREADY_DONE;
-		// }
-
-//		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
 		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
 		
 		$pos = strpos($this->cur_file, $replace);
@@ -522,14 +485,9 @@ class PATCHER
 		// Code was not found
 		else
 		{
-			// Ignore multiple tab characters
+			// Ignore QUERY ID at the end of query line
 			$reg = preg_replace("#(query\\\\\(.*?)\n#", '$1 \/\/ QUERY ID: [a-f0-9]+'."\n", $reg."\n");
 			$reg = substr($reg, 0, -1);
-			// if ($this->action == 'uninstall')
-			// {
-				// echo $reg;
-				// exit;
-			// }
 			$this->comments[] = 'Query ID ignored';
 			if (preg_match('#'.$reg.'#si', $this->cur_file, $matches))
 			{
@@ -554,7 +512,6 @@ class PATCHER
 				$this->find = $this->code = $matches[0];
 				return STATUS_UNKNOWN;
 			}
-			//return STATUS_NOT_DONE;
 			return STATUS_UNKNOWN;
 		}
 		
@@ -701,19 +658,12 @@ class PATCHER
 		$count = 0;
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			// if (strpos($this->cur_file, trim($this->code)) === false)
-				// return STATUS_ALREADY_REVERTED;
-
 			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_REVERTED;
 		}
 		else
 		{
-			// If it was already done
-			// if (strpos($this->cur_file, trim($this->code)) !== false)
-				// return STATUS_ALREADY_DONE;
-
 			$this->cur_file = preg_replace('#,?\s*\);#si', ','."\n\n".$this->code."\n".');', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_DONE;
