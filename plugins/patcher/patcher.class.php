@@ -347,7 +347,7 @@ class PATCHER
 //		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
 		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
 		
-		$pos = strpos($this->cur_file, trim($this->code));
+		$pos = strpos($this->cur_file, $replace);
 		if ($pos !== false) // done
 		{
 	//		$this->start_pos = $pos + strlen(trim($this->code));
@@ -520,7 +520,7 @@ class PATCHER
 	function step_find()
 	{
 		$this->find = $this->code;
-		$this->find = "\n".$this->find;
+//		$this->find = "\n".$this->find;
 		
 		if (in_array($this->action, array('uninstall', 'disable')))
 			return STATUS_UNKNOWN;
@@ -639,7 +639,7 @@ class PATCHER
 	
 	function step_after_add()
 	{
-		$this->find = trim($this->find);
+		//$this->find = trim($this->find);
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 		

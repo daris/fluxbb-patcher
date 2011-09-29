@@ -132,7 +132,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		message('Already uninstalled');
 
 	// Do patching! :)
-	if (isset($_POST['install'])/* || in_array($action, array('enable', 'disable'))*/) // Enable/Disable won't work as there are some files needed to be uploaded
+	if (isset($_POST['install']) || in_array($action, array('enable', 'disable'))) // Enable/Disable won't work as there are some files needed to be uploaded
 	{
 		$flux_mod = new FLUX_MOD($mod_id);
 
@@ -166,9 +166,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 				if ($cur_step['command'] == 'UPLOAD')
 				{
 					$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
-					if (in_array($action, array('disable', 'uninstall')))
+					if ($action == 'uninstall')
 						$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
-					else
+					elseif ($action == 'install')
 						$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
 				}
 				elseif ($cur_step['command'] == 'OPEN')
@@ -195,7 +195,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 					$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), $num_failed == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
 				}
-				elseif ($cur_step['command'] == 'RUN')
+				elseif ($cur_step['command'] == 'RUN' && !in_array($action, array('enable', 'disable')))
 				{
 					$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 					if (isset($cur_step['result']))
@@ -207,7 +207,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					}
 					$actions[] = $new_action;
 				}
-				elseif ($cur_step['command'] == 'DELETE')
+				elseif ($cur_step['command'] == 'DELETE' && !in_array($action, array('enable', 'disable')))
 					$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 				
 				elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
