@@ -219,12 +219,27 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 		foreach ($actions as $cur_action)
 			echo '<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
+		
+		$done_info = array(
+			'install'	=> $lang_admin_plugin_patcher['Mod installed'],
+			'uninstall'	=> $lang_admin_plugin_patcher['Mod uninstalled'],
+			'enable'	=> $lang_admin_plugin_patcher['Mod enabled'],
+			'disable'	=> $lang_admin_plugin_patcher['Mod disabled']
+		);
+		
+		$failed_info = array(
+			'install'	=> $lang_admin_plugin_patcher['Install failed'],
+			'uninstall'	=> $lang_admin_plugin_patcher['Uninstall failed'],
+			'enable'	=> $lang_admin_plugin_patcher['Enable failed'],
+			'disable'	=> $lang_admin_plugin_patcher['Disable failed']
+		);
+			
 ?>
 							</p>
 <?php if ($done) : ?>
-							<p><strong><?php echo $lang_admin_plugin_patcher['Congratulations'] ?></strong><br /><?php echo $action == 'uninstall' ? $lang_admin_plugin_patcher['Mod uninstalled'] : $lang_admin_plugin_patcher['Mod installed'] ?></p>
+							<p><strong><?php echo $lang_admin_plugin_patcher['Congratulations'] ?></strong><br /><?php echo $done_info[$action] ?></p>
 <?php else: ?>
-							<p><strong><?php echo $action == 'uninstall' ? $lang_admin_plugin_patcher['Uninstall failed'] : $lang_admin_plugin_patcher['Install failed'] ?></strong><br /><?php echo $action == 'uninstall' ? $lang_admin_plugin_patcher['Mod uninstall failed'] : $lang_admin_plugin_patcher['Mod install failed'] ?></p>
+							<p><strong><?php echo $failed_info[$action] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed'] ?></p>
 <?php endif; ?>
 <?php 	if (count($notes) > 0) 
 		{
