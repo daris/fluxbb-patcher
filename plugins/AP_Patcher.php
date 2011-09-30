@@ -614,11 +614,7 @@ else
 								<thead>
 									<tr>
 										<th class="tcl"><?php echo $lang_admin_plugin_patcher['Mod title'] ?></th>
-<?php if ($section != 'Mods to download') : ?>										<th class="tc2" style="width: 10%"><?php echo $lang_admin_plugin_patcher['Version'] ?></th>
-										<th class="tc3" style="width: 15%"><?php echo $lang_admin_plugin_patcher['Works on FluxBB'] ?></th>
-										<th class="tc3" style="width: 15%"><?php echo $lang_admin_plugin_patcher['Status'] ?></th>
-<?php endif; ?>
-										<th class="tcr" style="width: <?php echo $section == 'Mods to download' ? 50 : 15 ?>%"><?php echo $lang_admin_plugin_patcher['Action'] ?></th>
+										<th class="tcr" style="width: 30%"><?php echo $lang_admin_plugin_patcher['Action'] ?></th>
 									</tr>
 								</thead>
 								<tbody>
@@ -629,58 +625,62 @@ else
 				if (!$flux_mod->is_valid)
 					continue;
 
-				$title = array();
-				$title[] = '<strong>'.pun_htmlspecialchars($flux_mod->title).'</strong>';
+				$info = array();
+				$info[] = '<strong>'.pun_htmlspecialchars($flux_mod->title).'</strong>';
 			
 				if (isset($flux_mod->repository_url))
-					$title[0] = '<a href="'.$flux_mod->repository_url.'">'.$title[0].'</a>';;
+					$info[0] = '<a href="'.$flux_mod->repository_url.'">'.$info[0].'</a>';;
 
 				if (isset($flux_mod->author_email))
-					$title[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
+					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
 				elseif (isset($flux_mod->author))
-					$title[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
-				
-				if (isset($flux_mod->description))
+					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
+
+				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->version))
+					$info[] = ' <strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
+
+				if (isset($flux_mod->description) && !empty($flux_mod->description))
 				{
 					if (strlen($flux_mod->description) > 400)
-						$title[] = '<br />'.pun_htmlspecialchars(substr($flux_mod->description, 0, 400)).'...';
+						$info[] = '<br />'.pun_htmlspecialchars(substr($flux_mod->description, 0, 400)).'...';
 					else
-						$title[] = '<br />'.pun_htmlspecialchars($flux_mod->description);
+						$info[] = '<br />'.pun_htmlspecialchars($flux_mod->description);
 				}
 
 				// Is the mod compatible with FluxBB version
 				if (get_class($flux_mod) == 'FLUX_MOD' && !$flux_mod->is_compatible())
-					$title[] = '<br /><span style="color: #a00">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
+					$info[] = '<br /><span style="color: #a00">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
 
 				if (isset($flux_mod->important))
-					$title[] = '<br /><span style="color: #a00"><strong>'.$lang_admin_plugin_patcher['Important'].'</strong>: '.pun_htmlspecialchars($flux_mod->important).'</span>';
-
-				$version = '';
-				if (isset($flux_mod->version))
-					$version = '<strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
+					$info[] = '<br /><span style="color: #a00"><strong>'.$lang_admin_plugin_patcher['Important'].'</strong>: '.pun_htmlspecialchars($flux_mod->important).'</span>';
 
 				$works_on = '';
-				if (isset($flux_mod->works_on))
+				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->works_on))
 					$works_on = pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
 
 			
 ?>
-									<tr class="<?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
-										<td class="tcl"><?php echo implode("\n", $title) ?></td>
-<?php if (get_class($flux_mod) == 'FLUX_MOD') : ?>
-										<td class="tc2"><?php echo $version ?></td>
-										<td class="tc3"><?php echo $works_on ?></td>
+									<tr class="mod-info <?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
 
+										<td><?php echo implode("\n", $info) ?>
+<?php if (!empty($works_on)) : ?>									<br /><strong><?php echo $lang_admin_plugin_patcher['Works on FluxBB'] ?></strong>: <?php echo $works_on ?><?php endif; ?>
+										</td>
+<?php if (get_class($flux_mod) == 'FLUX_MOD') : ?>
+
+										<td class="tcr">
 <?php if ($flux_mod->is_installed) : ?>
-										<td class="tc3"><?php echo ($flux_mod->is_enabled) ? '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>' : '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>' ?></td>
-										<td class="tcr"><a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.($flux_mod->is_enabled ? 'disable' : 'enable') ?>"><?php echo $lang_admin_plugin_patcher[($flux_mod->is_enabled ? 'Disable' : 'Enable')] ?></a> | <a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a></td>
+											<?php echo ($flux_mod->is_enabled) ? '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>' : '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>' ?><br />
+											<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.($flux_mod->is_enabled ? 'disable' : 'enable') ?>"><?php echo $lang_admin_plugin_patcher[($flux_mod->is_enabled ? 'Disable' : 'Enable')] ?></a> | <a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a>
 <?php else :?>
-										<td class="tc3"><strong style="color: red"><?php echo $lang_admin_plugin_patcher['Not installed'] ?></strong></td>
-										<td class="tcr"><a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=install"><?php echo $lang_admin_plugin_patcher['Install'] ?></a></td>
+											<strong style="color: red"><?php echo $lang_admin_plugin_patcher['Not installed'] ?></strong><br />
+											<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=install"><?php echo $lang_admin_plugin_patcher['Install'] ?></a>
 <?php endif; ?>
 										</td>
+						
 <?php else : ?>
-										<td class="tcr" colspan="4"><a href="<?php echo PLUGIN_URL ?>&download=<?php echo pun_htmlspecialchars($flux_mod->id) ?>"><?php echo $lang_admin_plugin_patcher['Download mod'] ?></a></td>
+										<td class="tcr">
+											<a href="<?php echo PLUGIN_URL ?>&download=<?php echo pun_htmlspecialchars($flux_mod->id) ?>"><?php echo $lang_admin_plugin_patcher['Download mod'] ?></a>
+										</td>
 <?php endif; ?>
 									</tr>
 <?php
