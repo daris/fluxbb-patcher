@@ -517,20 +517,20 @@ class PATCHER
 			}
 			
 
-			// Add QUERY ID at end of query line
-			if (strpos($second, 'query(') !== false)
-			{		
-				preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$first."\n", $first_m, PREG_SET_ORDER);
-				preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$second."\n", $second_m, PREG_SET_ORDER);
+			// // Add QUERY ID at end of query line
+			// if (strpos($second, 'query(') !== false)
+			// {		
+				// preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$first."\n", $first_m, PREG_SET_ORDER);
+				// preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$second."\n", $second_m, PREG_SET_ORDER);
 
-				foreach ($first_m as $key => $first)
-				{
-					$query_line = trim($first[0]);
-					$replace_line = trim($second_m[$key][0]);
+				// foreach ($first_m as $key => $first)
+				// {
+					// $query_line = trim($first[0]);
+					// $replace_line = trim($second_m[$key][0]);
 
-					$second = str_replace($replace_line, $replace_line.' // QUERY ID: '.md5($query_line), $second);
-				}
-			}
+					// $second = str_replace($replace_line, $replace_line.' // QUERY ID: '.md5($query_line), $second);
+				// }
+			// }
 
 			// Ignore multiple tab characters
 			$reg = preg_replace("#\t+#", '\t*', $reg);
