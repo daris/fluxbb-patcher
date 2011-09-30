@@ -132,6 +132,7 @@ class PATCHER
 						}
 						elseif ($cur_step['command'] == 'REPLACE')
 						{
+							$cur_step['code'] = $this->fix_query_id($find, $cur_step['code']);
 							$new_step_list[] = array('command' => 'FIND', 'code' => $cur_step['code']);
 							$new_step_list[] = array('command' => 'REPLACE', 'code' => $find);
 						}
@@ -273,6 +274,26 @@ class PATCHER
 
 		$_SESSION['patcher_log'] = serialize($this->log);
 		return !$failed;
+	}
+	
+	
+	function fix_query_id($first, $second)
+	{
+		// Add QUERY ID at end of query line
+		if (strpos($second, 'query(') !== false)
+		{		
+			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$first."\n", $first_m, PREG_SET_ORDER);
+			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$second."\n", $second_m, PREG_SET_ORDER);
+
+			foreach ($first_m as $key => $first)
+			{
+				$query_line = trim($first[0]);
+				$replace_line = trim($second_m[$key][0]);
+
+				$second = str_replace($replace_line, $replace_line.' // QUERY ID: '.md5($query_line), $second);
+			}
+		}
+		return $second;
 	}
 	
 	
@@ -494,7 +515,23 @@ class PATCHER
 				$this->find = $this->code = $matches[0];
 				return STATUS_UNKNOWN;
 			}
-		
+			
+
+			// Add QUERY ID at end of query line
+			if (strpos($second, 'query(') !== false)
+			{		
+				preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$first."\n", $first_m, PREG_SET_ORDER);
+				preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$second."\n", $second_m, PREG_SET_ORDER);
+
+				foreach ($first_m as $key => $first)
+				{
+					$query_line = trim($first[0]);
+					$replace_line = trim($second_m[$key][0]);
+
+					$second = str_replace($replace_line, $replace_line.' // QUERY ID: '.md5($query_line), $second);
+				}
+			}
+
 			// Ignore multiple tab characters
 			$reg = preg_replace("#\t+#", '\t*', $reg);
 			$this->comments[] = 'Tabs ignored';
@@ -523,21 +560,8 @@ class PATCHER
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 
-		// Add QUERY ID at end of query line
-		if (strpos($this->code, 'query(') !== false)
-		{		
-			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$this->find."\n", $first_m, PREG_SET_ORDER);
-			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$this->code."\n", $second_m, PREG_SET_ORDER);
-
-			foreach ($first_m as $key => $first)
-			{
-				$query_line = trim($first[0]);
-				$replace_line = trim($second_m[$key][0]);
-
-				$this->code = str_replace($replace_line, $replace_line.' // QUERY ID: '.md5($query_line), $this->code);
-			}
-		}
-
+		if ($this->action != 'uninstall')
+			$this->code = $this->fix_query_id($this->find, $this->code);
 		$status = $this->replace_code(trim($this->find), trim($this->code));
 
 		// has query?
