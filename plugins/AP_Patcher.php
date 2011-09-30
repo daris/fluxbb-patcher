@@ -18,7 +18,6 @@ if (!defined('PATCHER_ROOT'))
 
 //define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
 define('PATCHER_VERSION', '1.99');
-define('PATCHER_CONFIG', PATCHER_ROOT.'../../patcher_config/');
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
@@ -39,15 +38,18 @@ if (!is_dir(MODS_DIR))
 
 if (!defined('BACKUPS_DIR'))
 {
-	if (is_dir(MODS_DIR.'../backups'))
-		define('BACKUPS_DIR', MODS_DIR.'../backups/');
-	else
-	{
-		// Try to create directory
-		if (!is_dir(PUN_ROOT.'backups'))
-			mkdir(PUN_ROOT.'backups');
-		define('BACKUPS_DIR', PUN_ROOT.'backups/');
-	}
+	// Try to create directory
+	if (!is_dir(PUN_ROOT.'backups'))
+		mkdir(PUN_ROOT.'backups');
+	define('BACKUPS_DIR', PUN_ROOT.'backups/');
+}
+
+if (!defined('PATCHER_CONFIG'))
+{
+	// Try to create directory
+	if (!is_dir(PUN_ROOT.'patcher_config'))
+		mkdir(PUN_ROOT.'patcher_config');
+	define('PATCHER_CONFIG', PUN_ROOT.'patcher_config/');
 }
 
 // Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
@@ -63,6 +65,10 @@ if (!session_id())
 $mod_id = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
 $action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
+
+// For compatibility (move mods.php to PATCHER_CONFIG directory)
+if (!file_exists(PATCHER_CONFIG.'mods.php') && file_exists(PUN_ROOT.'mods.php'))
+	rename(PUN_ROOT.'mods.php', PATCHER_CONFIG.'mods.php');
 
 // Revert from backup
 if (isset($_POST['revert']))
@@ -125,8 +131,8 @@ if (count($dirs_not_writable) > 0)
 
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
-	if (file_exists(PUN_ROOT.'mods.php'))
-		require PUN_ROOT.'mods.php';
+	if (file_exists(PATCHER_CONFIG.'mods.php'))
+		require PATCHER_CONFIG.'mods.php';
 	else
 		$inst_mods = array();
 	
@@ -573,8 +579,8 @@ else
 
 <?php
 
-	if (file_exists(PUN_ROOT.'mods.php'))
-		require PUN_ROOT.'mods.php';
+	if (file_exists(PATCHER_CONFIG.'mods.php'))
+		require PATCHER_CONFIG.'mods.php';
 	else
 		$inst_mods = array();
 	

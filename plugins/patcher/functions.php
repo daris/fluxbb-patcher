@@ -366,6 +366,12 @@ function create_backup($backup)
 		if (is_file(PUN_ROOT.'lang/English/'.$file) && !in_array($file, array('.', '..')))
 			$files[] = 'lang/English/'.$file;
 
+	// Add patcher_config directory to backup
+	$dir = dir(PATCHER_CONFIG);
+	while ($file = $dir->read())
+		if (!in_array($file, array('.', '..')))
+			$files[] = 'patcher_config/'.$file;
+
 	$files[] = 'style/Air.css';
 
 	zip_files($backup_file, $files);
@@ -375,12 +381,22 @@ function revert($file)
 {
 	global $pun_config, $lang_admin_plugin_patcher;
 
+	if (file_exists(PATCHER_CONFIG.'mods.php'))
+		unlink(PATCHER_CONFIG.'mods.php');
+	
+	$d = dir(PATCHER_CONFIG);
+	while ($f = $d->read())
+		if ($f != '.' && $f != '..' && substr($f, -4) == '.php')
+			unlink(PATCHER_CONFIG.'/'.$f);
+	$d->close();
+
 	$files = zip_extract(BACKUPS_DIR.$file, PUN_ROOT, true);
 	if (!$files)
 		message($lang_admin_plugin_patcher['Failed to extract file']);
-
-	if (!in_array('mods.php', $files))
-		@unlink(PUN_ROOT.'mods.php');
+	
+	// For compatibility (move mods.php to PATCHER_CONFIG directory)
+	if (file_exists(PUN_ROOT.'mods.php'))
+		rename(PUN_ROOT.'mods.php', PATCHER_CONFIG.'mods.php');
 
 	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Files reverted redirect']);
 }
