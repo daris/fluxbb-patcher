@@ -529,6 +529,10 @@ function remove_dir($path)
 function get_mod_repo()
 {
 	global $mod_repo;
+	
+	if (defined('PATCHER_NO_DOWNLOAD'))
+		return array();
+	
 	$mod_repo = array();
 	if (!defined('PUN_MOD_REPO_LOADED') && file_exists(FORUM_CACHE_DIR.'cache_mod_repo.php'))
 		require FORUM_CACHE_DIR.'cache_mod_repo.php';
@@ -581,6 +585,9 @@ function get_mod_repo()
 function download_file($url, $save_to_file)
 {
 	global $lang_admin_plugin_patcher;
+	
+	if (defined('PATCHER_NO_DOWNLOAD'))
+		return;
 	
 	$remote_file = @file_get_contents($url);
 	if (!$remote_file)

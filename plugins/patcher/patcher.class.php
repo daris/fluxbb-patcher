@@ -49,46 +49,72 @@ class PATCHER
 	{
 		$steps = array();
 		
-		// Load steps for current mod
-		$steps[$this->flux_mod->id.'/'.$this->flux_mod->readme_file_name] = $this->flux_mod->get_steps();
-		
-		// Load steps for related mods (readme_mod_name.txt)
-		foreach ($this->flux_mod->readme_file_list as $cur_readme_file)
+		if (in_array($this->action, array('install', 'enable')))
 		{
-			if (strpos($cur_readme_file, '_') === false)
-				continue;
-
-			$mod_key = substr($cur_readme_file, strpos($cur_readme_file, '_') + 1);
-			$mod_key = substr($mod_key, 0, strpos($mod_key, '.txt'));
-			$mod_key = str_replace('_', '-', $mod_key);
-
-			// TODO: make this more human readable :)
-			if ((in_array($this->action, array('install', 'enable')) && isset($this->installed_mods[$mod_key]) && (!isset($this->installed_mods[$this->flux_mod->id]) || !in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
-				|| (in_array($this->action, array('uninstall', 'disable')) && isset($this->installed_mods[$this->flux_mod->id]) && in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
-				$steps[$this->flux_mod->id.'/'.$cur_readme_file] = $this->flux_mod->get_steps($cur_readme_file);
-		}
-
-		foreach ($this->installed_mods as $cur_mod_id => $inst_mods_readme_files)
-		{
-			$flux_mod = new FLUX_MOD($cur_mod_id);
-			foreach ($flux_mod->readme_file_list as $cur_readme_file)
+			// Load steps for current mod
+			$steps[$this->flux_mod->id.'/'.$this->flux_mod->readme_file_name] = $this->flux_mod->get_steps();
+			
+			// Load steps for related mods (readme_mod_name.txt)
+			foreach ($this->flux_mod->readme_file_list as $cur_readme_file)
 			{
-				// skip if readme was already installed
-				if ((in_array($this->action, array('install', 'enable')) && in_array($cur_readme_file, $inst_mods_readme_files)) || 
-					(in_array($this->action, array('uninstall', 'disable')) && !in_array($cur_readme_file, $inst_mods_readme_files)) || strpos($cur_readme_file, '_') === false)
+				$cur_readme_file = ltrim($cur_readme_file, '/');
+				if (strpos($cur_readme_file, '_') === false)
 					continue;
 
 				$mod_key = substr($cur_readme_file, strpos($cur_readme_file, '_') + 1);
 				$mod_key = substr($mod_key, 0, strpos($mod_key, '.txt'));
 				$mod_key = str_replace('_', '-', $mod_key);
 
-				if ($mod_key == $this->flux_mod->id)
-					$steps[$flux_mod->id.'/'.$cur_readme_file] = $flux_mod->get_steps($cur_readme_file);
+				// TODO: make this more human readable :)
+				if ((in_array($this->action, array('install', 'enable')) && isset($this->installed_mods[$mod_key]) && (!isset($this->installed_mods[$this->flux_mod->id]) || !in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
+					|| (in_array($this->action, array('uninstall', 'disable')) && isset($this->installed_mods[$this->flux_mod->id]) && in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
+					$steps[$this->flux_mod->id.'/'.$cur_readme_file] = $this->flux_mod->get_steps($cur_readme_file);
+			}
+
+			foreach ($this->installed_mods as $cur_mod_id => $inst_mods_readme_files)
+			{
+				$flux_mod = new FLUX_MOD($cur_mod_id);
+				foreach ($flux_mod->readme_file_list as $cur_readme_file)
+				{
+					$cur_readme_file = ltrim($cur_readme_file, '/');
+		
+					// skip if readme was already installed
+					if ((in_array($this->action, array('install', 'enable')) && in_array($cur_readme_file, $inst_mods_readme_files)) || 
+						(in_array($this->action, array('uninstall', 'disable')) && !in_array($cur_readme_file, $inst_mods_readme_files)) || strpos($cur_readme_file, '_') === false)
+						continue;
+
+					$mod_key = substr($cur_readme_file, strpos($cur_readme_file, '_') + 1);
+					$mod_key = substr($mod_key, 0, strpos($mod_key, '.txt'));
+					$mod_key = str_replace('_', '-', $mod_key);
+
+					if ($mod_key == $this->flux_mod->id)
+						$steps[$flux_mod->id.'/'.$cur_readme_file] = $flux_mod->get_steps($cur_readme_file);
+				}
 			}
 		}
 		
-		if (in_array($this->action, array('uninstall', 'disable')))
+		// Uninstall, disable
+		else
 		{
+			// Load cached steps
+			$d = dir(PATCHER_CONFIG);
+			while ($f = $d->read())
+			{
+				if ($f != '.' && $f != '..' && substr($f, -4) == '.php' && (strpos($f, $this->flux_mod->id) !== false || strpos($f, str_replace('-', '_', $this->flux_mod->id)) !== false))
+				{
+					$readme_file = substr($f, 0, -4);
+					$readme_file = str_replace('.', '/', $readme_file).'.txt';
+					require PATCHER_CONFIG.$f;
+					$steps[$readme_file] = $readme_steps;
+				}
+			}
+			$d->close();
+			
+			// echo '<pre>';
+			// print_r($steps);
+			// echo '</pre>';
+			// exit;
+		
 			// Reverse readme list
 			$steps = array_reverse($steps);
 			
@@ -130,6 +156,17 @@ class PATCHER
 
 		return $steps;
 	}
+	
+	
+	// function get_cached_steps($readme_file)
+	// {
+		// $cached_filename = str_replace(array('.php', '.'), array('.txt', '/'), $readme_file);
+		// if (file_exists(PATCHER_CONFIG.$cached_filename))
+		// {
+			// require PATCHER_CONFIG.$cached_filename;
+			// return $readme_steps;
+		// }
+	// }
 	
 
 	function patch()
@@ -227,7 +264,7 @@ class PATCHER
 		// if some file was opened, save it
 		if ($this->cur_file_path != '' && trim($this->cur_file) != '' && $this->cur_file_modified)
 			$this->step_save();
-		
+
 		// Add mod to mods.php file
 		foreach ($this->steps as $cur_readme_file => $step_list)
 		{
@@ -244,6 +281,9 @@ class PATCHER
 	
 				if (empty($this->installed_mods[$cur_mod]))
 					unset($this->installed_mods[$cur_mod]);
+				
+				if (file_exists(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file)))
+					unlink(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file));
 			}
 			elseif ($this->action == 'install')
 			{
@@ -252,6 +292,9 @@ class PATCHER
 
 				if (!in_array($cur_readme, $this->installed_mods[$cur_mod]))
 					$this->installed_mods[$cur_mod][] = $cur_readme;
+				
+				// Put readme file to patcher_config directory
+				file_put_contents(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file), '<?php $readme_steps = '.var_export($step_list, true).';');
 			}
 			elseif ($this->action == 'enable' && isset($this->installed_mods[$cur_mod]['disabled']))
 				unset($this->installed_mods[$cur_mod]['disabled']);

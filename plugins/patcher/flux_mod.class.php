@@ -271,6 +271,9 @@ class FLUX_MOD
 	function check_for_updates()
 	{
 		global $mod_updates, $mod_repo;
+		
+		if (defined('PATCHER_NO_DOWNLOAD'))
+			return false;
 
 		// Probably does not have internet connection
 		if (isset($mod_repo) && isset($mod_repo['last_check_failed']))

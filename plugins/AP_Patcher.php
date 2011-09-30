@@ -16,7 +16,9 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
+//define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
 define('PATCHER_VERSION', '1.99');
+define('PATCHER_CONFIG', PATCHER_ROOT.'../../patcher_config/');
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
@@ -593,18 +595,21 @@ else
 	}
 	
 	// Get the mod list from the FluxBB repo
-	foreach ($mod_repo['mods'] as $cur_mod)
+	if (isset($mod_repo['mods']))
 	{
-		if ($cur_mod['id'] != 'patcher' && !isset($mod_list['Installed mods'][$cur_mod['id']]) && !isset($mod_list['Mods not installed'][$cur_mod['id']]))
+		foreach ($mod_repo['mods'] as $cur_mod)
 		{
-			$repo_mod = new REPO_MOD();
-			$repo_mod->id = $cur_mod['id'];
-			$repo_mod->title = $cur_mod['name'];
-			$repo_mod->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($cur_mod['id']).'/';
-			$repo_mod->is_valid = true;
-			if (isset($cur_mod['description']))
-				$repo_mod->description = $cur_mod['description'];
-			$mod_list['Mods to download'][$cur_mod['id']] = $repo_mod;
+			if ($cur_mod['id'] != 'patcher' && !isset($mod_list['Installed mods'][$cur_mod['id']]) && !isset($mod_list['Mods not installed'][$cur_mod['id']]))
+			{
+				$repo_mod = new REPO_MOD();
+				$repo_mod->id = $cur_mod['id'];
+				$repo_mod->title = $cur_mod['name'];
+				$repo_mod->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($cur_mod['id']).'/';
+				$repo_mod->is_valid = true;
+				if (isset($cur_mod['description']))
+					$repo_mod->description = $cur_mod['description'];
+				$mod_list['Mods to download'][$cur_mod['id']] = $repo_mod;
+			}
 		}
 	}
 
