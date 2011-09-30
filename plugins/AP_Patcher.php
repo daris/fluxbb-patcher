@@ -17,6 +17,8 @@ if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
 define('PATCHER_VERSION', '1.99');
+if (file_exists(PATCHER_ROOT.'debug.php'))
+	require PATCHER_ROOT.'debug.php';
 
 require PATCHER_ROOT.'functions.php';
 require PATCHER_ROOT.'flux_mod.class.php';
