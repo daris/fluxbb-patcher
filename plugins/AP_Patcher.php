@@ -666,22 +666,20 @@ else
 
 				// Is the mod compatible with FluxBB version
 				if (get_class($flux_mod) == 'FLUX_MOD' && !$flux_mod->is_compatible())
-					$info[] = '<br /><span style="color: #a00">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
+					$info[] = '<br /><span style="color: #a00; display: inline">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
 
 				if (isset($flux_mod->important))
 					$info[] = '<br /><span style="color: #a00"><strong>'.$lang_admin_plugin_patcher['Important'].'</strong>: '.pun_htmlspecialchars($flux_mod->important).'</span>';
 
 				$works_on = '';
 				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->works_on))
-					$works_on = pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
+					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
 
 			
 ?>
 									<tr class="mod-info <?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
 
-										<td><?php echo implode("\n", $info) ?>
-<?php if (!empty($works_on)) : ?>									<br /><strong><?php echo $lang_admin_plugin_patcher['Works on FluxBB'] ?></strong>: <?php echo $works_on ?><?php endif; ?>
-										</td>
+										<td><?php echo implode("\n", $info) ?></td>
 <?php if (get_class($flux_mod) == 'FLUX_MOD') : ?>
 
 										<td class="tcr">
