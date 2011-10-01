@@ -167,9 +167,9 @@ class PATCHER
 			}
 		}
 
-		foreach ($this->steps as $cur_readme_file => $step_list)
+		foreach ($this->steps as $cur_readme_file => &$step_list)
 		{
-			foreach ($step_list as $cur_step)
+			foreach ($step_list as $key => $cur_step)
 			{
 				$cur_step['status'] = STATUS_UNKNOWN;
 				
@@ -229,6 +229,14 @@ class PATCHER
 					$this->log[$cur_readme_file][$this->global_step]['substeps'][$i] = $cur_step;
 				}
 				
+				// Delete step if it fails
+				if ($cur_step['status'] == STATUS_NOT_DONE)
+				{
+					if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && $key > 0 && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
+						unset($step_list[$key-1]);
+					unset($step_list[$key]);
+				}
+				
 				// If some step fail, make whole mod install fail
 				if (!$failed && $cur_step['status'] == STATUS_NOT_DONE)
 					$failed = true;
@@ -243,7 +251,7 @@ class PATCHER
 		if ($this->cur_file_path != '' && trim($this->cur_file) != '' && $this->cur_file_modified)
 			$this->step_save();
 
-		// Add mod to mods.php file
+		// Update patcher_config.php file
 		foreach ($this->steps as $cur_readme_file => $step_list)
 		{
 			$cur_mod = substr($cur_readme_file, 0, strpos($cur_readme_file, '/'));

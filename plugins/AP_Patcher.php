@@ -83,7 +83,12 @@ if (isset($_GET['update']))
 
 // Download modification from FluxBB repo
 if (isset($_GET['download']))
+{
+	if (empty($_GET['download']))
+		message($lang_Common['Bad request']);
+
 	download_mod(basename($_GET['download']));
+}
 
 // Create initial backup
 if (!file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
@@ -772,10 +777,11 @@ else
 						$info[] = '<br /><strong style="color: #a00">'.$lang_admin_plugin_patcher['New version available'].'</strong> <a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&update&version='.pun_htmlspecialchars($mod_updates[$flux_mod->id]['release']).'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($mod_updates[$flux_mod->id]['release'])).'</a>';
 				}
 				else
-					$actions['download'] = $lang_admin_plugin_patcher['Download mod'];
+					$actions[] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($flux_mod->id).'">'.$lang_admin_plugin_patcher['Download mod'].'</a>';
 
 				foreach ($actions as $action => &$title)
-					$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.$action.'">'.$title.'</a>';
+					if (!is_numeric($action))
+						$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.$action.'">'.$title.'</a>';
 
 			
 ?>
