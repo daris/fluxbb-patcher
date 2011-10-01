@@ -58,6 +58,9 @@ $mod_id = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
 $action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'update', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
 
+if (file_exists(PUN_ROOT.'mods.php') && !file_exists(PUN_ROOT.'patcher_config.php'))
+	convert_mods_to_config();
+
 // Revert from backup
 if (isset($_POST['revert']))
 {
@@ -302,11 +305,19 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			message($lang_common['Bad request']);
 		$logs = unserialize($_SESSION['patcher_logs']);
 
+		$action_info = array(
+			'install'	=> $lang_admin_plugin_patcher['Installing'],
+			'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
+			'enable'	=> $lang_admin_plugin_patcher['Enabling'],
+			'disable'	=> $lang_admin_plugin_patcher['Disabling'],
+			'update'	=> $lang_admin_plugin_patcher['Updating']
+		);
+
 		foreach ($logs as $action_title => $log)
 		{
 ?>
 	<div class="block blocktable">
-		<h2><span><?php echo $action_title ?></span></h2>
+		<h2><span><?php echo $action_info[$action_title] ?></span></h2>
 	</div>
 <?php
 			$i = 0;
