@@ -9,7 +9,8 @@ This script allows you to easily install and uninstall FluxBB modifications.
 --- IMPORTANT ---
 In order to install mods, FluxBB root directory and subdirectories must be WRITABLE.
 
-If you want to create backups of FluxBB files backups directory (in FluxBB root directory) must be writable.
+If you want to create backups of FluxBB files backups directory (in FluxBB root directory) 
+must be writable.
 
 If you want to upload, download or update mod, mods directory must be writable.
 
@@ -18,4 +19,11 @@ There is a PCLZIP library included, but I feel it is slower than ZIP extension f
 If you want to speedup extracting process install and enable ZIP extension.
 
 Known issuses:
-- ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of topictags should delete <div class="postmsg"> from its readme)
+- ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of 
+topictags should delete <div class="postmsg"> from its readme)
+
+
+Tips:
+- If you have some modification installed and you have changed something in its readme file, 
+you can just click uninstall link (Do not click Uninstall button), change in the address 
+bar "action=uninstall" to "action=update", press Enter and click Update button.

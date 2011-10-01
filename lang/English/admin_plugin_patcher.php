@@ -188,4 +188,5 @@ $lang_admin_plugin_patcher = array(
 'DELETE'						=> 'DELETE',
 'RENAME'						=> 'RENAME',
 'RUN CODE'						=> 'RUN CODE',
+
 );
