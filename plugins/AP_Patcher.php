@@ -55,7 +55,7 @@ if (!session_id())
 	session_start();
 
 $mod_id = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
-$action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
+$action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'update', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
 
 // Revert from backup
@@ -134,9 +134,22 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	{
 		$flux_mod = new FLUX_MOD($mod_id);
 
+		$_SESSION['patcher_log'] = '';
+		$logs = array();
+
+		// Disable mod if we want to update it
+		if ($action == 'update')
+		{
+			$patcher = new PATCHER($flux_mod, 'disable');
+			$done = $patcher->patch();
+			$logs['disable'] = $patcher->log;
+		}
+	
 		$patcher = new PATCHER($flux_mod, $action);
 		$done = $patcher->patch();
-		$log = $patcher->log;
+		$logs[$action] = $patcher->log;
+		
+		$_SESSION['patcher_logs'] = serialize($logs);
 
 		generate_admin_menu($plugin);
 	
@@ -153,68 +166,6 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 <?php
 
 		$actions = $notes = array();
-
-		foreach ($log as $cur_step_list)
-		{
-			foreach ($cur_step_list as $cur_step)
-			{
-				if (!isset($cur_step['command']))
-					continue;
-
-				if ($cur_step['command'] == 'UPLOAD')
-				{
-					$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
-					if ($action == 'uninstall')
-						$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
-					elseif ($action == 'install')
-						$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
-				}
-				elseif ($cur_step['command'] == 'OPEN')
-				{
-					$num_changes = $num_failed = 0;
-					if (isset($cur_step['substeps']))
-					{
-						foreach ($cur_step['substeps'] as $cur_subaction)
-						{
-							if ($cur_subaction['status'] == STATUS_DONE || $cur_subaction['status'] == STATUS_REVERTED)
-								$num_changes++;
-							elseif ($cur_subaction['status'] == STATUS_NOT_DONE)
-								$num_failed++;
-						}
-					}
-					
-					$color = ($num_failed > 0) ? 'red' : 'green';
-
-					$sub_msg = array();
-					if ($num_changes > 0)
-						$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.($action == 'uninstall' ? ' reverted' : '')], $num_changes);
-					if ($num_failed > 0)
-						$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], $num_failed);
-
-					$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), $num_failed == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
-				}
-				elseif ($cur_step['command'] == 'RUN' && !in_array($action, array('enable', 'disable')))
-				{
-					$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
-					if (isset($cur_step['result']))
-					{
-						$result = $cur_step['result'];
-						if (strpos($result, "\n") !== false)
-							$result = substr($result, 0, strpos($result, "\n"));
-						$new_action[] = $result;
-					}
-					$actions[] = $new_action;
-				}
-				elseif ($cur_step['command'] == 'DELETE' && !in_array($action, array('enable', 'disable')))
-					$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
-				
-				elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
-					$notes[] = $cur_step['result'];
-			}
-		}
-
-		foreach ($actions as $cur_action)
-			echo '<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
 		
 		$done_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Mod installed'],
@@ -229,7 +180,74 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'enable'	=> $lang_admin_plugin_patcher['Enable failed'],
 			'disable'	=> $lang_admin_plugin_patcher['Disable failed']
 		);
+
+		foreach ($logs as $action_title => $log)
+		{
+			echo $action_title.'<br />';
 			
+			foreach ($log as $cur_step_list)
+			{
+				foreach ($cur_step_list as $cur_step)
+				{
+					if (!isset($cur_step['command']))
+						continue;
+
+					if ($cur_step['command'] == 'UPLOAD')
+					{
+						$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
+						if ($action == 'uninstall')
+							$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
+						elseif ($action == 'install')
+							$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
+					}
+					elseif ($cur_step['command'] == 'OPEN')
+					{
+						$num_changes = $num_failed = 0;
+						if (isset($cur_step['substeps']))
+						{
+							foreach ($cur_step['substeps'] as $cur_subaction)
+							{
+								if ($cur_subaction['status'] == STATUS_DONE || $cur_subaction['status'] == STATUS_REVERTED)
+									$num_changes++;
+								elseif ($cur_subaction['status'] == STATUS_NOT_DONE)
+									$num_failed++;
+							}
+						}
+						
+						$color = ($num_failed > 0) ? 'red' : 'green';
+
+						$sub_msg = array();
+						if ($num_changes > 0)
+							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.($action == 'uninstall' ? ' reverted' : '')], $num_changes);
+						if ($num_failed > 0)
+							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], $num_failed);
+
+						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), $num_failed == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
+					}
+					elseif ($cur_step['command'] == 'RUN' && !in_array($action, array('enable', 'disable')))
+					{
+						$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
+						if (isset($cur_step['result']))
+						{
+							$result = $cur_step['result'];
+							if (strpos($result, "\n") !== false)
+								$result = substr($result, 0, strpos($result, "\n"));
+							$new_action[] = $result;
+						}
+						$actions[] = $new_action;
+					}
+					elseif ($cur_step['command'] == 'DELETE' && !in_array($action, array('enable', 'disable')))
+						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
+					
+					elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
+						$notes[] = $cur_step['result'];
+				}
+			}
+
+			foreach ($actions as $cur_action)
+				echo '<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
+		}
+		
 ?>
 							</p>
 <?php if ($done) : ?>
@@ -237,13 +255,13 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 <?php else: ?>
 							<p><strong><?php echo $failed_info[$action] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed'] ?></p>
 <?php endif; ?>
-<?php 	if (count($notes) > 0) 
-		{
-			echo '<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
-			foreach ($notes as $cur_note)
-				echo '<code><pre>'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
-			echo '</p>';
-		} ?>
+	<?php 	if (count($notes) > 0) 
+			{
+				echo '<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
+				foreach ($notes as $cur_note)
+					echo '<code><pre>'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
+				echo '</p>';
+			} ?>
 							<p>
 								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> | 
 								<a href="<?php echo PLUGIN_URL ?>"><?php echo $lang_admin_plugin_patcher['Return to mod list'] ?></a>
@@ -264,23 +282,30 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		$first = true;
 		generate_admin_menu($plugin);
 		
-		if (!isset($_SESSION['patcher_log']))
+		if (!isset($_SESSION['patcher_logs']))
 			message($lang_common['Bad request']);
-		$log = unserialize($_SESSION['patcher_log']);
+		$logs = unserialize($_SESSION['patcher_logs']);
 
-		$i = 0;
-		foreach ($log as $cur_readme_file => $actions)
+		foreach ($logs as $action_title => $log)
 		{
-			$cur_mod = substr($cur_readme_file, 0, strpos($cur_readme_file, '/'));
-			$cur_readme = substr($cur_readme_file, strpos($cur_readme_file, '/') + 1);
+?>
+	<div class="block blocktable">
+		<h2><span><?php echo $action_title ?></span></h2>
+	</div>
+<?php
+			$i = 0;
+			foreach ($log as $cur_readme_file => $actions)
+			{
+				$cur_mod = substr($cur_readme_file, 0, strpos($cur_readme_file, '/'));
+				$cur_readme = substr($cur_readme_file, strpos($cur_readme_file, '/') + 1);
 ?>
 	<div class="block blocktable">
 		<h2<?php if ($first) $first = false; else echo ' class="block2"'; ?>><span><?php echo pun_htmlspecialchars($cur_mod).' » '.pun_htmlspecialchars($cur_readme) ?></span></h2>
 <?php
-			foreach ($actions as $key => $cur_step)
-			{
-				if (isset($cur_step['command']) && isset($lang_admin_plugin_patcher[$cur_step['command']]))
-					$cur_step['command'] = $lang_admin_plugin_patcher[$cur_step['command']];
+				foreach ($actions as $key => $cur_step)
+				{
+					if (isset($cur_step['command']) && isset($lang_admin_plugin_patcher[$cur_step['command']]))
+						$cur_step['command'] = $lang_admin_plugin_patcher[$cur_step['command']];
 
 ?>
 		<div class="box">
@@ -302,31 +327,31 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						<td><?php echo /*pun_htmlspecialchars(*/$cur_step['result']/*) Allow to run file show html output*/ ?></td>
 					</tr>
 <?php endif;
-				if (isset($cur_step['substeps']) && count($cur_step['substeps']) > 0)
-				{
+					if (isset($cur_step['substeps']) && count($cur_step['substeps']) > 0)
+					{
 ?>
 					<tbody>
 <?php
-					foreach ($cur_step['substeps'] as $id => $cur_substep)
-					{
-						if (isset($cur_substep['command']) && isset($lang_admin_plugin_patcher[$cur_substep['command']]))
-							$cur_substep['command'] = $lang_admin_plugin_patcher[$cur_substep['command']];
-						$style = '';
-						$comments = array();
-						
-						if (!isset($cur_substep['status']))
-							$cur_substep['status'] = STATUS_UNKNOWN;
-						switch ($cur_substep['status'])
+						foreach ($cur_step['substeps'] as $id => $cur_substep)
 						{
-							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00'; $comments[] = $lang_admin_plugin_patcher['NOT DONE']; break;
-							case STATUS_DONE:			$style = 'color: #0a0'; 		$comments[] = $lang_admin_plugin_patcher['DONE']; break;
-							case STATUS_ALREADY_DONE:	$style = 'color: orange'; 		$comments[] = $lang_admin_plugin_patcher['ALREADY DONE']; break;
-							case STATUS_REVERTED:		$style = 'color: #00a'; 		$comments[] = $lang_admin_plugin_patcher['REVERTED']; break;
-							case STATUS_ALREADY_REVERTED:$style = 'color: #00BFFF'; 	$comments[] = $lang_admin_plugin_patcher['ALREADY REVERTED']; break;
-						}
-						
-						if (isset($cur_substep['comments']))
-							$comments = array_merge($comments, $cur_substep['comments']);
+							if (isset($cur_substep['command']) && isset($lang_admin_plugin_patcher[$cur_substep['command']]))
+								$cur_substep['command'] = $lang_admin_plugin_patcher[$cur_substep['command']];
+							$style = '';
+							$comments = array();
+							
+							if (!isset($cur_substep['status']))
+								$cur_substep['status'] = STATUS_UNKNOWN;
+							switch ($cur_substep['status'])
+							{
+								case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00'; $comments[] = $lang_admin_plugin_patcher['NOT DONE']; break;
+								case STATUS_DONE:			$style = 'color: #0a0'; 		$comments[] = $lang_admin_plugin_patcher['DONE']; break;
+								case STATUS_ALREADY_DONE:	$style = 'color: orange'; 		$comments[] = $lang_admin_plugin_patcher['ALREADY DONE']; break;
+								case STATUS_REVERTED:		$style = 'color: #00a'; 		$comments[] = $lang_admin_plugin_patcher['REVERTED']; break;
+								case STATUS_ALREADY_REVERTED:$style = 'color: #00BFFF'; 	$comments[] = $lang_admin_plugin_patcher['ALREADY REVERTED']; break;
+							}
+							
+							if (isset($cur_substep['comments']))
+								$comments = array_merge($comments, $cur_substep['comments']);
 
 ?>
 						<tr>
@@ -339,21 +364,22 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 							</td>
 						</tr>
 <?php
-					}
+						}
 ?>
 					</tbody>
 <?php
-				}
+					}
 ?>
 				</table>
 			</div>
 		</div>
 <?php
-			}
+				}
 ?>
 	</div>
 <?php
 
+			}
 		}
 
 	}
@@ -572,7 +598,7 @@ else
 	else
 		$patcher_config = array('installed_mods' => array(), 'steps' => array());
 
-	$mod_list = array('Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
+	$mod_list = array('Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
 
 	// Get the mod list from mods directory
 	$dir = dir(MODS_DIR);
@@ -584,6 +610,10 @@ else
 			$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]);
 			$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 			$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
+			
+			if (isset($patcher_config['installed_mods'][$flux_mod->id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$flux_mod->id]['version'], '>'))
+				$mod_list['Mods to update'][$mod_id] = $flux_mod;
+			
 			$mod_list[$section][$mod_id] = $flux_mod;
 		}
 	}
@@ -609,6 +639,9 @@ else
 
 	foreach ($mod_list as $section => $mods)
 	{
+		if ($section == 'Mods to update' && count($mods) == 0)
+			continue;
+	
 		$i = 0;
 		uasort($mods, 'mod_title_compare'); 
 ?>
@@ -652,9 +685,14 @@ else
 				elseif (isset($flux_mod->author))
 					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
 
-				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->version))
-					$info[] = ' <strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
-
+				if (get_class($flux_mod) == 'FLUX_MOD')
+				{
+					if ($flux_mod->is_installed && $section != 'Mods to update')
+						$info[] = ' <strong>'.pun_htmlspecialchars($patcher_config['installed_mods'][$flux_mod->id]['version']).'</strong>';
+					else
+						$info[] = ' <strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
+				}
+				
 				if (isset($flux_mod->description) && !empty($flux_mod->description))
 				{
 					if (strlen($flux_mod->description) > 400)
@@ -673,29 +711,50 @@ else
 				$works_on = '';
 				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->works_on))
 					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
+				
+				$status = '';
+				$actions = array();
+				if (get_class($flux_mod) == 'FLUX_MOD')
+				{
+					if ($flux_mod->is_installed)
+					{
+						if ($section == 'Mods to update')
+							$actions['update'] = $lang_admin_plugin_patcher['Update'];
+						else
+						{
+							if ($flux_mod->is_enabled)
+							{
+								$status = '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>';
+								$actions['disable'] = $lang_admin_plugin_patcher['Disable'];
+							}
+							else
+							{
+								$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>';
+								$actions['enable'] = $lang_admin_plugin_patcher['Enable'];
+							}
+							$actions['uninstall'] = $lang_admin_plugin_patcher['Uninstall'];
+						}
+					}
+					else
+					{
+						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Not installed'].'</strong>';
+						$actions['install'] = $lang_admin_plugin_patcher['Install'];
+					}
+				}
+				else
+					$actions['download'] = $lang_admin_plugin_patcher['Download mod'];
+
+				foreach ($actions as $action => &$title)
+					$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.$action.'">'.$title.'</a>';
 
 			
 ?>
 									<tr class="mod-info <?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
-
 										<td><?php echo implode("\n", $info) ?></td>
-<?php if (get_class($flux_mod) == 'FLUX_MOD') : ?>
-
 										<td class="tcr">
-<?php if ($flux_mod->is_installed) : ?>
-											<?php echo ($flux_mod->is_enabled) ? '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>' : '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>' ?><br />
-											<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.($flux_mod->is_enabled ? 'disable' : 'enable') ?>"><?php echo $lang_admin_plugin_patcher[($flux_mod->is_enabled ? 'Disable' : 'Enable')] ?></a> | <a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a>
-<?php else :?>
-											<strong style="color: red"><?php echo $lang_admin_plugin_patcher['Not installed'] ?></strong><br />
-											<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id) ?>&action=install"><?php echo $lang_admin_plugin_patcher['Install'] ?></a>
-<?php endif; ?>
+											<?php echo ($status != '') ? $status.'<br />' : '' ?>
+											<?php echo implode(' | '."\n", $actions) ?>
 										</td>
-						
-<?php else : ?>
-										<td class="tcr">
-											<a href="<?php echo PLUGIN_URL ?>&download=<?php echo pun_htmlspecialchars($flux_mod->id) ?>"><?php echo $lang_admin_plugin_patcher['Download mod'] ?></a>
-										</td>
-<?php endif; ?>
 									</tr>
 <?php
 				$i++;

@@ -98,7 +98,7 @@ function mod_overview_table($flux_mod)
 <?php if (!$flux_mod->is_compatible()): ?>
 				<p style="color: #a00"><strong><?php echo $lang_admin_plugin_patcher['Warning'] ?>:</strong> <?php printf($lang_admin_plugin_patcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $flux_mod->works_on))) ?></p>
 <?php endif; if (isset($flux_mod->version) && $new_update_version = $flux_mod->check_for_updates()) : ?>
-				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($flux_mod->id).'&version='.$new_update_version.'">'.sprintf($lang_admin_plugin_patcher['Update mod to'], pun_htmlspecialchars($new_update_version)) ?></a>.</p>
+				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($flux_mod->id).'&version='.$new_update_version.'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($new_update_version)) ?></a>.</p>
 <?php endif; ?>
 			</div>
 		</div>
