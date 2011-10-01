@@ -44,14 +44,6 @@ if (!defined('BACKUPS_DIR'))
 	define('BACKUPS_DIR', PUN_ROOT.'backups/');
 }
 
-if (!defined('PATCHER_CONFIG'))
-{
-	// Try to create directory
-	if (!is_dir(PUN_ROOT.'patcher_config'))
-		mkdir(PUN_ROOT.'patcher_config');
-	define('PATCHER_CONFIG', PUN_ROOT.'patcher_config/');
-}
-
 // Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
 if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php'))
 	require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php';
@@ -65,10 +57,6 @@ if (!session_id())
 $mod_id = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
 $action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
-
-// For compatibility (move mods.php to PATCHER_CONFIG directory)
-if (!file_exists(PATCHER_CONFIG.'mods.php') && file_exists(PUN_ROOT.'mods.php'))
-	rename(PUN_ROOT.'mods.php', PATCHER_CONFIG.'mods.php');
 
 // Revert from backup
 if (isset($_POST['revert']))
@@ -131,14 +119,14 @@ if (count($dirs_not_writable) > 0)
 
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
-	if (file_exists(PATCHER_CONFIG.'mods.php'))
-		require PATCHER_CONFIG.'mods.php';
+	if (file_exists(PUN_ROOT.'patcher_config.php'))
+		require PUN_ROOT.'patcher_config.php';
 	else
-		$inst_mods = array();
+		$patcher_config = array('installed_mods' => array(), 'steps' => array());
 	
-	if ($action == 'install' && isset($inst_mods[$mod_id]))
+	if ($action == 'install' && isset($patcher_config['installed_mods'][$mod_id]))
 		message('Already installed');
-	if ($action == 'uninstall' && !isset($inst_mods[$mod_id]))
+	if ($action == 'uninstall' && !isset($patcher_config['installed_mods'][$mod_id]))
 		message('Already uninstalled');
 
 	// Do patching! :)
@@ -579,11 +567,11 @@ else
 
 <?php
 
-	if (file_exists(PATCHER_CONFIG.'mods.php'))
-		require PATCHER_CONFIG.'mods.php';
+	if (file_exists(PUN_ROOT.'patcher_config.php'))
+		require PUN_ROOT.'patcher_config.php';
 	else
-		$inst_mods = array();
-	
+		$patcher_config = array('installed_mods' => array(), 'steps' => array());
+
 	$mod_list = array('Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
 
 	// Get the mod list from mods directory
@@ -593,8 +581,8 @@ else
 		if (substr($mod_id, 0, 1) != '.' && is_dir(MODS_DIR.$mod_id))
 		{
 			$flux_mod = new FLUX_MOD($mod_id);
-			$flux_mod->is_installed = isset($inst_mods[$flux_mod->id]);
-			$flux_mod->is_enabled = isset($inst_mods[$flux_mod->id]) && !isset($inst_mods[$flux_mod->id]['disabled']);
+			$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]);
+			$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 			$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
 			$mod_list[$section][$mod_id] = $flux_mod;
 		}

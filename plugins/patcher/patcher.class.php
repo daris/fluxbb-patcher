@@ -8,8 +8,8 @@ class PATCHER
 {
 	var $flux_mod = null;
 	
-	var $installed_mods = array();
-	var $installed_mods_org = array();
+	var $config = array();
+	var $config_org = array();
 
 	var $cur_file = null; // Currently patched file
 	var $cur_file_path = null; // Path to currently patched file
@@ -27,11 +27,11 @@ class PATCHER
 	{
 		$this->flux_mod = $flux_mod;
 		
-		if (file_exists(PATCHER_CONFIG.'mods.php'))
-			require PATCHER_CONFIG.'mods.php';
+		if (file_exists(PUN_ROOT.'patcher_config.php'))
+			require PUN_ROOT.'patcher_config.php';
 		else
-			$inst_mods = array();
-		$this->installed_mods = $this->installed_mods_org = $inst_mods;
+			$patcher_config = array('installed_mods' => array(), 'steps' => array());
+		$this->config = $this->config_org = $patcher_config;
 		
 		$this->action = $action;
 		$this->steps = $this->get_steps();
@@ -66,12 +66,12 @@ class PATCHER
 				$mod_key = str_replace('_', '-', $mod_key);
 
 				// TODO: make this more human readable :)
-				if ((in_array($this->action, array('install', 'enable')) && isset($this->installed_mods[$mod_key]) && (!isset($this->installed_mods[$this->flux_mod->id]) || !in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
-					|| (in_array($this->action, array('uninstall', 'disable')) && isset($this->installed_mods[$this->flux_mod->id]) && in_array($cur_readme_file, $this->installed_mods[$this->flux_mod->id])))
+				if ((in_array($this->action, array('install', 'enable')) && isset($this->config['installed_mods'][$mod_key]) && (!isset($this->config['installed_mods'][$this->flux_mod->id]) || !in_array($cur_readme_file, $this->config['installed_mods'][$this->flux_mod->id])))
+					|| (in_array($this->action, array('uninstall', 'disable')) && isset($this->config['installed_mods'][$this->flux_mod->id]) && in_array($cur_readme_file, $this->config['installed_mods'][$this->flux_mod->id])))
 					$steps[$this->flux_mod->id.'/'.$cur_readme_file] = $this->flux_mod->get_steps($cur_readme_file);
 			}
 
-			foreach ($this->installed_mods as $cur_mod_id => $inst_mods_readme_files)
+			foreach ($this->config['installed_mods'] as $cur_mod_id => $inst_mods_readme_files)
 			{
 				$flux_mod = new FLUX_MOD($cur_mod_id);
 				foreach ($flux_mod->readme_file_list as $cur_readme_file)
@@ -97,18 +97,11 @@ class PATCHER
 		else
 		{
 			// Load cached steps
-			$d = dir(PATCHER_CONFIG);
-			while ($f = $d->read())
+			foreach ($this->config['steps'] as $cur_readme_file => $step_list)
 			{
-				if ($f != '.' && $f != '..' && $f != 'mods.php' && substr($f, -4) == '.php' && (strpos($f, $this->flux_mod->id) !== false || strpos($f, str_replace('-', '_', $this->flux_mod->id)) !== false))
-				{
-					$readme_file = substr($f, 0, -4);
-					$readme_file = str_replace('.', '/', $readme_file).'.txt';
-					require PATCHER_CONFIG.$f;
-					$steps[$readme_file] = $readme_steps;
-				}
+				if (strpos($cur_readme_file, $this->flux_mod->id) !== false || strpos($cur_readme_file, str_replace('-', '_', $this->flux_mod->id)) !== false)
+					$steps[$cur_readme_file] = $step_list;
 			}
-			$d->close();
 			
 			// echo '<pre>';
 			// print_r($steps);
@@ -174,7 +167,7 @@ class PATCHER
 				// Copy install mod file as we want to uninstall mod
 				if ($this->action == 'uninstall' && strpos($from, 'install_mod.php') !== false)
 					copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'install_mod.php');
-				elseif (strpos($from, 'gen.php') !== false)
+				elseif (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
 					copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'gen.php');
 				elseif ($this->action == 'disable')
 					continue;
@@ -265,41 +258,39 @@ class PATCHER
 
 			if ($this->action == 'uninstall')
 			{
-				if (isset($this->installed_mods[$cur_mod]) && in_array($cur_readme, $this->installed_mods[$cur_mod]))
-					$this->installed_mods[$cur_mod] = array_diff($this->installed_mods[$cur_mod], array($cur_readme)); // delete an element
+				if (isset($this->config['installed_mods'][$cur_mod]) && in_array($cur_readme, $this->config['installed_mods'][$cur_mod]))
+					$this->config['installed_mods'][$cur_mod] = array_diff($this->config['installed_mods'][$cur_mod], array($cur_readme)); // delete an element
 				
-				if (isset($this->installed_mods[$cur_mod]['disabled']))
-					unset($this->installed_mods[$cur_mod]['disabled']);
+				if (isset($this->config['installed_mods'][$cur_mod]['disabled']))
+					unset($this->config['installed_mods'][$cur_mod]['disabled']);
 	
-				if (isset($this->installed_mods[$cur_mod]['version']))
-					unset($this->installed_mods[$cur_mod]['version']);
+				if (isset($this->config['installed_mods'][$cur_mod]['version']))
+					unset($this->config['installed_mods'][$cur_mod]['version']);
 					
-				if (empty($this->installed_mods[$cur_mod]))
-					unset($this->installed_mods[$cur_mod]);
-				
-				if (file_exists(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file)))
-					unlink(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file));
+				if (empty($this->config['installed_mods'][$cur_mod]))
+					unset($this->config['installed_mods'][$cur_mod]);
+
+				unset($this->config['steps'][$cur_readme_file]);
 			}
 			elseif ($this->action == 'install')
 			{
-				if (!isset($this->installed_mods[$cur_mod]))
-					$this->installed_mods[$cur_mod] = array('version' => $this->flux_mod->version);
+				if (!isset($this->config['installed_mods'][$cur_mod]))
+					$this->config['installed_mods'][$cur_mod] = array('version' => $this->flux_mod->version);
 
-				if (!in_array($cur_readme, $this->installed_mods[$cur_mod]))
-					$this->installed_mods[$cur_mod][] = $cur_readme;
+				if (!in_array($cur_readme, $this->config['installed_mods'][$cur_mod]))
+					$this->config['installed_mods'][$cur_mod][] = $cur_readme;
 				
-				// Put readme file to patcher_config directory
-				file_put_contents(PATCHER_CONFIG.str_replace(array('/', '.txt'), array('.', '.php'), $cur_readme_file), '<?php $readme_steps = '.var_export($step_list, true).';');
+				$this->config['steps'][$cur_readme_file] = $step_list;
 			}
-			elseif ($this->action == 'enable' && isset($this->installed_mods[$cur_mod]['disabled']))
-				unset($this->installed_mods[$cur_mod]['disabled']);
+			elseif ($this->action == 'enable' && isset($this->config['installed_mods'][$cur_mod]['disabled']))
+				unset($this->config['installed_mods'][$cur_mod]['disabled']);
 			elseif ($this->action == 'disable')
-				$this->installed_mods[$cur_mod]['disabled'] = 1;
+				$this->config['installed_mods'][$cur_mod]['disabled'] = 1;
 
 		}
 			
-		if (!defined('PATCHER_NO_SAVE') && $this->installed_mods != $this->installed_mods_org)
-			file_put_contents(PATCHER_CONFIG.'mods.php', '<?php'."\n\n".'// DO NOT EDIT THIS FILE!'."\n\n".'$inst_mods = '.var_export($this->installed_mods, true).';');
+		if (!defined('PATCHER_NO_SAVE') && $this->config != $this->config_org)
+			file_put_contents(PUN_ROOT.'patcher_config.php', '<?php'."\n\n".'// DO NOT EDIT THIS FILE!'."\n\n".'$patcher_config = '.var_export($this->config, true).';');
 
 		$_SESSION['patcher_log'] = serialize($this->log);
 		return !$failed;
@@ -309,7 +300,7 @@ class PATCHER
 	function replace_code($find, $replace)
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
 	
 		// Undo changes?
@@ -491,7 +482,7 @@ class PATCHER
 		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
 		
 		// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
-		if (isset($this->installed_mods['friendly-url']) && !isset($this->installed_mods['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
+		if (isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
 		{
 			require_once PUN_ROOT.'friendly_url_changes.php';
 			if (isset($friendly_url_changes[$this->code]))
@@ -519,7 +510,7 @@ class PATCHER
 		if ($this->cur_file_modified && !empty($this->cur_file))
 		{
 			// If friendly url mod is installed apply its changes again (as patcher reverted them in open step)
-			if (isset($this->installed_mods['friendly-url']) && !isset($this->installed_mods['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
+			if (isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
 			{
 				require_once PUN_ROOT.'friendly_url_changes.php';
 				if (isset($friendly_url_changes[$this->cur_file_path]))
@@ -701,7 +692,7 @@ class PATCHER
 	function step_at_the_end_of_file_add()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
 	
 		if (in_array($this->action, array('uninstall', 'disable')))
@@ -732,7 +723,7 @@ class PATCHER
 	function step_add_new_elements_of_array()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->installed_mods[$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
 	
 		$count = 0;
