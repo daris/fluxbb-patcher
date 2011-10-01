@@ -103,7 +103,7 @@ class FLUX_MOD
 						$result = array_merge($result, $this->get_readme_file_list($dirpath.'/'.$file, false));
 				}
 				else if (strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false && strpos(strtolower($file), '.txt') !== false)
-					$result[] = str_replace($this->mod_dir, '', $dirpath.'/'.$file);
+					$result[] = ltrim(str_replace($this->mod_dir, '', $dirpath.'/'.$file), '/');
 			}
 		}
 		$dir->close();
