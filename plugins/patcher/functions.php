@@ -60,7 +60,7 @@ function list_files_to_upload($path, $from_dir = '', $to_dir = '')
 // Show a table containing mod information
 function mod_overview_table($flux_mod)
 {
-	global $lang_admin_plugin_patcher, $pun_config;
+	global $lang_admin_plugin_patcher, $pun_config, $mod_updates;
 
 	$detailed_info = array();
 	// Generate mod info
@@ -97,8 +97,8 @@ function mod_overview_table($flux_mod)
 				</dl>
 <?php if (!$flux_mod->is_compatible()): ?>
 				<p style="color: #a00"><strong><?php echo $lang_admin_plugin_patcher['Warning'] ?>:</strong> <?php printf($lang_admin_plugin_patcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $flux_mod->works_on))) ?></p>
-<?php endif; if (isset($flux_mod->version) && $new_update_version = $flux_mod->check_for_updates()) : ?>
-				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($flux_mod->id).'&version='.$new_update_version.'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($new_update_version)) ?></a>.</p>
+<?php endif; if (isset($mod_updates[$flux_mod->id]['release']) && version_compare($mod_updates[$flux_mod->id]['release'], $flux_mod->version, '>')) : ?>
+				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($flux_mod->id).'&version='.$mod_updates[$flux_mod->id]['release'].'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($mod_updates[$flux_mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 			</div>
 		</div>
@@ -475,7 +475,7 @@ function extract_mod_package($mod_id, $file, $action)
 		'download'	=> 'Modification downloaded redirect',
 	);
 	
-	redirect(PLUGIN_URL.'&mod_id='.$mod_id, $lang_admin_plugin_patcher[$redirect_message[$action]]);
+	redirect(PLUGIN_URL.'&mod_id='.$mod_id.($action == 'update' ? '&action=update' : ''), $lang_admin_plugin_patcher[$redirect_message[$action]]);
 }
 
 
@@ -526,7 +526,7 @@ function remove_dir($path)
 }
 
 
-function get_mod_repo()
+function get_mod_repo($refresh = false)
 {
 	global $mod_repo;
 	
@@ -552,7 +552,7 @@ function get_mod_repo()
 
 	$mod_repo_before = $mod_repo;
 	
-	if (isset($mod_repo['last_checked']))
+	if (isset($mod_repo['last_checked']) && !$refresh)
 	{
 		if (time() < $mod_repo['last_checked'] + 3600) // one hour
 			return $mod_repo;
@@ -579,6 +579,79 @@ function get_mod_repo()
 	}
 	
 	return $mod_repo;
+}
+
+
+function check_for_updates()
+{
+	global $mod_repo;
+	
+	$mod_updates = array();
+	
+	if (defined('PATCHER_NO_DOWNLOAD'))
+		return array();
+	
+	if (!defined('PUN_MOD_UPDATES_LOADED') && file_exists(FORUM_CACHE_DIR.'cache_mod_updates.php'))
+		require FORUM_CACHE_DIR.'cache_mod_updates.php';
+	$mod_updates_before = $mod_updates;
+	
+	if (!isset($mod_updates['updates']))
+		$mod_updates['updates'] = array();
+	
+	if (isset($mod_updates['last_checked']))
+	{
+		if (time() < $mod_updates['last_checked'] + 3600) // one hour
+			return $mod_updates['updates'];
+	}
+	
+	// Refresh mod repo
+	$mod_repo = get_mod_repo(true);
+	
+	@set_time_limit(0);
+	foreach ($mod_repo['mods'] as $cur_mod)
+	{
+		if (isset($mod_updates['updates'][$cur_mod['id']]['release_date']) && $mod_updates['updates'][$cur_mod['id']]['release_date'] == $cur_mod['release_date'])
+			continue;
+	
+		$last_release = 0;
+		$page = trim(@file_get_contents('http://fluxbb.org/api/json/resources/mods/'.urldecode($cur_mod['id']).'/'));
+		if (empty($page))
+		{
+			// Mod does not exists in fluxbb db, do not check for updates next time (until someone deletes cache file)
+			$mod_updates['updates'][$cur_mod['id']] = 0;
+		}
+		else
+		{
+			$mod_info = json_decode($page, true);
+			if (isset($mod_info['releases']))
+			{
+				foreach ($mod_info['releases'] as $version => $info)
+				{
+					// if (isset($info['forum_versions']) && in_array(FORUM_VERSION, $info['forum_versions']))
+					// {
+						//$last_release = $version;
+						$mod_updates['updates'][$cur_mod['id']] = array('release' => $version, 'release_date' => $info['release_date']);
+						break;
+					// }
+				}
+			}
+		}
+	}
+	$mod_updates['last_checked'] = time();
+
+	// Something changed? Update cache file
+	if ($mod_updates != $mod_updates_before)
+	{
+		// Output updates as PHP code
+		$fh = @fopen(FORUM_CACHE_DIR.'cache_mod_updates.php', 'wb');
+		if (!$fh)
+			error('Unable to write configuration cache file to cache directory. Please make sure PHP has write access to the directory \''.pun_htmlspecialchars(FORUM_CACHE_DIR).'\'', __FILE__, __LINE__);
+		fwrite($fh, '<?php'."\n\n".'define(\'PUN_MOD_UPDATES_LOADED\', 1);'."\n\n".'$mod_updates = '.var_export($mod_updates, true).';'."\n\n".'?>');
+		fclose($fh);
+	}
+	
+	
+	return $mod_updates['updates'];
 }
 
 

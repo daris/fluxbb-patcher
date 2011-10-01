@@ -93,16 +93,16 @@ if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patc
 	
 	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Backup created redirect']);
 }
-$warning = '';
+$notes = array();
 
 // Get modification repository (we need $mod_repo for $patcher_mod)
-$mod_repo = get_mod_repo();
+$mod_updates = check_for_updates();
+if (!isset($mod_repo))
+	$mod_repo = get_mod_repo();
 
 // Check for patcher updates
-$patcher_mod = new FLUX_MOD('patcher');
-$patcher_mod->version = PATCHER_VERSION;
-if ($last_patcher_release = $patcher_mod->check_for_updates())
-	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t".'<p>'.sprintf($lang_admin_plugin_patcher['New version available'], $last_patcher_release, '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>').'</p>'."\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
+if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
+	$notes[] = '<p>'.sprintf($lang_admin_plugin_patcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>').'</p>';
 
 // Show warning if there are directories not writable
 // TODO: is it really needed? There is a requirements list before installing mod
@@ -115,7 +115,13 @@ foreach ($check_dirs as $name => $cur_dir)
 }
 
 if (count($dirs_not_writable) > 0)
-	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t".'<h3><strong>'.$lang_admin_plugin_patcher['Important'].'</strong></h3><p>'.implode('<br />', $dirs_not_writable).'</p>'."\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
+	$notes[] = '<h3><strong>'.$lang_admin_plugin_patcher['Important'].'</strong></h3><p>'.implode('<br />', $dirs_not_writable).'</p>';
+	
+$warning = '';
+foreach ($notes as $cur_note)
+{
+	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t".$cur_note."\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
+}
 
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
@@ -180,10 +186,17 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'enable'	=> $lang_admin_plugin_patcher['Enable failed'],
 			'disable'	=> $lang_admin_plugin_patcher['Disable failed']
 		);
+		
+		$action_info = array(
+			'install'	=> $lang_admin_plugin_patcher['Installing'],
+			'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
+			'enable'	=> $lang_admin_plugin_patcher['Enabling'],
+			'disable'	=> $lang_admin_plugin_patcher['Disabling']
+		);
 
 		foreach ($logs as $action_title => $log)
 		{
-			echo $action_title.'<br />';
+			echo $action_info[$action_title].'...<br />';
 			
 			foreach ($log as $cur_step_list)
 			{
@@ -197,7 +210,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
 						if ($action == 'uninstall')
 							$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
-						elseif ($action == 'install')
+						elseif (in_array($action, array('install', 'update')))
 							$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
 					}
 					elseif ($cur_step['command'] == 'OPEN')
@@ -678,12 +691,7 @@ else
 				$info[] = '<strong>'.pun_htmlspecialchars($flux_mod->title).'</strong>';
 			
 				if (isset($flux_mod->repository_url))
-					$info[0] = '<a href="'.$flux_mod->repository_url.'">'.$info[0].'</a>';;
-
-				if (isset($flux_mod->author_email))
-					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
-				elseif (isset($flux_mod->author))
-					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
+					$info[0] = '<a href="'.$flux_mod->repository_url.'">'.$info[0].'</a>';
 
 				if (get_class($flux_mod) == 'FLUX_MOD')
 				{
@@ -692,6 +700,11 @@ else
 					else
 						$info[] = ' <strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
 				}
+				
+				if (isset($flux_mod->author_email))
+					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
+				elseif (isset($flux_mod->author))
+					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
 				
 				if (isset($flux_mod->description) && !empty($flux_mod->description))
 				{
@@ -740,6 +753,9 @@ else
 						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Not installed'].'</strong>';
 						$actions['install'] = $lang_admin_plugin_patcher['Install'];
 					}
+					
+					if (isset($mod_updates[$flux_mod->id]['release']) && version_compare($mod_updates[$flux_mod->id]['release'], $flux_mod->version, '>'))
+						$info[] = '<br /><strong style="color: #a00">'.$lang_admin_plugin_patcher['New version available'].'</strong> <a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&update&version='.pun_htmlspecialchars($mod_updates[$flux_mod->id]['release']).'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($mod_updates[$flux_mod->id]['release'])).'</a>';
 				}
 				else
 					$actions['download'] = $lang_admin_plugin_patcher['Download mod'];

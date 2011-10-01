@@ -158,13 +158,13 @@ class FLUX_MOD
 		{
 			if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $mod_info['author'], $m)) // name (test@gmail.com)
 			{
-				$this->mod_author = $m[1];
-				$this->mod_author_email = $m[2];
+				$this->author = $m[1];
+				$this->author_email = $m[2];
 			}
 			elseif (preg_match('#([^@]+)@([^@]+\.[^@]+)#', $mod_info['author'], $m)) // test@gmail.com
 			{
-				$this->mod_author = $m[1];
-				$this->mod_author_email = $m[1].'@'.$m[2];
+				$this->author = $m[1];
+				$this->author_email = $m[1].'@'.$m[2];
 			}
 		}
 		
@@ -191,7 +191,7 @@ class FLUX_MOD
 			$this->works_on = array_map('trim', explode(',', $mod_info['works on fluxbb']));
 		}
 
-		if (isset($this->mod_author) && strpos($this->mod_author, ';') !== false)
+		if (isset($this->author) && strpos($this->author, ';') !== false)
 			$this->author = substr($this->author, 0, strpos($this->author, ';'));
 
 		if (!isset($this->title) || empty($this->title))

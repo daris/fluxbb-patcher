@@ -54,6 +54,11 @@ $lang_admin_plugin_patcher = array(
 'Uninstall failed'				=> 'Uninstall failed',
 'Enable failed'					=> 'Enable failed',
 'Disable failed'				=> 'Disable failed',
+'Update failed'					=> 'Update failed',
+'Installing'					=> 'Installing modification',
+'Uninstalling'					=> 'Uninstalling modification',
+'Enabling'						=> 'Enabling modification',
+'Disabling'						=> 'Disabling modification',
 'Mod patching failed'			=> 'There were some errors while patching this mod. Use "Show log" button below to see what failed.',
 
 'Database prepared for'			=> 'Your database has been successfully prepared for %s mod',
@@ -81,7 +86,8 @@ $lang_admin_plugin_patcher = array(
 'Following files not writable'	=> 'Following files are not writable: %s. Please check permission settings for these files before proceeding.',
 'Update info'					=> 'You are going to install an outdated version of this modification.',
 'Download update'				=> 'Download update (%s)',
-'New version available'			=> 'You are using an outdated version of Patcher. A new version (%s) is available at %s.',
+'New version available'			=> 'New version available.',
+'New Patcher version available'	=> 'You are using an outdated version of Patcher. A new version (%s) is available at %s.',
 'Resources page'				=> 'FluxBB resources page',
 'Download mod'					=> 'Download mod',
 
