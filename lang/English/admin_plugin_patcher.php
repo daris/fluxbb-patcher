@@ -50,6 +50,7 @@ $lang_admin_plugin_patcher = array(
 'Mod uninstalled'				=> 'Successfully removed modification.',
 'Mod enabled'					=> 'Successfully enabled this modification.',
 'Mod disabled'					=> 'Successfully disabled this modification.',
+'Mod updated'					=> 'Successfully updated this modification.',
 'Install failed'				=> 'Install failed',
 'Uninstall failed'				=> 'Uninstall failed',
 'Enable failed'					=> 'Enable failed',
@@ -59,6 +60,7 @@ $lang_admin_plugin_patcher = array(
 'Uninstalling'					=> 'Uninstalling modification',
 'Enabling'						=> 'Enabling modification',
 'Disabling'						=> 'Disabling modification',
+'Updating'						=> 'Updating modification',
 'Mod patching failed'			=> 'There were some errors while patching this mod. Use "Show log" button below to see what failed.',
 
 'Database prepared for'			=> 'Your database has been successfully prepared for %s mod',

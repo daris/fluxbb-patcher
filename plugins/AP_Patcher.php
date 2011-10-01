@@ -177,21 +177,24 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'install'	=> $lang_admin_plugin_patcher['Mod installed'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Mod uninstalled'],
 			'enable'	=> $lang_admin_plugin_patcher['Mod enabled'],
-			'disable'	=> $lang_admin_plugin_patcher['Mod disabled']
+			'disable'	=> $lang_admin_plugin_patcher['Mod disabled'],
+			'update'	=> $lang_admin_plugin_patcher['Mod updated'],
 		);
 		
 		$failed_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Install failed'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Uninstall failed'],
 			'enable'	=> $lang_admin_plugin_patcher['Enable failed'],
-			'disable'	=> $lang_admin_plugin_patcher['Disable failed']
+			'disable'	=> $lang_admin_plugin_patcher['Disable failed'],
+			'update'	=> $lang_admin_plugin_patcher['Update failed']
 		);
 		
 		$action_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Installing'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
 			'enable'	=> $lang_admin_plugin_patcher['Enabling'],
-			'disable'	=> $lang_admin_plugin_patcher['Disabling']
+			'disable'	=> $lang_admin_plugin_patcher['Disabling'],
+			'update'	=> $lang_admin_plugin_patcher['Updating']
 		);
 
 		foreach ($logs as $action_title => $log)
@@ -624,7 +627,7 @@ else
 			$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 			$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
 			
-			if (isset($patcher_config['installed_mods'][$flux_mod->id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$flux_mod->id]['version'], '>'))
+			if (isset($patcher_config['installed_mods'][$mod_id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$mod_id]['version'], '>'))
 				$mod_list['Mods to update'][$mod_id] = $flux_mod;
 			
 			$mod_list[$section][$mod_id] = $flux_mod;

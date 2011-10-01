@@ -35,6 +35,7 @@ class PATCHER
 		
 		$this->action = $action;
 		$this->steps = $this->get_steps();
+		$this->log = array(); // reset log
 	}
 	
 	
