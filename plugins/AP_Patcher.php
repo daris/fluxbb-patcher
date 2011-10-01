@@ -95,7 +95,7 @@ if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patc
 }
 $notes = array();
 
-// Get modification repository (we need $mod_repo for $patcher_mod)
+// Check updates
 $mod_updates = check_for_updates();
 if (!isset($mod_repo))
 	$mod_repo = get_mod_repo();

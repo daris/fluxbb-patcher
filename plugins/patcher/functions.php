@@ -627,12 +627,8 @@ function check_for_updates()
 			{
 				foreach ($mod_info['releases'] as $version => $info)
 				{
-					// if (isset($info['forum_versions']) && in_array(FORUM_VERSION, $info['forum_versions']))
-					// {
-						//$last_release = $version;
-						$mod_updates['updates'][$cur_mod['id']] = array('release' => $version, 'release_date' => $info['release_date']);
-						break;
-					// }
+					$mod_updates['updates'][$cur_mod['id']] = array('release' => $version, 'release_date' => $info['release_date']);
+					break;
 				}
 			}
 		}
