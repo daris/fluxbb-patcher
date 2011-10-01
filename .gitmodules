@@ -43,3 +43,6 @@
 [submodule "mods/poki-bb-chatbox"]
 	path = mods/poki-bb-chatbox
 	url = git@github.com:daris/fluxbb-poki-bb-chatbox.git
+[submodule "mods/quick-mod-tools"]
+	path = mods/quick-mod-tools
+	url = git@github.com:daris/fluxbb-quick-mod-tools.git
