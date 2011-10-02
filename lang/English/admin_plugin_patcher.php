@@ -61,7 +61,9 @@ $lang_admin_plugin_patcher = array(
 'Enabling'						=> 'Enabling modification',
 'Disabling'						=> 'Disabling modification',
 'Updating'						=> 'Updating modification',
-'Mod patching failed'			=> 'There were some errors while patching this mod. Use "Show log" button below to see what failed.',
+'Mod patching failed'			=> 'There were some steps that failed to execute and in that case modification you tried to install might not working properly. If you are uncertain about consequences of that, use Uninstall button to uninstall this modification.',
+'What to do now'				=> 'What to do now',
+'Mod patching failed info 1'	=> 'If you know PHP language, you can try to correct steps that failed in modification readme.txt and click Update button to make changes again.',
 
 'Database prepared for'			=> 'Your database has been successfully prepared for %s mod',
 'Database restored'				=> 'Your database has been successfully restored',

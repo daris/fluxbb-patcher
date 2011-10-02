@@ -394,6 +394,14 @@ class FLUX_MOD
 				$requirements['affected_files'][$cur_file] = array(empty($error), $lang_admin_plugin_patcher['Found, writable'], $error);
 			}
 		}
+		
+		// Check if there exist any step that fails
+		foreach ($requirements as $cur_requirement)
+		{
+			if (!isset($requirements['failed']) && $cur_requirement[0] === false)
+				$requirements['failed'] = true;
+		}
+		
 		return $requirements;
 	}
 
