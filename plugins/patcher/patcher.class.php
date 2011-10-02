@@ -178,25 +178,24 @@ class PATCHER
 					$this->command = $cur_step['command'];
 					$this->code = $cur_step['code'];
 					$this->comments = array();
+					$this->result = '';
 					
 					// Execute current step
-					$result = $this->$function();
+					$cur_step['status'] = $this->$function();
 					
 					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
 					if (in_array($this->action, array('uninstall', 'disable')))
 					{
-						if ($result == STATUS_DONE)
-							$result = STATUS_REVERTED;
-						elseif ($result == STATUS_ALREADY_DONE)
-							$result = STATUS_ALREADY_REVERTED;
+						if ($cur_step['status'] == STATUS_DONE)
+							$cur_step['status'] = STATUS_REVERTED;
+						elseif ($cur_step['status'] == STATUS_ALREADY_DONE)
+							$cur_step['status'] = STATUS_ALREADY_REVERTED;
 					}
-					
-					if (is_array($result))
-						list($cur_step['status'], $cur_step['result']) = $result;
-					else
-						$cur_step['status'] = $result;
-						
-					// Skip if mod is disabled and we want to uninstall it (as file changes was already reverted)
+
+					if ($this->result != '')
+						$cur_step['result'] = $this->result;
+
+					// Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
 					if ($cur_step['status'] == STATUS_NOTHING_TO_DO)
 						continue;
 					
@@ -813,7 +812,6 @@ class PATCHER
 			if (!file_exists(PUN_ROOT.$this->code))
 				return array(STATUS_NOT_DONE, $lang_admin_plugin_patcher['File does not exist error']);
 
-			$result = '';
 			if (!isset($_GET['skip_install']))
 			{
 				$install_code = file_get_contents(PUN_ROOT.'install_mod.php');
@@ -839,23 +837,23 @@ class PATCHER
 				if ($this->action == 'uninstall')
 				{
 					restore();
-					$result = $lang_admin_plugin_patcher['Database restored'];
+					$this->result = $lang_admin_plugin_patcher['Database restored'];
 				}
 				elseif (in_array($this->action, array('install', 'update')))
 				{
 					install();
-					$result = sprintf($lang_admin_plugin_patcher['Database prepared for'], $mod_title);
+					$this->result = sprintf($lang_admin_plugin_patcher['Database prepared for'], $mod_title);
 				}
 			}
-			return empty($result) ? STATUS_DONE : array(STATUS_DONE, $result);
+			return STATUS_DONE;
 		}
 		else
 		{
 			ob_start();
 			require PUN_ROOT.$this->code;
-			$result = ob_get_contents();
+			$this->result = ob_get_contents();
 			ob_end_clean();
-			return array(STATUS_DONE, $result);
+			return STATUS_DONE;
 		}
 	}
 	
@@ -880,7 +878,8 @@ class PATCHER
 		if (unlink(PUN_ROOT.$this->code))
 			return STATUS_DONE; // done
 
-		return array(STATUS_NOT_DONE, $lang_admin_plugin_patcher['Can\'t delete file error']);
+		$this->result = $lang_admin_plugin_patcher['Can\'t delete file error'];
+		return STATUS_NOT_DONE;
 	}
 	
 	
