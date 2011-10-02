@@ -17,7 +17,7 @@ if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
 //define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
-define('PATCHER_VERSION', '1.99');
+define('PATCHER_VERSION', '2.0-dev');
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
@@ -114,25 +114,27 @@ if (!isset($mod_repo)) // get_mod_updates_cache could get $mod_repo
 
 // Check for patcher updates
 if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
-	$notes[] = '<p>'.sprintf($lang_admin_plugin_patcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>').'</p>';
+	$notes[] = sprintf($lang_admin_plugin_patcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>');
 
 // Show warning if there are directories not writable
-// TODO: is it really needed? There is a requirements list before installing mod
 $dirs_not_writable = array();
-$check_dirs = array('backups' => BACKUPS_DIR, 'mods' => MODS_DIR);
+$check_dirs = array('root' => PUN_ROOT, 'include' => PUN_ROOT.'include/', 'lang' => PUN_ROOT.'lang/', 'lang/English' => PUN_ROOT.'lang/English/', 'backups' => BACKUPS_DIR, 'mods' => MODS_DIR);
 foreach ($check_dirs as $name => $cur_dir)
 {
 	if (!is_writable($cur_dir))
-		$dirs_not_writable[] = sprintf($lang_admin_plugin_patcher['Directory not writable'], pun_htmlspecialchars($name));
+		$dirs_not_writable[] = pun_htmlspecialchars($name);
 }
 
 if (count($dirs_not_writable) > 0)
-	$notes[] = '<h3><strong>'.$lang_admin_plugin_patcher['Important'].'</strong></h3><p>'.implode('<br />', $dirs_not_writable).'</p>';
+	$notes[] = '<strong>'.$lang_admin_plugin_patcher['Directories not writable info'].'</strong>: '.implode(', ', $dirs_not_writable).'<br />'.$lang_admin_plugin_patcher['Disabled features info'];
 	
 $warning = '';
-foreach ($notes as $cur_note)
+if (count($notes) > 0)
 {
-	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t".$cur_note."\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
+	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t";
+	foreach ($notes as $cur_note)
+		$warning .= '<p>'.$cur_note.'</p>';
+	$warning .= "\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
 }
 
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
@@ -539,12 +541,12 @@ else
 	echo $warning;
 ?>
 	<div class="plugin blockform">
-		<h2><span><?php echo $lang_admin_plugin_patcher['Backup files head'] ?></span></h2>
+		<h2><span><?php echo sprintf($lang_admin_plugin_patcher['Patcher head'], PATCHER_VERSION) ?></span></h2>
 		<div class="box">
 			<form action="<?php echo PLUGIN_URL ?>" method="post">
 				<div class="inform">
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Backup legend'] ?></legend>
+						<legend><?php echo $lang_admin_plugin_patcher['Manage backups legend'] ?></legend>
 						<div class="infldset">
 							<table class="aligntop" cellspacing="0">
 								<tr>
@@ -557,10 +559,7 @@ else
 										<span><?php echo $lang_admin_plugin_patcher['Backup tool info'] ?></span>
 									</td>
 								</tr>
-							</table>
-						</div>
-					</fieldset>
-				</div>
+			
 
 <?php
 	$backups = array();
@@ -576,11 +575,6 @@ else
 	}
 
 ?>
-				<div class="inform">
-					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Revert files legend'] ?></legend>
-						<div class="infldset">
-							<table class="aligntop" cellspacing="0">
 								<tr>
 <?php if (count($backups) > 0) : ?>
 									<th scope="row">
@@ -599,10 +593,7 @@ else
 					</fieldset>
 				</div>
 			</form>
-		</div>
 
-		<h2><span><?php echo $lang_admin_plugin_patcher['Upload modification head'] ?></span></h2>
-		<div class="box">
 			<form method="post" action="<?php echo PLUGIN_URL ?>" enctype="multipart/form-data">
 				<div class="inform">
 					<fieldset>
@@ -610,18 +601,19 @@ else
 						<div class="infldset">
 							<table class="aligntop" cellspacing="0">
 								<tr>
-<?php if (is_writable(MODS_DIR)) : ?>
 									<th scope="row">
-										<?php echo $lang_admin_plugin_patcher['Upload package'] ?> <div><input type="submit" name="upload" value="<?php echo $lang_admin_plugin_patcher['Upload'] ?>" tabindex="6" /></div>
+										<?php echo $lang_admin_plugin_patcher['Upload package'] ?> <div><input type="submit"<?php echo (!is_writable(MODS_DIR)) ? ' disabled="disabled"' : '' ?> name="upload" value="<?php echo $lang_admin_plugin_patcher['Upload'] ?>" tabindex="6" /></div>
 									</th>
 									<td>
 										<input type="file" name="upload_mod" tabindex="5" />
 										<span><?php echo $lang_admin_plugin_patcher['Upload package info'] ?></span>
 									</td>
-<?php else : ?>
-									<td><?php echo $lang_admin_plugin_patcher['Mods directory not writable'] ?></td>
-<?php endif; ?>
 								</tr>
+<?php if (!is_writable(MODS_DIR)) : ?>
+								<tr>
+									<td colspan="2"><?php echo $lang_admin_plugin_patcher['Mods directory not writable'] ?></td>
+								</tr>
+<?php endif; ?>
 							</table>
 						</div>
 					</fieldset>

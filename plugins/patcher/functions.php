@@ -379,6 +379,11 @@ function revert($file)
 {
 	global $pun_config, $lang_admin_plugin_patcher;
 
+	$dirs_to_check = array('./', 'include', 'lang/English');
+	foreach ($dirs_to_check as $cur_dir)
+		if (!is_writable(PUN_ROOT.$cur_dir))
+			message(sprintf($lang_admin_plugin_patcher['Directory not writable'], $cur_dir));
+
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		unlink(PUN_ROOT.'patcher_config.php');
 
@@ -394,6 +399,9 @@ function upload_mod()
 {
 	global $pun_config, $inst_mods, $lang_admin_plugin_patcher;
 	
+	if (!is_writable(MODS_DIR))
+		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
+
 	if (!is_uploaded_file($_FILES['upload_mod']['tmp_name']))
 		message($lang_admin_plugin_patcher['File was not sent']);
 	
@@ -422,6 +430,9 @@ function update_mod($mod_id, $version)
 {
 	global $lang_admin_plugin_patcher;
 
+	if (!is_writable(MODS_DIR))
+		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
+
 	if (!is_writable(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods/'.pun_htmlspecialchars($mod_id)));
 
@@ -440,6 +451,9 @@ function update_mod($mod_id, $version)
 function download_mod($mod_id)
 {
 	global $lang_admin_plugin_patcher;
+
+	if (!is_writable(MODS_DIR))
+		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
 
 	if (file_exists(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory already exists'], 'mods/'.pun_htmlspecialchars($mod_id)));
@@ -593,10 +607,8 @@ function get_mod_updates_cache()
 		return array();
 
 	if (file_exists(FORUM_CACHE_DIR.'cache_mod_updates.php'))
-	{
-		$mod_updates = check_for_updates();
-		return $mod_updates['updates'];
-	}
+		return check_for_updates();
+
 	// First check
 	else
 	{
@@ -608,6 +620,8 @@ function get_mod_updates_cache()
 
 function check_for_updates()
 {
+	global $mod_repo;
+
 	$mod_updates = array();
 
 	if (!isset($mod_updates['updates']))
@@ -684,7 +698,7 @@ function download_file($url, $save_to_file)
 	// Save to file
 	$file = @fopen($save_to_file, 'wb');
 	if ($file === false)
-		mesage('Can\'t write to '.$save_to_file);
+		message(sprintf($lang_admin_plugin_patcher['Cannot write to'], $save_to_file));
 
 	fwrite($file, $remote_file);
 	fclose($file);

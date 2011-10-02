@@ -4,10 +4,13 @@ $lang_admin_plugin_patcher = array(
 
 'Backup created redirect'		=> 'Backup created. Redirecting …',
 'Important'						=> 'Important',
+'Directories not writable info'	=> 'The following directories are not writable',
+'Disabled features info'		=> 'Some features might be disabled until you correct permissions to these directories.',
 'Directory not writable'		=> 'The %s directory is not writable.',
 'File not writable'				=> 'The %s file is not writable.',
 'File does not exist'			=> 'The %s file does not exist.',
 'Invalid mod dir'				=> 'This directory does not have a valid mod package.',
+'Cannot write to'				=> 'Cannot write file to %s.',
 
 'Can\'t copy file'				=> 'Can\'t copy "%s" file to "%s".',
 
@@ -18,11 +21,7 @@ $lang_admin_plugin_patcher = array(
 'REVERTED'						=> 'REVERTED',
 'ALREADY REVERTED'				=> 'ALREADY REVERTED',
 
-'Patcher paused' 				=> 'A patcher script has paused and is awaiting your action',
-'Run file'						=> 'Run file',
-'Run file info'					=> 'Click above link and follow instructions. Once you do this, click Continue button.',
-'Continue'						=> 'Continue',
-'Summary'						=> 'Summary',
+'Patcher head'					=> 'Patcher plugin v%s',
 
 'Mod installation'				=> 'Mod installation',
 'Mod installation status'		=> 'Mod installation status',
@@ -100,7 +99,7 @@ $lang_admin_plugin_patcher = array(
 'Resources page'				=> 'FluxBB resources page',
 'Download mod'					=> 'Download mod',
 
-'Backup legend'					=> 'Backup',
+'Manage backups legend'			=> 'Manage backups',
 'Backup files'					=> 'Backup files',
 'Backup files info' 			=> 'Select Yes if you want to create a backup before patching FluxBB files.',
 'Backup filename'				=> 'Backup filename',
@@ -109,17 +108,14 @@ $lang_admin_plugin_patcher = array(
 
 'Patch'							=> 'Patch',
 
-'Backup files head'				=> 'Backup files',
 'Backup tool info'				=> 'This tool makes a backup of FluxBB root and include directory. All backups are placed in <strong>backups</strong> directory inside FluxBB root directory.',
 
-'Revert files legend'			=> 'Revert files',
 'Revert from backup'			=> 'Revert from backup',
 'Revert'						=> 'Revert',
 'Revert info'					=> 'Use this form to revert FluxBB files from backup.',
 'Revert info 2'					=> 'Reverting files will not uninstall any mods from databse. It will only revert all changes of files that was made by installing mods.',
 'No backups'					=> 'You have not created any backups yet. If you want to, use form above.',
 
-'Upload modification head'		=> 'Upload modification',
 'Upload modification legend'	=> 'Upload modification',
 'Upload package'				=> 'Upload package',
 'Upload'						=> 'Upload',
