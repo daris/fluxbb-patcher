@@ -27,7 +27,6 @@ class FLUX_MOD
 	var $mod_dir = null; // main readme file dir
 	private $readme_file = null; // main readme file content
 //	var $readme_file_list = null; // list of readme files in current mod directory (including subdirectory)
-	var $is_valid = true;
 	
 	function __construct($mod_id)
 	{
@@ -47,7 +46,7 @@ class FLUX_MOD
 	// Used for: readme_file_list, files_to_upload, upload_code
 	function __get($name)
 	{
-		if (in_array($name, array('title', 'version', 'description', 'release_date', 'author', 'author_email', 'works_on', 'repository_url', 'affected_files', 'affects_db', 'important')))
+		if (in_array($name, array('title', 'version', 'description', 'release_date', 'author', 'author_email', 'works_on', 'repository_url', 'affected_files', 'affects_db', 'important', 'is_valid')))
 		{
 			$this->get_mod_info();
 			return $this->$name;
@@ -74,7 +73,7 @@ class FLUX_MOD
 		{
 			foreach ($this->readme_file_list as $key => $cur_readme)
 			{
-				if (preg_match('#.*install.*#i', $cur_readme))
+				if (preg_match('#(install|read\s?me).*?\.txt#i', $cur_readme))
 				{
 					$this->readme_file_name = $cur_readme;
 					return true;
@@ -218,6 +217,9 @@ class FLUX_MOD
 					$this->affected_files[] = trim($cur_file);
 			}
 		}
+		
+		$this->is_valid = isset($this->version);
+		
 		return true;
 	}
 	
@@ -228,7 +230,7 @@ class FLUX_MOD
 
 		if (!isset($this->works_on))
 			return false;
-		
+
 		foreach ($this->works_on as $cur_version)
 		{
 			if (strpos($cur_version, '*') !== false)
@@ -236,15 +238,19 @@ class FLUX_MOD
 				if (preg_match('/'.str_replace('\*', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version']))
 					return true;
 			}
-			if (strpos($cur_version, 'x') !== false)
+			elseif (strpos($cur_version, 'x') !== false)
 			{
 				if (preg_match('/'.str_replace('x', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version']))
 					return true;
 			}
 			elseif ($cur_version == $pun_config['o_cur_version'])
 				return true;
+	
 			elseif ($cur_version == substr($pun_config['o_cur_version'], 0, strlen($cur_version)))
 				return true;
+			
+			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->works_on[0], $matches))
+				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
 		}
 
 		return false;
@@ -511,6 +517,9 @@ class FLUX_MOD
 				$cur_code = str_replace(array('[language]', 'your_language'), 'English', $cur_code);
 				$cur_code = str_replace(array('[style]', 'Your_style'), 'Air.css', $cur_code);
 				$cur_code = ltrim(trim($cur_code), '/');
+				
+				if (!file_exists(PUN_ROOT.$cur_code) && preg_match('#[a-zA-Z0-9-_]+\.php#i', $cur_code, $matches))
+					$cur_code = $matches[0];
 			}
 			elseif ($cur_command == 'NOTE')
 			{

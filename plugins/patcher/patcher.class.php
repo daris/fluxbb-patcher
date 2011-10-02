@@ -340,35 +340,6 @@ class PATCHER
 		// Undo changes?
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			// $count = 0;
-			// if ($this->command == 'REPLACE')
-			// {
-				// // if (!preg_match('#'.make_regexp(trim($replace)).'#si', $this->cur_file) && preg_match('#'.make_regexp(trim($find)).'#si', $this->cur_file))
-					// // return STATUS_ALREADY_REVERTED;
-
-				// $this->cur_file = preg_replace('#'.make_regexp($replace).'#si', preg_replace('#([\$\\\\]\d+)#', '\\\$1', $find), $this->cur_file, 1, $count);
-
-				// if ($count == 1)
-					// return STATUS_REVERTED;
-			// }
-			// else
-			// {
-				// if ($this->command == 'AFTER ADD')
-					// $this->code = "\n".$this->code;
-				// elseif ($this->command == 'BEFORE ADD')
-					// $this->code .= "\n";
-
-				// // if (!preg_match('#'.make_regexp(trim($this->code)).'#si', $this->cur_file))
-					// // return STATUS_ALREADY_REVERTED;
-
-				// $this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count);
-
-				// if ($count == 1)
-					// return STATUS_REVERTED;
-			// }
-			
-			// return STATUS_NOT_DONE;
-			
 			$tmp = $find;
 			$find = $replace;
 			$replace = $tmp;
@@ -378,27 +349,14 @@ class PATCHER
 
 		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
 		$second_part = substr($this->cur_file, $this->start_pos); // only replace this
-		// $pos = strpos($second_part, $replace);
 
-		// if ($pos !== false) // already done
-		// {
-			// $this->start_pos = $this->start_pos + $pos + strlen($replace);
-			// return STATUS_ALREADY_DONE;
-		// }
-		
 		// not done yet
-		//echo '<pre>'.htmlspecialchars(make_regexp($find)).'</pre>';
-		//$second_part = preg_replace('#'.make_regexp($find).'#si', $replace, $second_part, 1, $count);
 		$second_part = str_replace_once($find, $replace, $second_part);
 		$this->cur_file = $first_part.$second_part;
 		
 		$check_code = $replace;
 		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
-		{
 			$check_code = $this->code;
-//			$this->check_code($check_code);
-//			echo $check_code."\n\n\n";
-		}
 		
 		$pos = strpos($second_part, $check_code);
 		
@@ -409,18 +367,8 @@ class PATCHER
 			return STATUS_DONE;
 		}
 
-		// not done, try to find in whole file
-		// $pos = strpos($this->cur_file, trim($this->code));
-		// if ($pos !== false) // already done
-		// {
-	//		$this->start_pos = $pos + strlen(trim($this->code));
-			// return STATUS_ALREADY_DONE;
-		// }
-
-//		$this->cur_file = preg_replace('#'.make_regexp($find).'#si', $replace, $this->cur_file, 1);
 		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
 		
-		//echo $this->cur_file."\n\n\n";
 		$pos = strpos($this->cur_file, $check_code);
 		if ((in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE' && $pos === false) // Code shouldn't be in current file
 			|| $pos !== false) // done
