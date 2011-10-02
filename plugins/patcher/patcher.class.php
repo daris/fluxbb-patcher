@@ -395,7 +395,7 @@ class PATCHER
 		$check_code = $replace;
 		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
 		{
-			$check_code = $find;
+			$check_code = $this->code;
 //			$this->check_code($check_code);
 //			echo $check_code."\n\n\n";
 		}
@@ -799,18 +799,21 @@ class PATCHER
 	
 	function step_run()
 	{
-		if (defined('PATCHER_NO_SAVE'))
-			return STATUS_UNKNOWN;
-
 		global $lang_admin_plugin_patcher;
-		
+
 		if (in_array($this->action, array('enable', 'disable')) && $this->code == 'install_mod.php')
 			return STATUS_NOTHING_TO_DO;
 
+		if (defined('PATCHER_NO_SAVE'))
+			return STATUS_UNKNOWN;
+		
 		if ($this->code == 'install_mod.php')
 		{
 			if (!file_exists(PUN_ROOT.$this->code))
-				return array(STATUS_NOT_DONE, $lang_admin_plugin_patcher['File does not exist error']);
+			{
+				$this->result = $lang_admin_plugin_patcher['File does not exist error'];
+				return STATUS_NOT_DONE;
+			}
 
 			if (!isset($_GET['skip_install']))
 			{
@@ -860,12 +863,12 @@ class PATCHER
 	
 	function step_delete()
 	{
-		if (defined('PATCHER_NO_SAVE'))
-			return STATUS_UNKNOWN;
-
 		// Should never happen
 		if (in_array($this->action, array('enable', 'disable')))
 			return STATUS_NOTHING_TO_DO;
+
+		if (defined('PATCHER_NO_SAVE'))
+			return STATUS_UNKNOWN;
 
 		// Delete step is usually for install_mod.php so when uninstalling that file does not exist
 		if ($this->action == 'uninstall')
