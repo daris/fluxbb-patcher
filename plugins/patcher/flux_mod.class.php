@@ -338,8 +338,14 @@ class FLUX_MOD
 
 		// Ignore mod installer files
 		foreach ($files_to_upload as $from => $to)
+		{
 			if (preg_match('/plugins\/.*?\/(mod_config|search_insert|lang\/.*\/mod_admin).php$/', $from))
 				unset($files_to_upload[$from]);
+
+			// Do not upload language files when language folder does not exist
+			elseif (preg_match('#lang\/(.+?)\/#i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
+				unset($files_to_upload[$from]);
+		}
 
 		ksort($files_to_upload);
 		return $files_to_upload;
