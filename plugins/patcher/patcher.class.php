@@ -183,14 +183,9 @@ class PATCHER
 					// Execute current step
 					$cur_step['status'] = $this->$function();
 					
-					// Replace STATUS_DONE with STATUS_REVERTED and STATUS_ALREADY_DONE with STATUS_ALREADY_REVERTED when uninstalling mod
-					if (in_array($this->action, array('uninstall', 'disable')))
-					{
-						if ($cur_step['status'] == STATUS_DONE)
-							$cur_step['status'] = STATUS_REVERTED;
-						elseif ($cur_step['status'] == STATUS_ALREADY_DONE)
-							$cur_step['status'] = STATUS_ALREADY_REVERTED;
-					}
+					// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
+					if (in_array($this->action, array('uninstall', 'disable')) && $cur_step['status'] == STATUS_DONE)
+						$cur_step['status'] = STATUS_REVERTED;
 
 					if ($this->result != '')
 						$cur_step['result'] = $this->result;
@@ -335,7 +330,7 @@ class PATCHER
 	{
 		// Mod was already disabled before
 		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
-			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
+			return STATUS_DONE;
 	
 		// Undo changes?
 		if (in_array($this->action, array('uninstall', 'disable')))
@@ -597,7 +592,7 @@ class PATCHER
 		$status = $this->replace_code(trim($this->find), trim($this->code));
 
 		// has query?
-		if (($status == STATUS_NOT_DONE || $status == STATUS_REVERTED || $status == STATUS_ALREADY_REVERTED) && strpos($this->find, 'query(') !== false)
+		if (in_array($status, array(STATUS_NOT_DONE, STATUS_REVERTED)) && strpos($this->find, 'query(') !== false)
 		{
 			preg_match_all('#\n\t*.*?query\((.*?)\) or error.*\n#', "\n".$this->find."\n", $find_m, PREG_SET_ORDER);
 			preg_match_all('#\n\t*.*?query\((.*?)\) or error.*\n#', "\n".$this->code."\n", $code_m, PREG_SET_ORDER);
@@ -690,10 +685,6 @@ class PATCHER
 			
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			// If it was already done
-			if (!preg_match('#'.make_regexp($this->code).'#si', $this->cur_file))
-				return STATUS_ALREADY_REVERTED;
-
 			$count = 0;
 			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
@@ -701,15 +692,11 @@ class PATCHER
 		}
 		else
 		{
-			// If it was already done
-			if (preg_match('#'.make_regexp($this->code).'#si', $this->cur_file))
-				return STATUS_ALREADY_DONE;
-			elseif (trim($this->cur_file) != '')
-			{
-				$this->cur_file .= "\n\n".$this->code;
-				return STATUS_DONE;
-			}
+			$this->cur_file .= "\n\n".$this->code;
+			return STATUS_DONE;
 		}
+
+		return STATUS_NOT_DONE;
 	}
 	
 	
@@ -722,23 +709,18 @@ class PATCHER
 		$count = 0;
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
-			// if (strpos($this->cur_file, trim($this->code)) === false)
-				// return STATUS_ALREADY_REVERTED;
-
 			$this->cur_file = preg_replace('#'.make_regexp($this->code).'#si', '', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_REVERTED;
 		}
 		else
 		{
-			// If it was already done
-			// if (strpos($this->cur_file, trim($this->code)) !== false)
-				// return STATUS_ALREADY_DONE;
-
 			$this->cur_file = preg_replace('#,?\s*\);#si', ','."\n\n".$this->code."\n".');', $this->cur_file, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_DONE;
 		}
+
+		return STATUS_NOT_DONE;
 	}
 	
 	
@@ -833,7 +815,7 @@ class PATCHER
 		
 		$this->code = trim($this->code);
 		if (!file_exists(PUN_ROOT.$this->code))
-			return STATUS_ALREADY_DONE;
+			return STATUS_UNKNOWN;
 
 		if (unlink(PUN_ROOT.$this->code))
 			return STATUS_DONE; // done
@@ -858,13 +840,8 @@ class PATCHER
 			$new_file = trim($files[1]);
 			
 			// TODO: fix status as it indicates last renamed file
-			if (file_exists($new_file))
-				$status = STATUS_ALREADY_DONE;
-			else
-			{
-				if (rename(PUN_ROOT.$file_to_rename, PUN_ROOT.$new_file))
-					$status = STATUS_DONE;
-			}
+			if (!file_exists($new_file) && rename(PUN_ROOT.$file_to_rename, PUN_ROOT.$new_file))
+				$status = STATUS_DONE;
 		}
 		return $status;
 	}

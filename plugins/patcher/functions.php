@@ -32,9 +32,7 @@ if (!function_exists('json_encode'))
 define('STATUS_UNKNOWN', -1);
 define('STATUS_NOT_DONE', 0);
 define('STATUS_DONE', 1);
-define('STATUS_ALREADY_DONE', 2);
 define('STATUS_REVERTED', 3);
-define('STATUS_ALREADY_REVERTED', 4);
 define('STATUS_NOTHING_TO_DO', 5);
 
 

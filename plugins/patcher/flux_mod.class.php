@@ -392,7 +392,7 @@ class FLUX_MOD
 			foreach ($this->affected_files as $cur_file)
 			{
 				// Language file that is not English does not exist?
-				if (strpos(strtolower($cur_file), 'lang/') !== false && strpos(strtolower($cur_file), '/english') === false)
+				if (!file_exists(PUN_ROOT.$cur_file) && strpos(strtolower($cur_file), 'lang/') !== false && strpos(strtolower($cur_file), '/english') === false)
 					continue;
 
 				$error = '';

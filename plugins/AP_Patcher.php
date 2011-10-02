@@ -495,9 +495,7 @@ elseif (isset($_GET['show_log']))
 						{
 							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00'; $comments[] = $lang_admin_plugin_patcher['NOT DONE']; break;
 							case STATUS_DONE:			$style = 'color: #0a0'; 		$comments[] = $lang_admin_plugin_patcher['DONE']; break;
-							case STATUS_ALREADY_DONE:	$style = 'color: orange'; 		$comments[] = $lang_admin_plugin_patcher['ALREADY DONE']; break;
 							case STATUS_REVERTED:		$style = 'color: #00a'; 		$comments[] = $lang_admin_plugin_patcher['REVERTED']; break;
-							case STATUS_ALREADY_REVERTED:$style = 'color: #00BFFF'; 	$comments[] = $lang_admin_plugin_patcher['ALREADY REVERTED']; break;
 						}
 						
 						if (isset($cur_substep['comments']))
