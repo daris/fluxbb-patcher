@@ -552,11 +552,8 @@ function get_mod_repo($refresh = false)
 
 	$mod_repo_before = $mod_repo;
 	
-	if (isset($mod_repo['last_checked']) && !$refresh)
-	{
-		if (time() < $mod_repo['last_checked'] + 3600) // one hour
-			return $mod_repo;
-	}
+	if (isset($mod_repo['last_checked']) && !$refresh && time() < $mod_repo['last_checked'] + 3600) // one hour
+		return $mod_repo;
 	
 	$page = trim(@file_get_contents('http://fluxbb.org/api/json/resources/mods/'));
 	if (!empty($page))
@@ -582,28 +579,44 @@ function get_mod_repo($refresh = false)
 }
 
 
-function check_for_updates()
+function get_mod_updates_cache()
 {
-	global $mod_repo;
+	global $mod_repo, $lang_admin_plugin_patcher;
 	
 	$mod_updates = array();
 	
 	if (defined('PATCHER_NO_DOWNLOAD'))
 		return array();
-	
-	if (!defined('PUN_MOD_UPDATES_LOADED') && file_exists(FORUM_CACHE_DIR.'cache_mod_updates.php'))
-		require FORUM_CACHE_DIR.'cache_mod_updates.php';
-	$mod_updates_before = $mod_updates;
-	
+
+	if (file_exists(FORUM_CACHE_DIR.'cache_mod_updates.php'))
+	{
+		$mod_updates = check_for_updates();
+		return $mod_updates['updates'];
+	}
+	// First check
+	else
+	{
+		echo $lang_admin_plugin_patcher['Checking for updates'];
+		echo '<meta http-equiv="refresh" content="0; url='.PLUGIN_URL.'&check_for_updates">';
+		exit;
+	}
+}
+
+function check_for_updates()
+{
+	$mod_updates = array();
+
 	if (!isset($mod_updates['updates']))
 		$mod_updates['updates'] = array();
+
+	if (!defined('PUN_MOD_UPDATES_LOADED') && file_exists(FORUM_CACHE_DIR.'cache_mod_updates.php'))
+		require FORUM_CACHE_DIR.'cache_mod_updates.php';
 	
-	if (isset($mod_updates['last_checked']))
-	{
-		if (time() < $mod_updates['last_checked'] + 3600) // one hour
-			return $mod_updates['updates'];
-	}
+	if (!isset($_GET['check_for_updates']) && isset($mod_updates['last_checked']) && time() < $mod_updates['last_checked'] + 3600) // one hour
+		return $mod_updates['updates'];
 	
+	$mod_updates_before = $mod_updates;
+
 	// Refresh mod repo
 	$mod_repo = get_mod_repo(true);
 	
@@ -646,6 +659,8 @@ function check_for_updates()
 		fclose($fh);
 	}
 	
+	if (isset($_GET['check_for_updates']))
+		header('Location: '.PLUGIN_URL);
 	
 	return $mod_updates['updates'];
 }

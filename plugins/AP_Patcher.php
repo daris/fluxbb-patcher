@@ -104,8 +104,12 @@ if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patc
 $notes = array();
 
 // Check updates
-$mod_updates = check_for_updates();
-if (!isset($mod_repo))
+if (isset($_GET['check_for_updates']))
+	$mod_updates = check_for_updates();
+else
+	$mod_updates = get_mod_updates_cache();
+
+if (!isset($mod_repo)) // get_mod_updates_cache could get $mod_repo
 	$mod_repo = get_mod_repo();
 
 // Check for patcher updates
@@ -619,7 +623,7 @@ else
 
 
 	<div class="plugin blockform">
-		<h2><span><?php echo $lang_admin_plugin_patcher['Modifications'] ?></span></h2>
+		<h2><span><?php echo $lang_admin_plugin_patcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&check_for_updates"><?php echo $lang_admin_plugin_patcher['Check for updates'] ?></a> <?php echo $lang_admin_plugin_patcher['Check for updates info'] ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 

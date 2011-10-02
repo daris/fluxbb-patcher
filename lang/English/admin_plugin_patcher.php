@@ -177,6 +177,10 @@ $lang_admin_plugin_patcher = array(
 'Already patched'				=> 'A %s file of %s mod was already installed. Patching it next time could make a conflicts. Do not try to patch second time unless you know what are you doing.',
 'Patch again'					=> 'Patch again',
 
+'Check for updates'				=> 'Check for updates',
+'Check for updates info'		=> '(automatically checking in every hour)',
+'Checking for updates'			=> 'Checking for updates... This might take a while :)',
+
 // Actions
 'OPEN'							=> 'OPEN',
 'FIND'							=> 'FIND',
