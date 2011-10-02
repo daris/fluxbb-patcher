@@ -452,21 +452,30 @@ class PATCHER
 	{
 		global $lang_admin_plugin_patcher, $friendly_url_changes;
 		
+		// if some file was opened, save it
+		if (!empty($this->cur_file_path))
+			$this->step_save();
+
 		// Mod was already disabled before
 		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		$this->code = trim($this->code);
-	
-		// if some file was opened, save it
-		if (!empty($this->cur_file_path))
-			$this->step_save();
-
+		
 		if (!file_exists(PUN_ROOT.$this->code))
 		{
+			// Language file that is not English does not exist?
+			if (strpos(strtolower($this->code), 'lang/') !== false && strpos(strtolower($this->code), '/english') === false)
+			{
+				$this->cur_file = '';
+				$this->cur_file_path = '';
+				return STATUS_NOTHING_TO_DO;
+			}
+		
 			$this->cur_file = '';
 			$this->cur_file_path = $this->code;
-			return array(STATUS_NOT_DONE, $lang_admin_plugin_patcher['File does not exist error']);
+			$this->result = $lang_admin_plugin_patcher['File does not exist error'];
+			return STATUS_NOT_DONE;
 		}
 		
 		$this->cur_file_path = $this->code;
@@ -553,7 +562,7 @@ class PATCHER
 		$this->find = $this->code;
 
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 		
 		$this->check_code($this->find);
@@ -564,7 +573,7 @@ class PATCHER
 	function step_replace()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 
 		if (empty($this->find) || empty($this->cur_file))
@@ -649,7 +658,7 @@ class PATCHER
 	function step_after_add()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 
 		//$this->find = trim($this->find);
@@ -663,7 +672,7 @@ class PATCHER
 	function step_before_add()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 	
 		if (empty($this->find) || empty($this->cur_file))
@@ -676,7 +685,7 @@ class PATCHER
 	function step_at_the_end_of_file_add()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 			
 		if (in_array($this->action, array('uninstall', 'disable')))
@@ -707,7 +716,7 @@ class PATCHER
 	function step_add_new_elements_of_array()
 	{
 		// Mod was already disabled before
-		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 	
 		$count = 0;

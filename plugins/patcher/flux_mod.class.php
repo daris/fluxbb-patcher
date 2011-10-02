@@ -391,6 +391,10 @@ class FLUX_MOD
 		{
 			foreach ($this->affected_files as $cur_file)
 			{
+				// Language file that is not English does not exist?
+				if (strpos(strtolower($cur_file), 'lang/') !== false && strpos(strtolower($cur_file), '/english') === false)
+					continue;
+
 				$error = '';
 				if (!file_exists(PUN_ROOT.$cur_file))
 					$error = $lang_admin_plugin_patcher['Not exists'];
@@ -527,7 +531,7 @@ class FLUX_MOD
 				$cur_code = str_replace(array('[style]', 'Your_style'), 'Air.css', $cur_code);
 				$cur_code = ltrim(trim($cur_code), '/');
 				
-				if (!file_exists(PUN_ROOT.$cur_code) && preg_match('#[a-zA-Z0-9-_]+\.php#i', $cur_code, $matches))
+				if (!file_exists(PUN_ROOT.$cur_code) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.php#i', $cur_code, $matches) && file_exists(PUN_ROOT.$matches[0]))
 					$cur_code = $matches[0];
 			}
 			elseif ($cur_command == 'NOTE')
