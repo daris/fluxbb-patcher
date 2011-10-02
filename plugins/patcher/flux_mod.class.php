@@ -402,10 +402,19 @@ class FLUX_MOD
 		}
 		
 		// Check if there exist any step that fails
-		foreach ($requirements as $cur_requirement)
+		foreach ($requirements as $cur_requirements)
 		{
-			if (!isset($requirements['failed']) && $cur_requirement[0] === false)
-				$requirements['failed'] = true;
+			foreach ($cur_requirements as $cur_requirement)
+			{
+				if (!$cur_requirement[0])
+				{
+					$requirements['failed'] = true;
+					break;
+				}
+			}
+			
+			if (isset($requirements['failed']))
+				break;
 		}
 		
 		return $requirements;
