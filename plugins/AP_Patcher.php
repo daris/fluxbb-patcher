@@ -160,7 +160,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 	// Do patching! :)
 	if (!isset($requirements['failed']) // there are no unment requirements
-		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ $action != 'install')) // user clicked button on previous page or wants to enable/disable mod
+		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
 		$flux_mod = new FLUX_MOD($mod_id);
 
@@ -301,7 +301,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			{
 				echo '<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
 				foreach ($notes as $cur_note)
-					echo '<code><pre>'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
+					echo '<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
 				echo '</p>';
 			} ?>
 							<p>
