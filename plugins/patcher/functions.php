@@ -35,6 +35,7 @@ define('STATUS_DONE', 1);
 define('STATUS_ALREADY_DONE', 2);
 define('STATUS_REVERTED', 3);
 define('STATUS_ALREADY_REVERTED', 4);
+define('STATUS_NOTHING_TO_DO', 5);
 
 
 // Get the list of files to upload if patcher does not understand UPLOAD step

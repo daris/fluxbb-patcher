@@ -196,6 +196,10 @@ class PATCHER
 					else
 						$cur_step['status'] = $result;
 						
+					// Skip if mod is disabled and we want to uninstall it (as file changes was already reverted)
+					if ($cur_step['status'] == STATUS_NOTHING_TO_DO)
+						continue;
+					
 					$cur_step['comments'] = $this->comments;
 				}
 				
@@ -436,7 +440,7 @@ class PATCHER
 
 		// Should never happen
 		if (in_array($this->action, array('enable', 'disable')))
-			return STATUS_DONE;
+			return STATUS_NOTHING_TO_DO;
 		
 		if (in_array($this->action, array('uninstall')))
 		{
@@ -501,6 +505,10 @@ class PATCHER
 	{
 		global $lang_admin_plugin_patcher, $friendly_url_changes;
 		
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+			return STATUS_NOTHING_TO_DO;
+
 		$this->code = trim($this->code);
 	
 		// if some file was opened, save it
@@ -596,10 +604,10 @@ class PATCHER
 	function step_find()
 	{
 		$this->find = $this->code;
-//		$this->find = "\n".$this->find;
-		
-		// if (in_array($this->action, array('uninstall', 'disable')))
-			// return STATUS_UNKNOWN;
+
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+			return STATUS_NOTHING_TO_DO;
 		
 		$this->check_code($this->find);
 		return STATUS_UNKNOWN;
@@ -608,6 +616,10 @@ class PATCHER
 	
 	function step_replace()
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+			return STATUS_NOTHING_TO_DO;
+
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 
@@ -689,16 +701,24 @@ class PATCHER
 	
 	function step_after_add()
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+			return STATUS_NOTHING_TO_DO;
+
 		//$this->find = trim($this->find);
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
-		
+
 		return $this->replace_code($this->find, $this->find."\n".$this->code);
 	}
 	
 	
 	function step_before_add()
 	{
+		// Mod was already disabled before
+		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
+			return STATUS_NOTHING_TO_DO;
+	
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 
@@ -710,8 +730,8 @@ class PATCHER
 	{
 		// Mod was already disabled before
 		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
-			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
-	
+			return STATUS_NOTHING_TO_DO;
+			
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
 			// If it was already done
@@ -741,7 +761,7 @@ class PATCHER
 	{
 		// Mod was already disabled before
 		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
-			return STATUS_DONE; // TODO: Maybe STATUS_ALREADY_DONE should be here
+			return STATUS_NOTHING_TO_DO;
 	
 		$count = 0;
 		if (in_array($this->action, array('uninstall', 'disable')))
@@ -786,7 +806,7 @@ class PATCHER
 		global $lang_admin_plugin_patcher;
 		
 		if (in_array($this->action, array('enable', 'disable')) && $this->code == 'install_mod.php')
-			return STATUS_DONE;
+			return STATUS_NOTHING_TO_DO;
 
 		if ($this->code == 'install_mod.php')
 		{
@@ -847,7 +867,7 @@ class PATCHER
 
 		// Should never happen
 		if (in_array($this->action, array('enable', 'disable')))
-			return STATUS_DONE;
+			return STATUS_NOTHING_TO_DO;
 
 		// Delete step is usually for install_mod.php so when uninstalling that file does not exist
 		if ($this->action == 'uninstall')
