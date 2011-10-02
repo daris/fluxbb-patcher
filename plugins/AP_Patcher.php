@@ -143,10 +143,14 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		$patcher_config = array('installed_mods' => array(), 'steps' => array());
 	
 	if ($action == 'install' && isset($patcher_config['installed_mods'][$mod_id]))
-		message('Already installed');
-	if ($action == 'uninstall' && !isset($patcher_config['installed_mods'][$mod_id]))
-		message('Already uninstalled');
-		
+		message($lang_admin_plugin_patcher['Mod already installed']);
+	elseif ($action == 'uninstall' && !isset($patcher_config['installed_mods'][$mod_id]))
+		message($lang_admin_plugin_patcher['Mod already uninstalled']);
+	elseif ($action == 'enable' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
+		message($lang_admin_plugin_patcher['Mod already enabled']);
+	elseif ($action == 'disable' && isset($patcher_config['installed_mods'][$mod_id]['disabled']))
+		message($lang_admin_plugin_patcher['Mod already disabled']);
+	
 	$flux_mod = new FLUX_MOD($mod_id);
 	if (!$flux_mod->is_valid)
 		message($lang_admin_plugin_patcher['Invalid mod dir']);
@@ -216,9 +220,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'update'	=> $lang_admin_plugin_patcher['Updating']
 		);
 
-		foreach ($logs as $action_title => $log)
+		foreach ($logs as $cur_action => $log)
 		{
-			echo '<p>'.$action_info[$action_title].'...<br />';
+			echo '<p>'.$action_info[$cur_action].'...<br />';
 			$actions = array();
 			
 			foreach ($log as $cur_step_list)
@@ -231,9 +235,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					if ($cur_step['command'] == 'UPLOAD')
 					{
 						$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
-						if ($action_title == 'uninstall')
+						if ($cur_action == 'uninstall')
 							$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
-						elseif (in_array($action_title, array('install', 'update')))
+						elseif (in_array($cur_action, array('install', 'update')))
 							$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
 					}
 					elseif ($cur_step['command'] == 'OPEN')
@@ -254,13 +258,13 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 						$sub_msg = array();
 						if ($num_changes > 0)
-							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.(in_array($action_title, array('uninstall', 'disable')) ? ' reverted' : '')], $num_changes);
+							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.(in_array($cur_action, array('uninstall', 'disable')) ? ' reverted' : '')], $num_changes);
 						if ($num_failed > 0)
 							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], $num_failed);
 
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), $num_failed == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
 					}
-					elseif ($cur_step['command'] == 'RUN' && !in_array($action_title, array('enable', 'disable')))
+					elseif ($cur_step['command'] == 'RUN' && !in_array($cur_action, array('enable', 'disable')))
 					{
 						$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 						if (isset($cur_step['result']))
@@ -272,7 +276,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						}
 						$actions[] = $new_action;
 					}
-					elseif ($cur_step['command'] == 'DELETE' && !in_array($action_title, array('enable', 'disable')))
+					elseif ($cur_step['command'] == 'DELETE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 					
 					elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
@@ -430,11 +434,11 @@ elseif (isset($_GET['show_log']))
 		'update'	=> $lang_admin_plugin_patcher['Updating']
 	);
 
-	foreach ($logs as $action_title => $log)
+	foreach ($logs as $cur_action => $log)
 	{
 ?>
 	<div class="block blocktable">
-		<h2><span><?php echo $action_info[$action_title] ?></span></h2>
+		<h2><span><?php echo $action_info[$cur_action] ?></span></h2>
 	</div>
 <?php
 		$i = 0;

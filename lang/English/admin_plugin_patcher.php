@@ -82,6 +82,11 @@ $lang_admin_plugin_patcher = array(
 'Show log'						=> 'Show log',
 'Return to mod list'			=> 'Return to mod list',
 
+'Mod already installed'			=> 'Modification already installed.',
+'Mod already uninstalled'		=> 'Modification already uninstalled.',
+'Mod already enabled'			=> 'Modification already enabled.',
+'Mod already disabled'			=> 'Modification already disabled.',
+
 'Modification overview'			=> 'Modification overview',
 'Description'					=> 'Description',
 'Warning'						=> 'Warning',
