@@ -91,7 +91,7 @@ if (isset($_GET['download']))
 }
 
 // Create initial backup
-if (!file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
+if (is_writable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
 	create_backup('fluxbb-'.FORUM_VERSION);
 
 if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patch'] used somewhere?
@@ -550,7 +550,7 @@ else
 								<tr>
 									<th scope="row">
 										<input type="hidden" name="redirect" value="1" />
-										<?php echo $lang_admin_plugin_patcher['Backup filename'] ?><div><input type="submit" name="backup" value="<?php echo $lang_admin_plugin_patcher['Make backup'] ?>" tabindex="2" /></div>
+										<?php echo $lang_admin_plugin_patcher['Backup filename'] ?><div><input type="submit"<?php echo is_writable(BACKUPS_DIR) ? '' : ' disabled="disabled"' ?> name="backup" value="<?php echo $lang_admin_plugin_patcher['Make backup'] ?>" tabindex="2" /></div>
 									</th>
 									<td>
 										<input type="text" name="backup_name" value="<?php echo time() ?>" size="35" maxlength="80" tabindex="1" />

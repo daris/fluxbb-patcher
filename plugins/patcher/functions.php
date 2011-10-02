@@ -342,6 +342,9 @@ function preparse_query(&$string)
 function create_backup($backup)
 {
 	global $lang_admin_plugin_patcher;
+	
+	if (!is_writable(BACKUPS_DIR))
+		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'backups'));
 
 	$backup_file = BACKUPS_DIR.$backup.'.zip';
 
