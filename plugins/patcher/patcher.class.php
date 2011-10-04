@@ -20,7 +20,7 @@ class PATCHER
 	
 	var $action = null;
 	
-	var $steps = null;
+	var $steps = array();
 	var $log = array();
 	
 	function __construct($flux_mod, $action = 'install')
@@ -164,21 +164,11 @@ class PATCHER
 					continue;
 			}
 		}
-		
-		$config_file = null;
-		if (file_exists($this->flux_mod->readme_file_dir.'/patcher.config.php'))
-			$config_file = $this->flux_mod->readme_file_dir.'/patcher.config.php';
-		elseif (file_exists($this->flux_mods->readme_file_dir.'/files/patcher.config.php'))
-			$config_file = $this->flux_mod->readme_file_dir.'/files/patcher.config.php';
-		
-		if (isset($config_file))
-		{
-			$config_type = 'patch';
-			require $config_file;
-		}
 
 		$i = 1;
-		foreach ($this->steps as $cur_readme_file => &$step_list)
+//		foreach ($this->steps as $cur_readme_file => &$step_list)
+		$steps = $this->steps; // TODO: there is something wrong with variables visiblity
+		while (list($cur_readme_file, $step_list) = each($this->steps))
 		{
 			foreach ($step_list as $key => $cur_step)
 			{

@@ -7,14 +7,22 @@
 
 class REPO_MOD
 {
-	function __get($name)
+	var $id;
+	var $title;
+	var $version;
+	var $repository_url;
+	var $is_valid;
+	var $description;
+
+	function __construct($id, $cur_mod)
 	{
-		return null;
-	}
-	
-	function __set($name, $value)
-	{
-		$this->$name = $value;
+		$this->id = key($cur_mod);
+		$this->title = $cur_mod['name'];
+		$this->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($cur_mod['id']).'/';
+		$this->is_valid = true;
+		$this->version = $cur_mod['last_release']['version'];
+		if (isset($cur_mod['description']))
+			$this->description = $cur_mod['description'];
 	}
 }
 
@@ -50,19 +58,6 @@ class FLUX_MOD
 			return null;
 
 		$this->$name = $this->$function_name();
-		
-		$config_file = null;
-		if (file_exists($this->readme_file_dir.'/patcher.config.php'))
-			$config_file = $this->readme_file_dir.'/patcher.config.php';
-		elseif (file_exists($this->readme_file_dir.'/files/patcher.config.php'))
-			$config_file = $this->readme_file_dir.'/files/patcher.config.php';
-		
-		if (isset($config_file))
-		{
-			$config_type = '__get';
-			require $config_file;
-		}
-		
 		return $this->$name;
 	}
 	
@@ -175,13 +170,15 @@ class FLUX_MOD
 		if (!isset($this->mod_info['author']))
 			return '';
 	
-		$author = '';
-		if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
-			|| preg_match('#([^@]+)@([^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
+		$author = $this->mod_info['author'];
+		if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
+			|| preg_match('#([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
 			$author = $m[1];
 		
 		if (strpos($author, ';') !== false)
-			return substr($author, 0, strpos($author, ';'));
+			$author = substr($author, 0, strpos($author, ';'));
+
+		return $author;
 	}
 	
 	function get_author_email()
@@ -279,10 +276,12 @@ class FLUX_MOD
 			if (!empty($cur_file) && !in_array($cur_file, array('Null', 'None')))
 				$files[] = trim($cur_file);
 		}
-		
+
+		if (file_exists($this->readme_file_dir.'/patcher.affected_files.php'))
+			$files = array_merge($files, require($this->readme_file_dir.'/patcher.affected_files.php'));
+
 		sort($files);
-		
-		return $files;
+		return array_unique($files);
 	}
 
 	
@@ -295,22 +294,13 @@ class FLUX_MOD
 
 		foreach ($this->works_on as $cur_version)
 		{
-			if (strpos($cur_version, '*') !== false)
-			{
-				if (preg_match('/'.str_replace('\*', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version']))
+			if (strpos($cur_version, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version'])
+				|| strpos($cur_version, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version'])
+				|| $cur_version == $pun_config['o_cur_version']
+				|| $cur_version == substr($pun_config['o_cur_version'], 0, strlen($cur_version))
+				|| substr($cur_version, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
 					return true;
-			}
-			elseif (strpos($cur_version, 'x') !== false)
-			{
-				if (preg_match('/'.str_replace('x', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version']))
-					return true;
-			}
-			elseif ($cur_version == $pun_config['o_cur_version'])
-				return true;
-	
-			elseif ($cur_version == substr($pun_config['o_cur_version'], 0, strlen($cur_version)))
-				return true;
-			
+
 			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->works_on[0], $matches))
 				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
 		}
@@ -474,8 +464,9 @@ class FLUX_MOD
 		}
 		
 		// Check if there exist any step that fails
-		foreach ($requirements as $cur_requirements)
+		foreach ($requirements as &$cur_requirements)
 		{
+			uasort($cur_requirements, 'requirements_cmp');
 			foreach ($cur_requirements as $cur_requirement)
 			{
 				if (!$cur_requirement[0])
