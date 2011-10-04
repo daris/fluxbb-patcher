@@ -218,6 +218,24 @@ class FLUX_MOD
 			}
 		}
 		
+		$config_file = null;
+		if (file_exists($this->readme_file_dir.'/patcher.config.php'))
+			$config_file = $this->readme_file_dir.'/patcher.config.php';
+		elseif (file_exists($this->readme_file_dir.'/files/patcher.config.php'))
+			$config_file = $this->readme_file_dir.'/files/patcher.config.php';
+		
+		if (isset($config_file))
+		{
+			$config_type = 'get_mod_info';
+			require $config_file;
+		}
+		
+		if (isset($this->affected_files))
+		{
+			sort($this->affected_files);
+			usort($this->affected_files, 'dir_compare');
+		}
+		
 		$this->is_valid = isset($this->version);
 		
 		return true;

@@ -244,27 +244,38 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					}
 					elseif ($cur_step['command'] == 'OPEN')
 					{
+						$steps_failed = array();
 						$num_changes = $num_failed = 0;
 						if (isset($cur_step['substeps']))
 						{
-							foreach ($cur_step['substeps'] as $cur_substep)
+							foreach ($cur_step['substeps'] as $key => $cur_substep)
 							{
 								if ($cur_substep['status'] == STATUS_DONE || $cur_substep['status'] == STATUS_REVERTED)
 									$num_changes++;
 								elseif ($cur_substep['status'] == STATUS_NOT_DONE)
-									$num_failed++;
+								{
+									if (isset($cur_step['substeps'][$key-1]['command']) && $cur_step['substeps'][$key-1]['command'] == 'FIND')
+										$steps_failed[$key] = $key-1;
+									else
+										$steps_failed[$key] = $key;
+								}
 							}
 						}
 						
-						$color = ($num_failed > 0) ? 'red' : 'green';
+						$color = (count($steps_failed) > 0) ? 'red' : 'green';
 
 						$sub_msg = array();
 						if ($num_changes > 0)
 							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.(in_array($cur_action, array('uninstall', 'disable')) ? ' reverted' : '')], $num_changes);
-						if ($num_failed > 0)
-							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], $num_failed);
+						if (count($steps_failed) > 0)
+						{
+							$failed_info = array();
+							foreach ($steps_failed as $key => $s)
+								$failed_info[] = '<a href="'.PLUGIN_URL.'&show_log#a'.$s.'">#'.$key.'</a>';
+							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], count($steps_failed)).': '.implode(', ', $failed_info);
+						}
 
-						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), $num_failed == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
+						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), count($steps_failed) == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
 					}
 					elseif ($cur_step['command'] == 'RUN' && !in_array($cur_action, array('enable', 'disable')))
 					{
@@ -443,7 +454,7 @@ elseif (isset($_GET['show_log']))
 		<h2><span><?php echo $action_info[$cur_action] ?></span></h2>
 	</div>
 <?php
-		$i = 0;
+
 		foreach ($log as $cur_readme_file => $actions)
 		{
 			$cur_mod = substr($cur_readme_file, 0, strpos($cur_readme_file, '/'));
@@ -464,7 +475,7 @@ elseif (isset($_GET['show_log']))
 					<thead>
 						<tr>
 <?php if (isset($cur_step['command']) && isset($cur_step['code'])) : ?>
-							<th id="a<?php echo ++$i ?>" style="<?php echo ($cur_step['status'] == STATUS_NOT_DONE) ? 'font-weight: bold; color: #a00' : '' ?>"><span style="float: right"><a href="#a<?php echo $key ?>">#<?php echo $i ?></a></span><?php echo pun_htmlspecialchars($cur_step['command']).' '.pun_htmlspecialchars($cur_step['code']) ?></th>
+							<th id="a<?php echo $key ?>" style="<?php echo ($cur_step['status'] == STATUS_NOT_DONE) ? 'font-weight: bold; color: #a00' : '' ?>"><span style="float: right"><a href="#a<?php echo $key ?>">#<?php echo $key ?></a></span><?php echo pun_htmlspecialchars($cur_step['command']).' '.pun_htmlspecialchars($cur_step['code']) ?></th>
 <?php elseif (isset($cur_step['command'])) : ?>
 							<th><?php echo pun_htmlspecialchars($cur_step['command']) ?></th>
 <?php else : ?>
@@ -504,8 +515,8 @@ elseif (isset($_GET['show_log']))
 ?>
 						<tr>
 							<td>
-<?php if (isset($cur_substep['command'])) : ?>								<span style="float: right; margin-right: 1em;"><a href="#a<?php echo ++$i ?>">#<?php echo $i ?></a></span>
-								<span id="a<?php echo $i ?>" style="<?php echo $style ?>; display: block; margin-left: 1em"><?php echo pun_htmlspecialchars($cur_substep['command']).' '.((count($comments) > 0) ? '('.implode(', ', $comments).')' : '') ?></span><?php endif; ?>
+<?php if (isset($cur_substep['command'])) : ?>								<span style="float: right; margin-right: 1em;"><a href="#a<?php echo $id ?>">#<?php echo $id ?></a></span>
+								<span id="a<?php echo $id ?>" style="<?php echo $style ?>; display: block; margin-left: 1em"><?php echo pun_htmlspecialchars($cur_substep['command']).' '.((count($comments) > 0) ? '('.implode(', ', $comments).')' : '') ?></span><?php endif; ?>
 <?php if (isset($cur_substep['code']) && trim($cur_substep['code']) != '') : ?>
 								<div class="codebox"><pre style="max-height: 30em"><code><?php echo pun_htmlspecialchars($cur_substep['code']) ?></code></pre></div>
 <?php endif; ?>
@@ -569,8 +580,8 @@ else
 			$time = @filemtime(BACKUPS_DIR.$cur_file);
 			$backups[$time] = '<option value="'.pun_htmlspecialchars($cur_file).'">'.pun_htmlspecialchars($cur_file). ' ('.format_time($time).')</option>';
 		}
-		@krsort($backups);
 	}
+	@krsort($backups);
 
 ?>
 								<tr>
