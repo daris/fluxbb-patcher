@@ -23,7 +23,7 @@ class FLUX_MOD
 {
 	var $id = null; // mod directory
 	var $readme_file_dir = null; // main readme file name
-	var $readme_file_name = null; // main readme file dir
+//	var $readme_file_name = null; // main readme file dir
 	var $mod_dir = null; // main readme file dir
 	private $readme_file = null; // main readme file content
 //	var $readme_file_list = null; // list of readme files in current mod directory (including subdirectory)
@@ -32,54 +32,62 @@ class FLUX_MOD
 	{
 		$this->id = $mod_id;
 		$this->mod_dir = MODS_DIR.$this->id.'/';
-		if (!is_dir($this->mod_dir) || !$this->get_readme_file_name())
+		if (!is_dir($this->mod_dir) || !isset($this->readme_file_name))
 		{
 			$this->is_valid = false;
 			return false;
 		}
 		$this->readme_file_dir = $this->mod_dir.dirname($this->readme_file_name);
 		$this->readme_file = file_get_contents($this->mod_dir.$this->readme_file_name);
-//		$this->get_mod_info();
 	}
 	
 	
 	// Used for: readme_file_list, files_to_upload, upload_code
 	function __get($name)
 	{
-		if (in_array($name, array('title', 'version', 'description', 'release_date', 'author', 'author_email', 'works_on', 'repository_url', 'affected_files', 'affects_db', 'important', 'is_valid')))
-		{
-			$this->get_mod_info();
-			return $this->$name;
-		}
 		$function_name = 'get_'.$name;
-		return is_callable(array($this, $function_name)) ? $this->$name = $this->$function_name() : false;
+		if (!is_callable(array($this, $function_name)))
+			return null;
+
+		$this->$name = $this->$function_name();
+		
+		$config_file = null;
+		if (file_exists($this->readme_file_dir.'/patcher.config.php'))
+			$config_file = $this->readme_file_dir.'/patcher.config.php';
+		elseif (file_exists($this->readme_file_dir.'/files/patcher.config.php'))
+			$config_file = $this->readme_file_dir.'/files/patcher.config.php';
+		
+		if (isset($config_file))
+		{
+			$config_type = '__get';
+			require $config_file;
+		}
+		
+		return $this->$name;
+	}
+	
+
+	function __isset($name)
+	{
+		$value = $this->$name;
+		return isset($value) && !empty($value);
 	}
 	
 
 	function get_readme_file_name()
 	{
 		if (file_exists(MODS_DIR.$this->id.'/readme.txt'))
-		{
-			$this->readme_file_name = 'readme.txt';
-			return true;
-		}
+			return 'readme.txt';
 
 		if (count($this->readme_file_list) == 1)
+			return $this->readme_file_list[0];
+
+		foreach ($this->readme_file_list as $key => $cur_readme)
 		{
-			$this->readme_file_name = $this->readme_file_list[0];
-			return true;
+			if (preg_match('#(install|read\s?me).*?\.txt#i', $cur_readme))
+				return $cur_readme;
 		}
-		else
-		{
-			foreach ($this->readme_file_list as $key => $cur_readme)
-			{
-				if (preg_match('#(install|read\s?me).*?\.txt#i', $cur_readme))
-				{
-					$this->readme_file_name = $cur_readme;
-					return true;
-				}
-			}
-		}
+
 		return false;
 	}
 	
@@ -113,12 +121,10 @@ class FLUX_MOD
 	
 	function get_mod_info()
 	{
-		$mod_info = array();
-
 		$file = $this->readme_file;
 		
 		if (!isset($this->readme_file) || empty($this->readme_file))
-			return false;
+			return array();
 		
 		$file = substr($file, 0, strpos($file, '#--'));
 		$file = trim($file, '# '."\n\r\t");
@@ -152,95 +158,133 @@ class FLUX_MOD
 			elseif ($last_info != '')
 				$mod_info[$last_info] .= "\n".trim($line);
 		}
-
-		if (isset($mod_info['author']))
-		{
-			if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $mod_info['author'], $m)) // name (test@gmail.com)
-			{
-				$this->author = $m[1];
-				$this->author_email = $m[2];
-			}
-			elseif (preg_match('#([^@]+)@([^@]+\.[^@]+)#', $mod_info['author'], $m)) // test@gmail.com
-			{
-				$this->author = $m[1];
-				$this->author_email = $m[1].'@'.$m[2];
-			}
-		}
 		
-		$this->title = isset($mod_info['mod title']) ? $mod_info['mod title'] : ucfirst(str_replace(array('-', '_'), '', $this->id));
+		$this->is_valid = isset($mod_info['mod version']);
 		
-		if (isset($mod_info['mod version']))
-			$this->version = $mod_info['mod version'];
+		return $mod_info;
+	}
+
+	
+	function get_is_valid()
+	{
+		return isset($this->version);
+	}
+
+	function get_author()
+	{
+		if (!isset($this->mod_info['author']))
+			return '';
+	
+		$author = '';
+		if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
+			|| preg_match('#([^@]+)@([^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
+			$author = $m[1];
 		
-		if (isset($mod_info['description']))
-			$this->description = $mod_info['description'];
-			
-		if (isset($mod_info['affects db']))
-			$this->affects_db = $mod_info['affects db'];
-
-		if (isset($mod_info['important']))
-			$this->important = $mod_info['important'];
-
-		if (isset($mod_info['release date']))
-			$this->release_date = $mod_info['release date'];
-
-		if (isset($mod_info['works on fluxbb']))
-		{
-			$mod_info['works on fluxbb'] = str_replace(' and ', ', ', $mod_info['works on fluxbb']);
-			$this->works_on = array_map('trim', explode(',', $mod_info['works on fluxbb']));
-		}
-
-		if (isset($this->author) && strpos($this->author, ';') !== false)
-			$this->author = substr($this->author, 0, strpos($this->author, ';'));
-
-		if (!isset($this->title) || empty($this->title))
-			$this->title = ucfirst(str_replace(array('_', '-'), ' ', $this->id));
-
-		if (isset($mod_info['repository url']) && strpos($mod_info['repository url'], '(Leave unedited)') === false)
-			$this->repository_url = $mod_info['repository url'];
-
-		if (isset($mod_info['affected files']))
-		{
-			$delimiter = (strpos($mod_info['affected files'], ', ') !== false) ? ',' : "\n";
-			$affected_files = explode($delimiter, $mod_info['affected files']);
-			$this->affected_files = array();
-			foreach ($affected_files as $cur_file)
-			{
-				$cur_file = str_replace(array('[language]', 'your_lang'), 'English', trim($cur_file));
-				$cur_file = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $cur_file);
-				if (strpos($cur_file, ' (') !== false)
-					$cur_file = substr($cur_file, 0, strpos($cur_file, ' ('));
-				if (strpos($cur_file, ' [') !== false)
-					$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
-				
-				if (!empty($cur_file) && !in_array($cur_file, array('Null', 'None')))
-					$this->affected_files[] = trim($cur_file);
-			}
-		}
-		
-		$config_file = null;
-		if (file_exists($this->readme_file_dir.'/patcher.config.php'))
-			$config_file = $this->readme_file_dir.'/patcher.config.php';
-		elseif (file_exists($this->readme_file_dir.'/files/patcher.config.php'))
-			$config_file = $this->readme_file_dir.'/files/patcher.config.php';
-		
-		if (isset($config_file))
-		{
-			$config_type = 'get_mod_info';
-			require $config_file;
-		}
-		
-		if (isset($this->affected_files))
-		{
-			sort($this->affected_files);
-			usort($this->affected_files, 'dir_compare');
-		}
-		
-		$this->is_valid = isset($this->version);
-		
-		return true;
+		if (strpos($author, ';') !== false)
+			return substr($author, 0, strpos($author, ';'));
 	}
 	
+	function get_author_email()
+	{
+		if (!isset($this->mod_info['author']))
+			return '';
+		
+		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
+			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
+			return $m[1];
+	}
+	
+	function get_title()
+	{
+		if (!isset($this->mod_info['mod title']))
+			return ucfirst(str_replace(array('-', '_'), ' ', $this->id));
+		
+		return $this->mod_info['mod title'];
+	}
+
+	function get_version()
+	{
+		if (!isset($this->mod_info['mod version']))
+			return '';
+		
+		return $this->mod_info['mod version'];
+	}
+	
+	function get_description()
+	{
+		if (!isset($this->mod_info['description']))
+			return '';
+		
+		return $this->mod_info['description'];
+	}
+	
+	function get_affects_db()
+	{
+		if (!isset($this->mod_info['affects db']))
+			return '';
+		
+		return $this->mod_info['affects db'];
+	}
+
+	function get_important()
+	{
+		if (!isset($this->mod_info['important']))
+			return '';
+		
+		return $this->mod_info['important'];
+	}
+	
+	function get_release_date()
+	{
+		if (!isset($this->mod_info['release date']))
+			return '';
+		
+		return $this->mod_info['release date'];
+	}
+
+	function get_works_on()
+	{
+		if (!isset($this->mod_info['works on fluxbb']))
+			return '';
+		
+		$this->mod_info['works on fluxbb'] = str_replace(' and ', ', ', $this->mod_info['works on fluxbb']);
+		return array_map('trim', explode(',', $this->mod_info['works on fluxbb']));
+	}
+	
+	function get_repository_url()
+	{
+		if (!isset($this->mod_info['repository url']) || strpos($this->mod_info['repository url'], '(Leave unedited)') !== false)
+			return '';
+		
+		return $this->mod_info['repository url'];
+	}
+
+	function get_affected_files()
+	{
+		if (!isset($this->mod_info['affected files']))
+			return '';
+		
+		$files = array();
+		$delimiter = (strpos($this->mod_info['affected files'], ', ') !== false) ? ',' : "\n";
+		$affected_files = explode($delimiter, $this->mod_info['affected files']);
+		foreach ($affected_files as $cur_file)
+		{
+			$cur_file = str_replace(array('[language]', 'your_lang'), 'English', trim($cur_file));
+			$cur_file = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $cur_file);
+			if (strpos($cur_file, ' (') !== false)
+				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ('));
+			if (strpos($cur_file, ' [') !== false)
+				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
+			
+			if (!empty($cur_file) && !in_array($cur_file, array('Null', 'None')))
+				$files[] = trim($cur_file);
+		}
+		
+		sort($files);
+		
+		return $files;
+	}
+
 	
 	function is_compatible()
 	{
@@ -743,7 +787,7 @@ class FLUX_MOD
 			// Fix section numbering
 			$steps = array_values($steps);
 		}
-
+		
 		return $steps;
 	}
 	
