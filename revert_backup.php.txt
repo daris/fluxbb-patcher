@@ -1,0 +1,102 @@
+<?php
+
+define('PUN_ROOT', dirname(__FILE__).'/');
+if (is_dir(PUN_ROOT.'plugins/patcher/'))
+	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
+elseif (is_dir(PUN_ROOT.'patcher/plugins/patcher/'))
+	define('PATCHER_ROOT', PUN_ROOT.'patcher/plugins/patcher/');
+define('BACKUPS_DIR', PUN_ROOT.'backups/');
+
+$revert = isset($_GET['revert']) ? basename($_GET['revert']) : null;
+
+if (!isset($revert))
+{
+	$backups = array();
+	$dir = dir(BACKUPS_DIR);
+	while ($cur_file = $dir->read())
+	{
+		if (substr($cur_file, 0, 1) != '.' && substr($cur_file, strlen($cur_file) - 4) == '.zip')
+			$backups[] = '<option value="'.htmlspecialchars($cur_file).'">'.htmlspecialchars($cur_file). '</option>';
+	}
+	@sort($backups);
+	if (count($backups) > 0)
+	echo '<form method="get" action=""><select name="revert">'.implode("\n\t\t\t\t", $backups).'</select><input type="submit" value="Revert"></form>';
+}
+else
+{
+	if (!file_exists(BACKUPS_DIR.$revert))
+	{
+		echo 'File does not exist'.$revert;
+		exit;
+	}
+	revert($revert);
+}
+
+
+
+function revert($file)
+{
+	global $pun_config, $lang_admin_plugin_patcher;
+
+	$dirs_to_check = array('./', 'include', 'lang/English');
+	foreach ($dirs_to_check as $cur_dir)
+	{
+		if (!is_writable(PUN_ROOT.$cur_dir))
+		{
+			echo 'Directory not writable '.$cur_dir;
+			exit;
+		}
+	}
+
+	if (file_exists(PUN_ROOT.'patcher_config.php'))
+		unlink(PUN_ROOT.'patcher_config.php');
+
+	$files = zip_extract(BACKUPS_DIR.$file, PUN_ROOT, true);
+	if (!$files)
+	{
+		echo 'Failed to extract file';
+		exit;
+	}
+
+	echo 'Done';
+	exit;
+}
+
+
+function zip_extract($file, $extract_to, $list_files = false)
+{
+	global $lang_admin_plugin_patcher;
+	$files = array();
+	if (class_exists('ZipArchive'))
+	{
+		$zip = new ZipArchive;
+		if ($zip->open($file) !== true)
+			return false;
+
+		$zip->extractTo($extract_to);
+		if ($list_files)
+		{
+			$i = 0;
+			while ($cur_file = $zip->statIndex($i++))
+				$files[] = $cur_file['name'];
+		}
+		$zip->close();
+	}
+	else
+	{
+		require_once PATCHER_ROOT.'pclzip.lib.php';
+		
+		$archive = new PclZip($file);
+		$result = $archive->extract(PCLZIP_OPT_PATH, $extract_to, PCLZIP_OPT_REPLACE_NEWER);
+		if ($result == 0)
+		{
+			echo $archive->errorInfo(true);exit;
+		}
+		elseif ($list_files)
+		{
+			foreach ($result as $cur_file)
+				$files[] = $cur_file['stored_filename'];
+		}
+	}
+	return ($list_files ? $files : true);
+}

@@ -21,9 +21,15 @@ If you want to speedup extracting process install and enable ZIP extension.
 Known issues:
 - ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of 
 topictags should delete <div class="postmsg"> from its readme)
-
+- User Management v1.4.2 makes Patcher to think that there are new updates while there aren't 
+any. This is due to version 1.4 defined in its readme.txt file.
 
 Tips:
 - If you have some modification installed and you have changed something in its readme file, 
 you can just click uninstall link (Do not click Uninstall button), change in the address 
 bar "action=uninstall" to "action=update", press Enter and click Update button.
+
+FluxBB doesn't work:
+If Patcher fails with installing some mod and it will make your FluxBB not usable (for example
+causing fatal error) you can upload revert_backup.php.txt file to your server, rename it to
+revert_backup.php and run in browser. It will allow you to revert modified files from backup.
