@@ -1,5 +1,7 @@
 <?php
 
+// Warning: this language file is outdated
+
 $lang_admin_plugin_patcher = array(
 
 'Backup created redirect'		=> 'Kopia zapasowa. Przekierowywanie …',

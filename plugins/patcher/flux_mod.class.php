@@ -16,9 +16,9 @@ class REPO_MOD
 
 	function __construct($id, $cur_mod)
 	{
-		$this->id = key($cur_mod);
+		$this->id = $id;
 		$this->title = $cur_mod['name'];
-		$this->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($cur_mod['id']).'/';
+		$this->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($this->id).'/';
 		$this->is_valid = true;
 		$this->version = $cur_mod['last_release']['version'];
 		if (isset($cur_mod['description']))
@@ -178,7 +178,7 @@ class FLUX_MOD
 		if (strpos($author, ';') !== false)
 			$author = substr($author, 0, strpos($author, ';'));
 
-		return $author;
+		return trim($author);
 	}
 	
 	function get_author_email()
@@ -188,7 +188,7 @@ class FLUX_MOD
 		
 		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
 			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
-			return $m[1];
+			return trim($m[1]);
 	}
 	
 	function get_title()
@@ -196,7 +196,7 @@ class FLUX_MOD
 		if (!isset($this->mod_info['mod title']))
 			return ucfirst(str_replace(array('-', '_'), ' ', $this->id));
 		
-		return $this->mod_info['mod title'];
+		return trim($this->mod_info['mod title']);
 	}
 
 	function get_version()

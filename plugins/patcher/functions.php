@@ -383,7 +383,7 @@ function upload_mod()
 }
 
 
-function update_mod($mod_id, $version)
+function download_update($mod_id, $version)
 {
 	global $lang_admin_plugin_patcher;
 
@@ -450,7 +450,11 @@ function extract_mod_package($mod_id, $file, $action)
 		'download'	=> 'Modification downloaded redirect',
 	);
 	
-	redirect(PLUGIN_URL.'&mod_id='.$mod_id.($action == 'update' ? '&action=update' : ''), $lang_admin_plugin_patcher[$redirect_message[$action]]);
+	$patcher_config = array('installed_mods' => array(), 'steps' => array());
+	if (file_exists(PUN_ROOT.'patcher_config.php'))
+		require PUN_ROOT.'patcher_config.php';
+	
+	redirect(PLUGIN_URL.'&mod_id='.$mod_id.($action == 'update' && isset($patcher_config['installed_mods'][$mod_id]) ? '&action=update' : ''), $lang_admin_plugin_patcher[$redirect_message[$action]]);
 }
 
 

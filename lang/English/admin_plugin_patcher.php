@@ -97,7 +97,8 @@ $lang_admin_plugin_patcher = array(
 'New version available'			=> 'New version available.',
 'New Patcher version available'	=> 'You are using an outdated version of Patcher. A new version (%s) is available at %s.',
 'Resources page'				=> 'FluxBB resources page',
-'Download mod'					=> 'Download mod',
+'Download and install'			=> 'Download and install',
+'Download and install update'	=> 'Download and install update',
 
 'Manage backups legend'			=> 'Manage backups',
 'Backup files'					=> 'Backup files',
@@ -108,7 +109,7 @@ $lang_admin_plugin_patcher = array(
 
 'Patch'							=> 'Patch',
 
-'Backup tool info'				=> 'This tool makes a backup of FluxBB root and include directory. All backups are placed in <strong>backups</strong> directory inside FluxBB root directory.',
+'Backup tool info'				=> 'This tool makes a backup of FluxBB root, include and lang/English directory. All backups are placed in <strong>backups</strong> directory inside FluxBB root directory.',
 
 'Revert from backup'			=> 'Revert from backup',
 'Revert'						=> 'Revert',

@@ -1,4 +1,4 @@
-FluxBB Patcher 2.0
+FluxBB Patcher 2.0-dev
 
 This script allows you to easily install and uninstall FluxBB modifications.
 
@@ -18,7 +18,7 @@ Note:
 There is a PCLZIP library included, but I feel it is slower than ZIP extension for PHP. 
 If you want to speedup extracting process install and enable ZIP extension.
 
-Known issuses:
+Known issues:
 - ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of 
 topictags should delete <div class="postmsg"> from its readme)
 
