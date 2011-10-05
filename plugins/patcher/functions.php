@@ -454,7 +454,11 @@ function extract_mod_package($mod_id, $file, $action)
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		require PUN_ROOT.'patcher_config.php';
 	
-	redirect(PLUGIN_URL.'&mod_id='.$mod_id.($action == 'update' && isset($patcher_config['installed_mods'][$mod_id]) ? '&action=update' : ''), $lang_admin_plugin_patcher[$redirect_message[$action]]);
+	$redirect_url = '&mod_id='.$mod_id.($action == 'update' ? '&action=update' : '');
+	if ($action == 'update' && !isset($_GET['update']))
+		$redirect_url = '';
+	
+	redirect(PLUGIN_URL.$redirect_url, $lang_admin_plugin_patcher[$redirect_message[$action]]);
 }
 
 

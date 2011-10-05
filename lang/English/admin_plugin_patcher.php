@@ -99,6 +99,7 @@ $lang_admin_plugin_patcher = array(
 'Resources page'				=> 'FluxBB resources page',
 'Download and install'			=> 'Download and install',
 'Download and install update'	=> 'Download and install update',
+'Install old version'			=> 'Install old version',
 
 'Manage backups legend'			=> 'Manage backups',
 'Backup files'					=> 'Backup files',

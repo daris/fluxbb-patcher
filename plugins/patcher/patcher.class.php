@@ -484,19 +484,33 @@ class PATCHER
 		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
 		
 		// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
-		if (isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
+		if (isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']) && isset($this->config['steps']['friendly-url/files/gen.php']))
 		{
-			require_once PUN_ROOT.'friendly_url_changes.php';
-			if (isset($friendly_url_changes[$this->code]))
+			$steps = $this->config['steps']['friendly-url/files/gen.php'];
+			$cur_file = '';
+			
+			$search = $replace = array();
+			$found = false;
+			for ($i = 0; $i <= count($steps); $i++)
 			{
-				$search = $replace = array();
-				foreach ($friendly_url_changes[$this->code] as $key => $cur_change)
+				if ($found)
 				{
-					$search[$key] = $cur_change[1];
-					$replace[$key] = $cur_change[0];
+					// Revert changes
+					$replace[] = $steps[$i]['code'];
+					unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
+					$search[] = $steps[++$i]['code'];
+					unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
+
+					if (isset($steps[$i+1]['command']) && $steps[$i+1]['command'] == 'OPEN')
+						break;
 				}
-				$this->cur_file = str_replace($search, $replace, $this->cur_file);
+				
+				if (!$found && (!isset($steps[$i]['command']) || $steps[$i]['command'] != 'OPEN' || $steps[$i]['code'] != $this->cur_file_path))
+					continue;
+				$found = true;
+				unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
 			}
+			$this->cur_file = str_replace($search, $replace, $this->cur_file);
 		}
 
 		$this->start_pos = 0;
@@ -512,30 +526,18 @@ class PATCHER
 		if ($this->cur_file_modified && !empty($this->cur_file))
 		{
 			// If friendly url mod is installed apply its changes again (as patcher reverted them in open step)
-			if (isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']) && file_exists(PUN_ROOT.'friendly_url_changes.php'))
+			if ($this->flux_mod->id != 'friendly-url' && isset($this->config['installed_mods']['friendly-url']) && !isset($this->config['installed_mods']['friendly-url']['disabled']))
 			{
-				require_once PUN_ROOT.'friendly_url_changes.php';
-				if (isset($friendly_url_changes[$this->cur_file_path]))
+				$cur_readme_file = 'friendly-url/files/gen.php';
+				if (!isset($this->config['steps'][$cur_readme_file]))
+					$this->config['steps'][$cur_readme_file] = array();
+			
+				if (file_exists(MODS_DIR.'friendly-url/files/gen.php'))
 				{
-					if (file_exists(MODS_DIR.'friendly-url/files/gen.php'))
-					{
-						global $changes;
-						require_once MODS_DIR.'friendly-url/files/gen.php';
-						$this->cur_file = url_replace_file($this->cur_file_path, $this->cur_file);
-						$friendly_url_changes[$this->cur_file_path] = $changes[$this->cur_file_path];
-						file_put_contents(PUN_ROOT.'friendly_url_changes.php', '<?php'."\n\n".'// Do not delete this file as you won\'t be able to uninstall this mod'."\n\n".'$friendly_url_changes = '.var_export($friendly_url_changes, true).';');
-//						print_r($changes);
-					}
-					else
-					{
-						$search = $replace = array();
-						foreach ($friendly_url_changes[$this->cur_file_path] as $key => $cur_change)
-						{
-							$search[$key] = $cur_change[0];
-							$replace[$key] = $cur_change[1];
-						}
-						$this->cur_file = str_replace($search, $replace, $this->cur_file);
-					}
+					$changes = array();
+					require_once MODS_DIR.'friendly-url/files/gen.php';
+					$this->cur_file = url_replace_file($this->cur_file_path, $this->cur_file, $changes);
+					$this->config['steps'][$cur_readme_file] = array_merge($this->config['steps'][$cur_readme_file], url_get_steps($changes));
 				}
 			}
 

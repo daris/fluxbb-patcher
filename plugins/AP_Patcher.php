@@ -262,10 +262,10 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.(in_array($cur_action, array('uninstall', 'disable')) ? ' reverted' : '')], $num_changes);
 						if (count($steps_failed) > 0)
 						{
-							$failed_info = array();
+							$steps_failed_info = array();
 							foreach ($steps_failed as $key => $s)
-								$failed_info[] = '<a href="'.PLUGIN_URL.'&show_log#a'.$s.'">#'.$key.'</a>';
-							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], count($steps_failed)).': '.implode(', ', $failed_info);
+								$steps_failed_info[] = '<a href="'.PLUGIN_URL.'&show_log#a'.$s.'">#'.$key.'</a>';
+							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], count($steps_failed)).': '.implode(', ', $steps_failed_info);
 						}
 
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), count($steps_failed) == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
@@ -687,50 +687,59 @@ else
 			$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 			$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
 			
-			$has_update = array();
-			// new update in local copy
-			if (isset($patcher_config['installed_mods'][$mod_id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$mod_id]['version'], '>'))
-				$has_update['local'] = $flux_mod->version;
-		
-			// new update available to download from fluxbb.org repo
-			if (isset($mod_repo['mods'][$flux_mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$flux_mod->id]['last_release']['version'], ($flux_mod->is_installed) ? $patcher_config['installed_mods'][$mod_id]['version'] : $flux_mod->version, '>'))
-				$has_update['repo'] = $mod_repo['mods'][$flux_mod->id]['last_release']['version'];
-			
-			// get newest update
-			$update_version = '';
-			if (isset($has_update['local']) && isset($has_update['repo']))
+			if ($flux_mod->is_installed)
 			{
-				if (version_compare($has_update['local'], $has_update['repo'], '>'))
+				$has_update = array();
+				// new update in local copy
+				if (isset($patcher_config['installed_mods'][$mod_id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$mod_id]['version'], '>'))
+					$has_update['local'] = $flux_mod->version;
+			
+				// new update available to download from fluxbb.org repo
+				if (isset($mod_repo['mods'][$flux_mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$flux_mod->id]['last_release']['version'], $patcher_config['installed_mods'][$mod_id]['version'], '>'))
+					$has_update['repo'] = $mod_repo['mods'][$flux_mod->id]['last_release']['version'];
+				
+				// get newest update
+				$update_version = '';
+				if (isset($has_update['local']) && isset($has_update['repo']))
 				{
-					$update_version = $has_update['local'];
-					unset($has_update['repo']);
+					if (version_compare($has_update['local'], $has_update['repo'], '>'))
+					{
+						$update_version = $has_update['local'];
+						unset($has_update['repo']);
+					}
+					else
+					{
+						$update_version = $has_update['repo'];
+						unset($has_update['local']);
+					}
 				}
-				else
-				{
+				elseif (isset($has_update['local']))
+					$update_version = $has_update['local'];
+				elseif (isset($has_update['repo']))
 					$update_version = $has_update['repo'];
-					unset($has_update['local']);
+				
+				if ($update_version != '')
+				{
+					$updated_mod = new FLUX_MOD($mod_id);
+					$updated_mod->is_installed = $flux_mod->is_installed;
+					$updated_mod->is_enabled = $flux_mod->is_enabled;
+					if (isset($has_update['local']))
+						$updated_mod->has_local_update = true;
+					else
+						$updated_mod->has_repo_update = true;
+
+					$updated_mod->version = $update_version;
+					$mod_list['Mods to update'][$mod_id] = $updated_mod;
+
+					if (isset($has_update['local']))
+						$flux_mod->version = $patcher_config['installed_mods'][$mod_id]['version'];
 				}
 			}
-			elseif (isset($has_update['local']))
-				$update_version = $has_update['local'];
-			elseif (isset($has_update['repo']))
-				$update_version = $has_update['repo'];
-			
-			if ($update_version != '')
+			else
 			{
-				$updated_mod = new FLUX_MOD($mod_id);
-				$updated_mod->is_installed = $flux_mod->is_installed;
-				$updated_mod->is_enabled = $flux_mod->is_enabled;
-				if (isset($has_update['local']))
-					$updated_mod->has_local_update = true;
-				else
-					$updated_mod->has_repo_update = true;
-
-				$updated_mod->version = $update_version;
-				$mod_list['Mods to update'][$mod_id] = $updated_mod;
-
-				if (isset($has_update['local']))
-					$flux_mod->version = $patcher_config['installed_mods'][$mod_id]['version'];
+				// new update available to download from fluxbb.org repo
+				if (isset($mod_repo['mods'][$flux_mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$flux_mod->id]['last_release']['version'], $flux_mod->version, '>'))
+					$flux_mod->has_repo_update = $mod_repo['mods'][$flux_mod->id]['last_release']['version'];
 			}
 
 			$mod_list[$section][$mod_id] = $flux_mod;
@@ -740,7 +749,7 @@ else
 	// Get the mod list from the FluxBB repo
 	if (isset($mod_repo['mods']))
 		foreach ($mod_repo['mods'] as $cur_mod_id => $cur_mod)
-			if ($cur_mod['id'] != 'patcher' && !isset($mod_list['Installed mods'][$cur_mod['id']]) && !isset($mod_list['Mods not installed'][$cur_mod['id']]))
+			if ($cur_mod_id != 'patcher' && !isset($mod_list['Installed mods'][$cur_mod_id]) && !isset($mod_list['Mods not installed'][$cur_mod_id]))
 				$mod_list['Mods to download'][$cur_mod_id] = new REPO_MOD($cur_mod_id, $cur_mod);
 
 
@@ -814,7 +823,7 @@ else
 					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
 				
 				$status = '';
-				$actions = array();
+				$actions = array(array(), array());
 				if (get_class($flux_mod) == 'FLUX_MOD')
 				{
 					if ($flux_mod->is_installed)
@@ -822,42 +831,52 @@ else
 						if ($section == 'Mods to update')
 						{
 							if (isset($flux_mod->has_repo_update))
-								$actions[] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&download_update='.pun_htmlspecialchars($flux_mod->version).'">'.$lang_admin_plugin_patcher['Download and install update'].'</a>';
+								$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&download_update='.pun_htmlspecialchars($flux_mod->version).'&update">'.$lang_admin_plugin_patcher['Download and install update'].'</a>';
 
 							if (isset($flux_mod->has_local_update))
-								$actions['update'] = $lang_admin_plugin_patcher['Update'];
+								$actions[0]['update'] = $lang_admin_plugin_patcher['Update'];
 						}
 						else
 						{
 							if ($flux_mod->is_enabled)
 							{
 								$status = '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>';
-								$actions['disable'] = $lang_admin_plugin_patcher['Disable'];
+								$actions[1]['disable'] = $lang_admin_plugin_patcher['Disable'];
 							}
 							else
 							{
 								$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>';
-								$actions['enable'] = $lang_admin_plugin_patcher['Enable'];
+								$actions[1]['enable'] = $lang_admin_plugin_patcher['Enable'];
 							}
-							$actions['uninstall'] = $lang_admin_plugin_patcher['Uninstall'];
+							$actions[1]['uninstall'] = $lang_admin_plugin_patcher['Uninstall'];
 						}
 					}
 					else
 					{
-						// if (isset($flux_mod->has_local_update))
-							// $actions[] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&download_update='.pun_htmlspecialchars($flux_mod->has_local_update).'&install">'.sprintf($lang_admin_plugin_patcher['Download and install update'], pun_htmlspecialchars($flux_mod->has_local_update)).'</a>';
+						if (isset($flux_mod->has_repo_update))
+							$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&download_update='.pun_htmlspecialchars($flux_mod->has_repo_update).'">'.sprintf($lang_admin_plugin_patcher['Download update'], $flux_mod->has_repo_update).'</a>';
 
 						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Not installed'].'</strong>';
-						$actions['install'] = $lang_admin_plugin_patcher['Install'];
+						$actions[1]['install'] = isset($flux_mod->has_repo_update) ? $lang_admin_plugin_patcher['Install old version'] : $lang_admin_plugin_patcher['Install'];
 					}
 
 				}
 				else
-					$actions[] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($flux_mod->id).'">'.$lang_admin_plugin_patcher['Download and install'].'</a>';
+					$actions[1][] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($flux_mod->id).'">'.$lang_admin_plugin_patcher['Download and install'].'</a>';
 
-				foreach ($actions as $action => &$title)
-					if (!is_numeric($action))
-						$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.$action.'">'.$title.'</a>';
+				$actions_info = array();
+				foreach ($actions as $type => $action_list)
+				{
+					if (count($action_list) == 0)
+						continue;
+
+					foreach ($action_list as $action => &$title)
+					{
+						if (!is_numeric($action))
+							$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($flux_mod->id).'&action='.$action.'">'.$title.'</a>';
+					}
+					$actions_info[] = implode(' | ', $action_list);
+				}
 
 			
 ?>
@@ -865,7 +884,7 @@ else
 										<td><?php echo implode("\n", $info) ?></td>
 										<td class="tcr">
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
-											<?php echo implode(' | '."\n", $actions) ?>
+											<?php echo implode('<br />'."\n", $actions_info) ?>
 										</td>
 									</tr>
 <?php
