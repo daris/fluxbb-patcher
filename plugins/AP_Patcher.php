@@ -428,8 +428,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						<legend><?php echo $req_type[$type][0] ?></legend>
 						<div class="infldset">
 							<p><?php echo $req_type[$type][1] ?></p>
-							<div style="overflow: auto; max-height: 18em; margin-bottom: 10px">
-								<table>
+							<table>
 <?php
 				foreach ($cur_requirements as $text => $cur_requirement)
 				{
@@ -441,8 +440,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					echo '<tr><td style="width: 50%">'.pun_htmlspecialchars($text).'</td><td>'.$status.'</td></tr>';
 				}
 ?>
-								</table>
-							</div>
+							</table>
 						</div>
 					</fieldset>
 <?php

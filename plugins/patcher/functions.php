@@ -64,13 +64,6 @@ function mod_title_compare($a, $b)
 }
 
 
-// Move unmet requirements to the top
-function requirements_cmp($a, $b)
-{
-	return $a[0] > $b[0];
-}
-
-
 function make_regexp($string)
 {
 	// Escape special regular expressions

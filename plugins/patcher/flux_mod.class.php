@@ -466,7 +466,7 @@ class FLUX_MOD
 		// Check if there exist any step that fails
 		foreach ($requirements as &$cur_requirements)
 		{
-			uasort($cur_requirements, 'requirements_cmp');
+			ksort($cur_requirements);
 			foreach ($cur_requirements as $cur_requirement)
 			{
 				if (!$cur_requirement[0])
