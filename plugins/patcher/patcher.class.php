@@ -238,8 +238,23 @@ class PATCHER
 						$failed = true;
 				
 					// Delete step if it fails
-					if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && $key > 0 && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
+					if (in_array($this->action, array('install', 'update')))
+					{
+						if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && $key > 0 && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
+							unset($step_list[$key-1]);
+						unset($step_list[$key]);
+					}
+				}
+				
+				// Delete step if it fails
+				if ($this->action == 'uninstall' && $cur_step['status'] != STATUS_NOT_DONE && !in_array($cur_step['command'], array('FIND', 'OPEN')))
+				{
+					if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
+					{
+						if (isset($step_list[$key-2]) && $step_list[$key-2]['command'] == 'OPEN')
+							unset($step_list[$key-2]);
 						unset($step_list[$key-1]);
+					}
 					unset($step_list[$key]);
 				}
 
@@ -252,9 +267,9 @@ class PATCHER
 			
 			if ($this->action == 'uninstall')
 			{
-				if (isset($this->config['installed_mods'][$cur_mod]) && in_array($cur_readme, $this->config['installed_mods'][$cur_mod]))
+				if (count($step_list) == 0 && isset($this->config['installed_mods'][$cur_mod]) && in_array($cur_readme, $this->config['installed_mods'][$cur_mod]))
 					$this->config['installed_mods'][$cur_mod] = array_diff($this->config['installed_mods'][$cur_mod], array($cur_readme)); // delete an element
-				unset($this->config['steps'][$cur_readme_file]);
+				$this->config['steps'][$cur_readme_file] = $step_list;
 			}
 			elseif (in_array($this->action, array('install', 'update')))
 			{
@@ -276,8 +291,10 @@ class PATCHER
 
 			if (isset($this->config['installed_mods'][$this->flux_mod->id]['version']))
 				unset($this->config['installed_mods'][$this->flux_mod->id]['version']);
-				
-			if (empty($this->config['installed_mods'][$this->flux_mod->id]))
+			
+			if ($failed)
+				$this->config['installed_mods'][$this->flux_mod->id]['uninstall_failed'] = true;
+			elseif (empty($this->config['installed_mods'][$this->flux_mod->id]))
 				unset($this->config['installed_mods'][$this->flux_mod->id]);
 		}
 		elseif (in_array($this->action, array('install', 'update')))
@@ -346,17 +363,20 @@ class PATCHER
 		
 //		$replace = preg_replace('#([\$\\\\]\d+)#', '\\\$1', $replace);
 
+		$check_code = $replace;
+		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
+			$check_code = $this->code;
+
 		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
 		$second_part = substr($this->cur_file, $this->start_pos); // only replace this
+		
+		if (strpos($second_part, $find) === false && strpos($this->cur_file, $find) === false)
+			return STATUS_NOT_DONE;
 
 		// not done yet
 		$second_part = str_replace_once($find, $replace, $second_part);
 		$this->cur_file = $first_part.$second_part;
-		
-		$check_code = $replace;
-		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
-			$check_code = $this->code;
-		
+
 		$pos = strpos($second_part, $check_code);
 		
 		if ((in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE' && $pos === false) // Code shouldn't be in current file
@@ -435,6 +455,7 @@ class PATCHER
 		{
 			if (is_dir($this->flux_mod->readme_file_dir.'/'.$from))
 				copy_dir($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.$to);
+				// TODO: friendly_url_upload for directory
 			else
 			{
 				if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
@@ -442,10 +463,37 @@ class PATCHER
 				
 				if (!copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.$to))
 					message(sprintf($lang_admin_plugin_patcher['Can\'t copy file'], pun_htmlspecialchars($from), pun_htmlspecialchars($to))); // TODO: move message somewhere :)
+				
+				$this->friendly_url_upload($to);
 			}
 		}
 		return STATUS_DONE;
 	}
+	
+	
+	// If friendly url mod is installed apply its changes
+	function friendly_url_upload($cur_file_name)
+	{
+		echo trim(dirname($cur_file_name), '\\/').'<br />';
+		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !in_array(trim(dirname($cur_file_name), '\\/'), array('', 'include', 'include/attach')))
+			return;
+
+		$gen_file = 'friendly-url/files/gen.php';
+		if (!isset($this->config['steps'][$gen_file]))
+			$this->config['steps'][$gen_file] = array();
+	
+		if (file_exists(MODS_DIR.$gen_file))
+		{
+			$changes = array();
+			require_once MODS_DIR.'friendly-url/files/gen.php';
+			$cur_file = file_get_contents(PUN_ROOT.$cur_file_name);
+			$cur_file = url_replace_file($cur_file_name, $cur_file, $changes);
+			if (count($changes) > 0)
+				file_put_contents(PUN_ROOT.$cur_file_name, $cur_file);
+			$this->config['steps'][$gen_file] = array_merge($this->config['steps'][$gen_file], url_get_steps($changes));
+		}
+	}
+
 	
 	function step_open()
 	{
@@ -851,5 +899,5 @@ class PATCHER
 		}
 		return $status;
 	}
-	
+
 }

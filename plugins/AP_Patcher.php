@@ -312,7 +312,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			} ?>
 							<p>
 								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> | 
-<?php if (!$done && in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=update"><?php echo $lang_admin_plugin_patcher['Update'] ?></a> | <?php endif; ?>
+<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=update"><?php echo $lang_admin_plugin_patcher['Update'] ?></a> | <?php endif; ?>
 <?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a> |  <?php endif; ?>
 								<a href="<?php echo PLUGIN_URL ?>"><?php echo $lang_admin_plugin_patcher['Return to mod list'] ?></a>
 							</p>
@@ -672,7 +672,7 @@ else
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		require PUN_ROOT.'patcher_config.php';
 
-	$mod_list = array('Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
+	$mod_list = array('Mods failed to uninstall' => array(), 'Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
 
 	// Get the mod list from mods directory
 	$dir = dir(MODS_DIR);
@@ -681,9 +681,12 @@ else
 		if (substr($mod_id, 0, 1) != '.' && is_dir(MODS_DIR.$mod_id))
 		{
 			$flux_mod = new FLUX_MOD($mod_id);
-			$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]);
+			$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]['version']);
 			$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 			$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
+			
+			if (isset($patcher_config['installed_mods'][$flux_mod->id]['uninstall_failed']))
+				$section = 'Mods failed to uninstall';
 			
 			if ($flux_mod->is_installed)
 			{
@@ -753,7 +756,7 @@ else
 
 	foreach ($mod_list as $section => $mods)
 	{
-		if ($section == 'Mods to update' && count($mods) == 0)
+		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && count($mods) == 0)
 			continue;
 	
 		$i = 0;
@@ -794,7 +797,7 @@ else
 					$info[0] = '<a href="'.$flux_mod->repository_url.'">'.$info[0].'</a>';
 
 				if (isset($flux_mod->version))
-					$info[] = ' <strong>'.pun_htmlspecialchars($flux_mod->version).'</strong>';
+					$info[] = ' <strong>v'.pun_htmlspecialchars($flux_mod->version).'</strong>';
 				
 				if (isset($flux_mod->author_email) && isset($flux_mod->author))
 					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
@@ -824,7 +827,12 @@ else
 				$actions = array(array(), array());
 				if (get_class($flux_mod) == 'FLUX_MOD')
 				{
-					if ($flux_mod->is_installed)
+					if ($section == 'Mods failed to uninstall')
+					{
+						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Uninstall failed'].'</strong>';
+						$actions[1]['uninstall'] = $lang_admin_plugin_patcher['Try again to uninstall'];
+					}
+					elseif ($flux_mod->is_installed)
 					{
 						if ($section == 'Mods to update')
 						{

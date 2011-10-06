@@ -124,6 +124,7 @@ $lang_admin_plugin_patcher = array(
 'Upload package info'			=> 'You can use this form to upload modification ZIP package and install it.',
 'Mods directory not writable'	=> 'Mods directory is not writable. PHP must have write permission to this directory in order to upload modification package.',
 
+'Mods failed to uninstall'		=> 'Mods that failed to uninstall',
 'Mods to update'				=> 'Modifications available to update',
 'Installed mods'				=> 'Installed modifications',
 'Mods not installed'			=> 'Modifications not installed',
@@ -145,6 +146,7 @@ $lang_admin_plugin_patcher = array(
 'Not installed'					=> 'Not installed',
 'Install'						=> 'Install',
 'Uninstall'						=> 'Uninstall',
+'Try again to Uninstall'		=> 'Try again to uninstall',
 'Update'						=> 'Update',
 'Enable'						=> 'Enable',
 'Disable'						=> 'Disable',
