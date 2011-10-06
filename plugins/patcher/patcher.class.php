@@ -358,48 +358,24 @@ class PATCHER
 		if ($this->action == 'uninstall' && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_DONE;
 	
-		// Undo changes?
 		if (in_array($this->action, array('uninstall', 'disable')))
 		{
+			// Swap $find with $replace
 			$tmp = $find;
 			$find = $replace;
 			$replace = $tmp;
 		}
-
-		$check_code = $replace;
-		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
-			$check_code = $this->code;
-
-		$first_part = substr($this->cur_file, 0, $this->start_pos); // do not touch this
-		$second_part = substr($this->cur_file, $this->start_pos); // only replace this
 		
-		if (strpos($second_part, $find) === false && strpos($this->cur_file, $find) === false)
+		$pos = strpos($this->cur_file, $find, $this->start_pos);
+		if ($pos === false)
+			$pos = strpos($this->cur_file, $find);
+	
+		if ($pos === false)
 			return STATUS_NOT_DONE;
 
-		// not done yet
-		$second_part = str_replace_once($find, $replace, $second_part);
-		$this->cur_file = $first_part.$second_part;
-
-		$pos = strpos($second_part, $check_code);
-		
-		if ((in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE' && $pos === false) // Code shouldn't be in current file
-			|| $pos !== false) // done
-		{
-			$this->start_pos = $this->start_pos + $pos + strlen($check_code);
-			return STATUS_DONE;
-		}
-
-		$this->cur_file = str_replace_once($find, $replace, $this->cur_file);
-		
-		$pos = strpos($this->cur_file, $check_code);
-		if ((in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE' && $pos === false) // Code shouldn't be in current file
-			|| $pos !== false) // done
-		{
-	//		$this->start_pos = $pos + strlen(trim($this->code));
-			return STATUS_DONE;
-		}
-
-		return STATUS_NOT_DONE;
+		$this->cur_file = substr_replace($this->cur_file, $replace, $pos, strlen($find));
+		$this->start_pos = $pos + strlen($replace);
+		return STATUS_DONE;
 	}
 
 	
