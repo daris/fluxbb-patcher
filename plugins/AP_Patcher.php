@@ -217,7 +217,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 		foreach ($logs as $cur_action => $log)
 		{
-			echo '<p>'.$action_info[$cur_action].'...<br />';
+			echo "\n\t\t\t\t\t\t".'<p>'.$action_info[$cur_action].'...<br />';
 			$actions = array();
 			
 			foreach ($log as $cur_step_list)
@@ -291,9 +291,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			}
 
 			foreach ($actions as $cur_action)
-				echo '<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
+				echo "\n\t\t\t\t\t\t\t".'<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
 			
-			echo '</p>';
+			echo '</p>'."\n";
 		}
 		
 ?>
@@ -305,10 +305,10 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 <?php endif; ?>
 	<?php 	if (count($notes) > 0) 
 			{
-				echo '<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
+				echo "\n\t\t\t\t\t\t".'<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
 				foreach ($notes as $cur_note)
-					echo '<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
-				echo '</p>';
+					echo "\n\t\t\t\t\t\t\t".'<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
+				echo "\n\t\t\t\t\t\t".'</p>';
 			} ?>
 							<p>
 								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> | 

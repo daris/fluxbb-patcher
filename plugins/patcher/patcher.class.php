@@ -166,9 +166,9 @@ class PATCHER
 		}
 
 		$i = 1;
-//		foreach ($this->steps as $cur_readme_file => &$step_list)
 		$steps = $this->steps; // TODO: there is something wrong with variables visiblity
-		while (list($cur_readme_file, $step_list) = each($this->steps))
+//		foreach ($this->steps as $cur_readme_file => &$step_list)
+		while (list($cur_readme_file, $step_list) = each($this->steps)) // Allow to add steps inside loop
 		{
 			foreach ($step_list as $key => $cur_step)
 			{
@@ -191,41 +191,37 @@ class PATCHER
 
 					if ($this->result != '')
 						$cur_step['result'] = $this->result;
-
-					// Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
-					if ($cur_step['status'] == STATUS_NOTHING_TO_DO)
-						continue;
 					
 					$cur_step['comments'] = $this->comments;
 				}
 				
-				// Don't display Note message when uninstalling mod
-				if (in_array($this->action, array('uninstall', 'disable')) && $cur_step['command'] == 'NOTE')
-					continue;
-				
-				if (in_array($cur_step['command'], array('OPEN', 'RUN', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE')))
+				if (!(in_array($this->action, array('uninstall', 'disable')) && $cur_step['command'] == 'NOTE') // Don't display Note message when uninstalling mod
+					&& $cur_step['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
 				{
-					$this->global_step = $i; // it is a global action
-					
-					if ($cur_step['command'] == 'UPLOAD')
+					if (in_array($cur_step['command'], array('OPEN', 'RUN', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE')))
 					{
-						$code = array();
-						foreach ($this->flux_mod->files_to_upload as $from => $to)
-							$code[] = $from.' to '.$to;
-						$cur_step['substeps'][0] = array('code' => implode("\n", $code));
-						unset($cur_step['code']);
+						$this->global_step = $i; // it is a global action
+						
+						if ($cur_step['command'] == 'UPLOAD')
+						{
+							$code = array();
+							foreach ($this->flux_mod->files_to_upload as $from => $to)
+								$code[] = $from.' to '.$to;
+							$cur_step['substeps'][0] = array('code' => implode("\n", $code));
+							unset($cur_step['code']);
+						}
+						
+						if (!isset($this->log[$cur_readme_file]))
+							$this->log[$cur_readme_file] = array();
+						$this->log[$cur_readme_file][$i] = $cur_step;
 					}
-					
-					if (!isset($this->log[$cur_readme_file]))
-						$this->log[$cur_readme_file] = array();
-					$this->log[$cur_readme_file][$i] = $cur_step;
-				}
-				else
-				{
-					if (!isset($this->log[$cur_readme_file][$this->global_step]['substeps']))
-						$this->log[$cur_readme_file][$this->global_step]['substeps'] = array();
-					
-					$this->log[$cur_readme_file][$this->global_step]['substeps'][$i] = $cur_step;
+					else
+					{
+						if (!isset($this->log[$cur_readme_file][$this->global_step]['substeps']))
+							$this->log[$cur_readme_file][$this->global_step]['substeps'] = array();
+						
+						$this->log[$cur_readme_file][$this->global_step]['substeps'][$i] = $cur_step;
+					}
 				}
 				
 				if (($cur_step['status'] == STATUS_DONE || $cur_step['status'] == STATUS_REVERTED) && $cur_step['command'] != 'OPEN' && !$this->cur_file_modified)
@@ -369,8 +365,6 @@ class PATCHER
 			$find = $replace;
 			$replace = $tmp;
 		}
-		
-//		$replace = preg_replace('#([\$\\\\]\d+)#', '\\\$1', $replace);
 
 		$check_code = $replace;
 		if (in_array($this->action, array('uninstall', 'disable')) && $this->command != 'REPLACE')
@@ -412,6 +406,9 @@ class PATCHER
 	function step_upload()
 	{
 		global $lang_admin_plugin_patcher;
+
+		if (defined('PATCHER_NO_SAVE'))
+			return STATUS_UNKNOWN;
 
 		// Should never happen
 		if (in_array($this->action, array('enable', 'disable')))
@@ -847,7 +844,7 @@ class PATCHER
 	// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
 	function friendly_url_open()
 	{
-		if (!isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !isset($this->config['steps']['friendly-url/files/gen.php']))
+		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !isset($this->config['steps']['friendly-url/files/gen.php']))
 			return;
 		
 		$steps = $this->config['steps']['friendly-url/files/gen.php'];
