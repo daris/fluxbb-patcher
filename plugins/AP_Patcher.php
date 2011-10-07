@@ -157,8 +157,6 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	if (!isset($requirements['failed']) // there are no unment requirements
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
-		$flux_mod = new FLUX_MOD($mod_id);
-
 		$_SESSION['patcher_log'] = '';
 		$logs = array();
 
@@ -503,7 +501,7 @@ elseif (isset($_GET['show_log']))
 				<table>
 					<thead>
 						<tr>
-<?php if (isset($cur_step['command']) && isset($cur_step['code'])) : ?>
+<?php if (isset($cur_step['command']) && (isset($cur_step['code']) || isset($cur_step['substeps']))) : ?>
 							<th id="a<?php echo $key ?>" style="<?php echo ($cur_step['status'] == STATUS_NOT_DONE) ? 'font-weight: bold; color: #a00' : '' ?>"><span style="float: right"><a href="#a<?php echo $key ?>">#<?php echo $key ?></a></span><?php echo pun_htmlspecialchars($cur_step['command']).' '.pun_htmlspecialchars($cur_step['code']) ?></th>
 <?php elseif (isset($cur_step['command'])) : ?>
 							<th><?php echo pun_htmlspecialchars($cur_step['command']) ?></th>

@@ -249,7 +249,8 @@ class PATCHER
 					}
 				}
 				
-				// Delete step if it fails
+				// Delete step for uninstall when step was done
+				// TODO: sometimes it deletes OPEN when it shouldn't
 				if ($this->uninstall && $cur_step['status'] != STATUS_NOT_DONE && !in_array($cur_step['command'], array('FIND', 'OPEN')))
 				{
 					if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
