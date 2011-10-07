@@ -34,10 +34,9 @@ class PATCHER
 	{
 		$this->flux_mod = $flux_mod;
 		
+		$patcher_config = array('installed_mods' => array(), 'steps' => array());
 		if (file_exists(PUN_ROOT.'patcher_config.php'))
 			require PUN_ROOT.'patcher_config.php';
-		else
-			$patcher_config = array('installed_mods' => array(), 'steps' => array());
 		$this->config = $this->config_org = $patcher_config;
 		
 		$this->action = $action;
