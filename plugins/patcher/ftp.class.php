@@ -43,7 +43,7 @@ if (!extension_loaded('ftp')) {
 	}
 }
 if (!defined('FTP_NATIVE')) {
-	define('FTP_NATIVE', /*(function_exists('ftp_connect'))? 1 : */0);
+	define('FTP_NATIVE', (function_exists('ftp_connect'))? 1 : 0);
 }
 
 
