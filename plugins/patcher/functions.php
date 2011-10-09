@@ -335,7 +335,7 @@ function revert($file)
 			message(sprintf($lang_admin_plugin_patcher['Directory not writable'], $cur_dir));
 
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
-		unlink(PUN_ROOT.'patcher_config.php');
+		$fs->delete(PUN_ROOT.'patcher_config.php');
 
 	$files = zip_extract(BACKUPS_DIR.$file, PUN_ROOT, true);
 	if (!$files)
