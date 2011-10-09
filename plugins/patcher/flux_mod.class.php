@@ -406,7 +406,7 @@ class FLUX_MOD
 	
 	function check_requirements()
 	{
-		global $lang_admin_plugin_patcher;
+		global $lang_admin_plugin_patcher, $fs;
 		
 		$dirs_to_check = array();
 		$requirements = array('files_to_upload' => array(), 'directories' => array(), 'affected_files' => array());
@@ -423,6 +423,7 @@ class FLUX_MOD
 			if (!in_array($cur_dir, $dirs_to_check))
 				$dirs_to_check[] = $cur_dir;
 		}
+	//	print_r($dirs_to_check);
 		sort($dirs_to_check);
 		foreach ($dirs_to_check as $cur_dir_to_check)
 		{
@@ -435,14 +436,14 @@ class FLUX_MOD
 					$cur_path .= $cur_dir.'/';
 					
 					if (!is_dir(PUN_ROOT.$cur_path))
-						$requirements['directories'][$cur_path] = array(mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
+						$requirements['directories'][$cur_path] = array($fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
 				}
 				
 				if (!isset($requirements['directories'][$cur_dir_to_check]))
-					$requirements['directories'][$cur_dir_to_check] = array(is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+					$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
 			}
 			else
-				$requirements['directories'][$cur_dir_to_check] = array(is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+				$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
 		}
 
 		if (count($this->affected_files) > 0)
@@ -456,7 +457,7 @@ class FLUX_MOD
 				$error = '';
 				if (!file_exists(PUN_ROOT.$cur_file))
 					$error = $lang_admin_plugin_patcher['Not exists'];
-				elseif (!is_writable(PUN_ROOT.$cur_file))
+				elseif (!$fs->is_writable(PUN_ROOT.$cur_file))
 					$error = $lang_admin_plugin_patcher['Not writable'];
 	
 				$requirements['affected_files'][$cur_file] = array(empty($error), $lang_admin_plugin_patcher['Found, writable'], $error);

@@ -24,6 +24,12 @@ if (file_exists(PATCHER_ROOT.'debug.php'))
 require PATCHER_ROOT.'functions.php';
 require PATCHER_ROOT.'flux_mod.class.php';
 require PATCHER_ROOT.'patcher.class.php';
+require PATCHER_ROOT.'filesystem.class.php';
+require PATCHER_ROOT.'config.php';
+
+$fs = new FILESYSTEM(isset($ftp_details) ? $ftp_details : null);
+
+//zip_extract(MODS_DIR.'patcher.zip', MODS_DIR.'patcher');
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))
@@ -40,7 +46,7 @@ if (!defined('BACKUPS_DIR'))
 {
 	// Try to create directory
 	if (!is_dir(PUN_ROOT.'backups'))
-		mkdir(PUN_ROOT.'backups');
+		$fs->mkdir(PUN_ROOT.'backups');
 	define('BACKUPS_DIR', PUN_ROOT.'backups/');
 }
 
@@ -91,7 +97,7 @@ if (isset($_GET['download']))
 }
 
 // Create initial backup
-if (is_writable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
+if ($fs->is_writable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
 	create_backup('fluxbb-'.FORUM_VERSION);
 
 if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patch'] used somewhere?
@@ -115,7 +121,7 @@ $dirs_not_writable = array();
 $check_dirs = array('root' => PUN_ROOT, 'include' => PUN_ROOT.'include/', 'lang' => PUN_ROOT.'lang/', 'lang/English' => PUN_ROOT.'lang/English/', 'backups' => BACKUPS_DIR, 'mods' => MODS_DIR);
 foreach ($check_dirs as $name => $cur_dir)
 {
-	if (!is_writable($cur_dir))
+	if (!$fs->is_writable($cur_dir))
 		$dirs_not_writable[] = pun_htmlspecialchars($name);
 }
 
@@ -588,7 +594,7 @@ else
 								<tr>
 									<th scope="row">
 										<input type="hidden" name="redirect" value="1" />
-										<?php echo $lang_admin_plugin_patcher['Backup filename'] ?><div><input type="submit"<?php echo is_writable(BACKUPS_DIR) ? '' : ' disabled="disabled"' ?> name="backup" value="<?php echo $lang_admin_plugin_patcher['Make backup'] ?>" tabindex="2" /></div>
+										<?php echo $lang_admin_plugin_patcher['Backup filename'] ?><div><input type="submit"<?php echo $fs->is_writable(BACKUPS_DIR) ? '' : ' disabled="disabled"' ?> name="backup" value="<?php echo $lang_admin_plugin_patcher['Make backup'] ?>" tabindex="2" /></div>
 									</th>
 									<td>
 										<input type="text" name="backup_name" value="<?php echo time() ?>" size="35" maxlength="80" tabindex="1" />
@@ -638,14 +644,14 @@ else
 							<table class="aligntop" cellspacing="0">
 								<tr>
 									<th scope="row">
-										<?php echo $lang_admin_plugin_patcher['Upload package'] ?> <div><input type="submit"<?php echo (!is_writable(MODS_DIR)) ? ' disabled="disabled"' : '' ?> name="upload" value="<?php echo $lang_admin_plugin_patcher['Upload'] ?>" tabindex="6" /></div>
+										<?php echo $lang_admin_plugin_patcher['Upload package'] ?> <div><input type="submit"<?php echo (!$fs->is_writable(MODS_DIR)) ? ' disabled="disabled"' : '' ?> name="upload" value="<?php echo $lang_admin_plugin_patcher['Upload'] ?>" tabindex="6" /></div>
 									</th>
 									<td>
 										<input type="file" name="upload_mod" tabindex="5" />
 										<span><?php echo $lang_admin_plugin_patcher['Upload package info'] ?></span>
 									</td>
 								</tr>
-<?php if (!is_writable(MODS_DIR)) : ?>
+<?php if (!$fs->is_writable(MODS_DIR)) : ?>
 								<tr>
 									<td colspan="2"><?php echo $lang_admin_plugin_patcher['Mods directory not writable'] ?></td>
 								</tr>

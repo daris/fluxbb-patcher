@@ -291,9 +291,9 @@ function preparse_query(&$string)
 
 function create_backup($backup)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 	
-	if (!is_writable(BACKUPS_DIR))
+	if (!$fs->is_writable(BACKUPS_DIR))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'backups'));
 
 	$backup_file = BACKUPS_DIR.$backup.'.zip';
@@ -327,11 +327,11 @@ function create_backup($backup)
 
 function revert($file)
 {
-	global $pun_config, $lang_admin_plugin_patcher;
+	global $pun_config, $lang_admin_plugin_patcher, $fs;
 
-	$dirs_to_check = array('./', 'include', 'lang/English');
+	$dirs_to_check = array('', 'include', 'lang/English');
 	foreach ($dirs_to_check as $cur_dir)
-		if (!is_writable(PUN_ROOT.$cur_dir))
+		if (!$fs->is_writable(PUN_ROOT.$cur_dir))
 			message(sprintf($lang_admin_plugin_patcher['Directory not writable'], $cur_dir));
 
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
@@ -347,9 +347,9 @@ function revert($file)
 
 function upload_mod()
 {
-	global $pun_config, $inst_mods, $lang_admin_plugin_patcher;
+	global $pun_config, $lang_admin_plugin_patcher, $fs;
 	
-	if (!is_writable(MODS_DIR))
+	if (!$fs->is_writable(MODS_DIR))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
 
 	if (!is_uploaded_file($_FILES['upload_mod']['tmp_name']))
@@ -378,31 +378,31 @@ function upload_mod()
 
 function download_update($mod_id, $version)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 
-	if (!is_writable(MODS_DIR))
+	if (!$fs->is_writable(MODS_DIR))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
 
-	if (!is_writable(MODS_DIR.$mod_id))
+	if (!$fs->is_writable(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods/'.pun_htmlspecialchars($mod_id)));
 
 	// Empty modification dir
 	remove_dir(MODS_DIR.$mod_id);
 
-	$mod_id = preg_replace('/-+v[\d\.]+$/', '', str_replace('_', '-', $mod_id)); // strip version number
+//	$mod_id = preg_replace('/-+v[\d\.]+$/', '', str_replace('_', '-', $mod_id)); // strip version number
 	$filename = basename($mod_id.'_v'.$version.'.zip');
-	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), MODS_DIR.$filename);
+	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $fs->tmpname());
 
-	mkdir(MODS_DIR.$mod_id);
+	$fs->mkdir(MODS_DIR.$mod_id);
 
 	extract_mod_package($mod_id, MODS_DIR.$filename, 'update');
 }
 
 function download_mod($mod_id)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 
-	if (!is_writable(MODS_DIR))
+	if (!$fs->is_writable(MODS_DIR))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
 
 	if (file_exists(MODS_DIR.$mod_id))
@@ -419,23 +419,24 @@ function download_mod($mod_id)
 	}
 	
 	$filename = basename($mod_id.'_v'.$last_release.'.zip');
-	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), MODS_DIR.$filename);
+	$tmpname = $fs->tmpname();
+	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), $tmpname);
 
-	mkdir(MODS_DIR.$mod_id);
+	$fs->mkdir(MODS_DIR.$mod_id);
 
-	extract_mod_package($mod_id, MODS_DIR.$filename, 'download');
+	extract_mod_package($mod_id, $tmpname, 'download');
 }
 
 
 function extract_mod_package($mod_id, $file, $action)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 
 	if (!zip_extract($file, MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 		
-	if ($action != 'upload')
-		@unlink($file);
+	// if ($action != 'upload')
+		// $fs->delete($file);
 	
 	$redirect_message = array(
 		'upload'	=> 'Modification uploaded redirect',
@@ -457,7 +458,9 @@ function extract_mod_package($mod_id, $file, $action)
 
 function copy_dir($source, $dest)
 {
-	@mkdir($dest);
+	global $fs;
+	
+	$fs->mkdir($dest);
 	$d = dir($source);
 	while ($f = $d->read())
 	{
@@ -466,7 +469,7 @@ function copy_dir($source, $dest)
 			if (is_dir($source.'/'.$f))
 				copy_dir($source.'/'.$f, $dest.'/'.$f);
 			else
-				copy($source.'/'.$f, $dest.'/'.$f);
+				$fs->copy($source.'/'.$f, $dest.'/'.$f);
 		}
 	}
 	$d->close();
@@ -475,6 +478,8 @@ function copy_dir($source, $dest)
 
 function remove_dir($path)
 {
+	global $fs;
+
 	if (!is_dir($path))
 		return;
 	
@@ -484,7 +489,7 @@ function remove_dir($path)
 		if ($f != '.' && $f != '..')
 		{
 			if (is_file($path.'/'.$f))
-				unlink($path.'/'.$f);
+				$fs->delete($path.'/'.$f);
 		}
 	}
 	$d->close();
@@ -498,7 +503,7 @@ function remove_dir($path)
 		}
 	}
 	$d->close();
-	rmdir($path);
+	$fs->delete($path);
 }
 
 
@@ -600,7 +605,7 @@ function do_clickable_html($text)
 
 function zip_extract($file, $extract_to, $list_files = false)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 	$files = array();
 	if (class_exists('ZipArchive'))
 	{
@@ -608,13 +613,26 @@ function zip_extract($file, $extract_to, $list_files = false)
 		if ($zip->open($file) !== true)
 			return false;
 
-		$zip->extractTo($extract_to);
-		if ($list_files)
+		//$zip->extractTo($extract_to);
+
+		$i = 0;
+		while ($cur_file = $zip->statIndex($i++))
 		{
-			$i = 0;
-			while ($cur_file = $zip->statIndex($i++))
-				$files[] = $cur_file['name'];
+			$fp = $zip->getStream($cur_file['name']);
+			if (!$fp)
+				message('Failed');
+			$contents = '';
+			while (!feof($fp))
+				$contents .= fread($fp, 2);
+			fclose($fp);
+
+			if (in_array(substr($cur_file['name'], -1), array('/', '\\')))
+				$fs->mkdir($extract_to.'/'.$cur_file['name']);
+			else
+				$fs->put($extract_to.'/'.$cur_file['name'], $contents);
+			$files[] = $cur_file['name'];
 		}
+
 		$zip->close();
 	}
 	else
@@ -622,13 +640,15 @@ function zip_extract($file, $extract_to, $list_files = false)
 		require_once PATCHER_ROOT.'pclzip.lib.php';
 		
 		$archive = new PclZip($file);
-		$result = $archive->extract(PCLZIP_OPT_PATH, $extract_to, PCLZIP_OPT_REPLACE_NEWER);
-		if ($result == 0)
-			message($archive->errorInfo(true));
-		elseif ($list_files)
+		$p_list = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
+		foreach ($p_list as $cur_file)
 		{
-			foreach ($result as $cur_file)
-				$files[] = $cur_file['stored_filename'];
+			if ($cur_file['folder'] == 1)
+				$fs->mkdir($extract_to.'/'.$cur_file['stored_filename']);
+			else
+				$fs->put($extract_to.'/'.$cur_file['stored_filename'], $cur_file['content']);
+
+			$files[] = $cur_file['stored_filename'];
 		}
 	}
 	return ($list_files ? $files : true);
@@ -637,11 +657,12 @@ function zip_extract($file, $extract_to, $list_files = false)
 
 function zip_files($file, $files)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
+	$tmpfile = $fs->tmpname();
 	if (class_exists('ZipArchive'))
 	{
 		$zip = new ZipArchive();
-		if ($zip->open($file, ZIPARCHIVE::CREATE) !== true)
+		if ($zip->open($tmpfile, ZIPARCHIVE::CREATE) !== true)
 			message($lang_admin_plugin_patcher['Can\'t create zip archive.']);
 		
 		foreach ($files as $cur_file)
@@ -654,10 +675,11 @@ function zip_files($file, $files)
 	{
 		require_once PATCHER_ROOT.'pclzip.lib.php';
 		
-		$archive = new PclZip($file);
+		$archive = new PclZip($tmpfile);
 		if ($archive->add(implode(',', $files)) == 0)
 			message($archive->errorInfo(true));
 	}
+	$fs->move($tmpfile, $file);
 }
 
 
