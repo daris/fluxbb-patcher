@@ -27,9 +27,7 @@ require PATCHER_ROOT.'patcher.class.php';
 require PATCHER_ROOT.'filesystem.class.php';
 require PATCHER_ROOT.'config.php';
 
-$fs = new FILESYSTEM(isset($ftp_details) ? $ftp_details : null);
-
-//zip_extract(MODS_DIR.'patcher.zip', MODS_DIR.'patcher');
+$fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))

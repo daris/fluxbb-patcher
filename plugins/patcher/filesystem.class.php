@@ -111,19 +111,17 @@ class FILESYSTEM
 			else
 			{
 				$details = $this->ftp->listDetails($this->fix_path($path));
-				$name = basename($path);
+				$name = $this->fix_path($path);
+
+				$rights = $details[0]['rights'];
 				
-				foreach ($details as $cur_details)
-				{
-					if ($cur_details['name'] == $name)
-					{
-						$rights = $cur_details['rights'];
-						if (substr($rights, 0, 1) == '-' && substr($rights, 2, 1) == 'w')
-							return true;
-						else
-							return false;
-					}
-				}
+				// Is not a file?
+				if (substr($rights, 0, 1) != '-')
+					return false;
+				
+				// TODO: real permissions checking
+				if (substr($rights, 2, 1) == 'w')
+					return true;
 			}
 
 			return false;
