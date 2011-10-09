@@ -161,12 +161,12 @@ class JFTP /*extends JObject*/
 			$this->_OS = 'UNIX';
 		}
 
-		if (FTP_NATIVE) {
-			// Import the generic buffer stream handler
-			jimport('joomla.utilities.buffer');
-			// Autoloading fails for JBuffer as the class is used as a stream handler
-			JLoader::load('JBuffer');
-		}
+		// if (FTP_NATIVE) {
+			// // Import the generic buffer stream handler
+			// jimport('joomla.utilities.buffer');
+			// // Autoloading fails for JBuffer as the class is used as a stream handler
+			// JLoader::load('JBuffer');
+		// }
 	}
 
 	/**
