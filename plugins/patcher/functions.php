@@ -527,10 +527,6 @@ function get_mod_repo($refresh = false)
 		$mod_repo['mods'] = $mods;
 	}
 
-	// Do not try again if last checking failed (maybe server doesn't have internet connection)
-	if (isset($mod_repo['last_check_failed']))
-		return $mod_repo;
-
 	$mod_repo_before = $mod_repo;
 	
 	if (isset($mod_repo['last_checked']) && !$refresh && time() < $mod_repo['last_checked'] + 3600) // one hour
@@ -547,10 +543,8 @@ function get_mod_repo($refresh = false)
 			$mod_repo['mods'][$mod_id] = $cur_mod;
 			unset($mod_repo['mods'][$key]);
 		}
-		$mod_repo['last_checked'] = time();
 	}
-	else
-		$mod_repo['last_check_failed'] = 1;
+	$mod_repo['last_checked'] = time();
 
 	// Something changed? Update cache file
 	if ($mod_repo != $mod_repo_before)

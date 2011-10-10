@@ -184,8 +184,6 @@ class PATCHER
 						foreach ($substeps as $cur_step)
 							foreach ($cur_step as $cur_step_sub)
 								$new_step_list[] = $cur_step_sub;
-						
-						//array_splice($cur_step_list, $key+1, 0, $new_substeps);
 					}
 					
 					$step_list = array_merge($run_steps_start, $new_step_list, $run_steps_end, $upload_steps_end);
@@ -200,7 +198,6 @@ class PATCHER
 	function patch()
 	{
 		global $fs;
-//		$_SESSION['patcher_files'] = array();
 		$failed = false;
 		
 		if ($this->uninstall || $this->disable)
@@ -212,8 +209,6 @@ class PATCHER
 					$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'install_mod.php');
 				elseif (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
 					$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'gen.php');
-				elseif ($this->disable)
-					continue;
 			}
 		}
 
@@ -295,7 +290,6 @@ class PATCHER
 				}
 				
 				// Delete step for uninstall when step was done
-				// TODO: sometimes it deletes OPEN when it shouldn't
 				if ($this->uninstall && $cur_step['status'] != STATUS_NOT_DONE && !in_array($cur_step['command'], array('FIND', 'OPEN')))
 				{
 					if (in_array($cur_step['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && isset($step_list[$key-1]) && $step_list[$key-1]['command'] == 'FIND')
@@ -423,7 +417,7 @@ class PATCHER
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
-	
+
 		if ($this->uninstall || $this->disable)
 		{
 			// Swap $find with $replace
@@ -436,6 +430,18 @@ class PATCHER
 			{
 				$pos = strrpos($this->cur_file, $find);
 				$this->comments[] = 'Whole file';
+				
+				if ($pos === false && in_array($this->command, array('BEFORE ADD', 'AFTER ADD')))
+				{
+					if ($this->command == 'BEFORE ADD')
+						$find = $this->code."\n";
+					elseif ($this->command == 'AFTER ADD')
+						$find = "\n".$this->code;
+
+					$replace = '';
+					$this->comments[0] = 'Removing code';
+					$pos = strpos($this->cur_file, $find);
+				}
 			}
 			else
 				$this->start_pos = $pos;
