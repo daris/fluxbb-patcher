@@ -224,7 +224,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			
 			foreach ($log as $cur_step_list)
 			{
-				foreach ($cur_step_list as $cur_step)
+				foreach ($cur_step_list as $id => $cur_step)
 				{
 					if (!isset($cur_step['command']))
 						continue;
@@ -256,6 +256,8 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 								}
 							}
 						}
+						if ($cur_step['status'] == STATUS_NOT_DONE)
+							$steps_failed[$id] = $id;
 						
 						$color = (count($steps_failed) > 0) ? 'red' : 'green';
 
