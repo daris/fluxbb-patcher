@@ -165,9 +165,9 @@ class PATCHER
 			{
 				// Copy install mod file as we want to uninstall mod
 				if ($this->uninstall && strpos($from, 'install_mod.php') !== false)
-					copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'install_mod.php');
+					$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'install_mod.php');
 				elseif (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
-					copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'gen.php');
+					$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'gen.php');
 				elseif ($this->disable)
 					continue;
 			}
@@ -775,7 +775,7 @@ class PATCHER
 	
 	function step_delete()
 	{
-		global $fp;
+		global $fs;
 
 		// Should never happen
 		if ($this->enable || $this->disable)
@@ -792,7 +792,7 @@ class PATCHER
 		if (!file_exists(PUN_ROOT.$this->code))
 			return STATUS_UNKNOWN;
 
-		if ($fp->delete(PUN_ROOT.$this->code))
+		if ($fs->delete(PUN_ROOT.$this->code))
 			return STATUS_DONE; // done
 
 		$this->result = $lang_admin_plugin_patcher['Can\'t delete file error'];

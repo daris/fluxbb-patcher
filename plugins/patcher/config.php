@@ -1,5 +1,6 @@
 <?php
 
+// Comment out if you want to disable FTP layer
 $ftp_data = array(
 	'host' => '127.0.0.1',
 	'port' => 21,

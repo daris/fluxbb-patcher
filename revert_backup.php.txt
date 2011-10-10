@@ -7,6 +7,11 @@ elseif (is_dir(PUN_ROOT.'patcher/plugins/patcher/'))
 	define('PATCHER_ROOT', PUN_ROOT.'patcher/plugins/patcher/');
 define('BACKUPS_DIR', PUN_ROOT.'backups/');
 
+require PATCHER_ROOT.'filesystem.class.php';
+require PATCHER_ROOT.'config.php';
+
+$fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
+
 $revert = isset($_GET['revert']) ? basename($_GET['revert']) : null;
 
 if (!isset($revert))
@@ -36,12 +41,12 @@ else
 
 function revert($file)
 {
-	global $pun_config, $lang_admin_plugin_patcher;
+	global $pun_config, $lang_admin_plugin_patcher, $fs;
 
 	$dirs_to_check = array('./', 'include', 'lang/English');
 	foreach ($dirs_to_check as $cur_dir)
 	{
-		if (!is_writable(PUN_ROOT.$cur_dir))
+		if (!$fs->is_writable(PUN_ROOT.$cur_dir))
 		{
 			echo 'Directory not writable '.$cur_dir;
 			exit;
@@ -49,7 +54,7 @@ function revert($file)
 	}
 
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
-		unlink(PUN_ROOT.'patcher_config.php');
+		$fs->delete(PUN_ROOT.'patcher_config.php');
 
 	$files = zip_extract(BACKUPS_DIR.$file, PUN_ROOT, true);
 	if (!$files)
@@ -65,7 +70,7 @@ function revert($file)
 
 function zip_extract($file, $extract_to, $list_files = false)
 {
-	global $lang_admin_plugin_patcher;
+	global $lang_admin_plugin_patcher, $fs;
 	$files = array();
 	if (class_exists('ZipArchive'))
 	{
@@ -73,13 +78,26 @@ function zip_extract($file, $extract_to, $list_files = false)
 		if ($zip->open($file) !== true)
 			return false;
 
-		$zip->extractTo($extract_to);
-		if ($list_files)
+		//$zip->extractTo($extract_to);
+
+		$i = 0;
+		while ($cur_file = $zip->statIndex($i++))
 		{
-			$i = 0;
-			while ($cur_file = $zip->statIndex($i++))
-				$files[] = $cur_file['name'];
+			$fp = $zip->getStream($cur_file['name']);
+			if (!$fp)
+				message('Failed');
+			$contents = '';
+			while (!feof($fp))
+				$contents .= fread($fp, 2);
+			fclose($fp);
+
+			if (in_array(substr($cur_file['name'], -1), array('/', '\\')))
+				$fs->mkdir($extract_to.'/'.$cur_file['name']);
+			else
+				$fs->put($extract_to.'/'.$cur_file['name'], $contents);
+			$files[] = $cur_file['name'];
 		}
+
 		$zip->close();
 	}
 	else
@@ -87,15 +105,15 @@ function zip_extract($file, $extract_to, $list_files = false)
 		require_once PATCHER_ROOT.'pclzip.lib.php';
 		
 		$archive = new PclZip($file);
-		$result = $archive->extract(PCLZIP_OPT_PATH, $extract_to, PCLZIP_OPT_REPLACE_NEWER);
-		if ($result == 0)
+		$p_list = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
+		foreach ($p_list as $cur_file)
 		{
-			echo $archive->errorInfo(true);exit;
-		}
-		elseif ($list_files)
-		{
-			foreach ($result as $cur_file)
-				$files[] = $cur_file['stored_filename'];
+			if ($cur_file['folder'] == 1)
+				$fs->mkdir($extract_to.'/'.$cur_file['stored_filename']);
+			else
+				$fs->put($extract_to.'/'.$cur_file['stored_filename'], $cur_file['content']);
+
+			$files[] = $cur_file['stored_filename'];
 		}
 	}
 	return ($list_files ? $files : true);

@@ -76,7 +76,12 @@ class FILESYSTEM
 	function delete($file)
 	{
 		$this->check_connection();
-		return $this->is_ftp ? $this->ftp->delete($this->fix_path($file)) : unlink($file);
+		if ($this->is_ftp) 
+			return $this->ftp->delete($this->fix_path($file));
+		
+		if (is_dir($file))
+			return rmdir($file);
+		return unlink($file);
 	}
 	
 	function is_writable($path)
