@@ -30,6 +30,8 @@ class PATCHER
 	var $disable = false;
 	var $enable = false;
 	
+	var $modify_file_commands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
+	
 	function __construct($flux_mod, $action = 'install')
 	{
 		$this->flux_mod = $flux_mod;
@@ -211,6 +213,8 @@ class PATCHER
 					$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.'gen.php');
 			}
 		}
+		if ($this->uninstall)
+			$this->friendly_url_uninstall_upload();
 
 		$i = 1;
 		$steps = $this->steps; // TODO: there is something wrong with variables visiblity
@@ -485,15 +489,12 @@ class PATCHER
 		{
 			$directories = array();
 			foreach ($this->flux_mod->files_to_upload as $from => $to)
-			{
-				if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
-					$to .= (substr($to, -1) == '/' ? '' : '/').basename($from);
-			
+			{			
 				if (file_exists(PUN_ROOT.$to))
 					$fs->delete(PUN_ROOT.$to);
 				
 				$cur_path = '';
-				$dir_structure = explode('/', trim($to, '/'));
+				$dir_structure = explode('/', $to);
 				foreach ($dir_structure as $cur_dir)
 				{
 					$cur_path .= '/'.$cur_dir;
@@ -523,7 +524,7 @@ class PATCHER
 			
 			return STATUS_REVERTED;
 		}
-		
+
 		foreach ($this->flux_mod->files_to_upload as $from => $to)
 		{
 			if (is_dir($this->flux_mod->readme_file_dir.'/'.$from))
@@ -915,16 +916,15 @@ class PATCHER
 		$steps = $this->config['steps']['friendly-url/files/gen.php'];
 		$cur_file = '';
 		
-		$search = $replace = array();
+		$changes = array();
 		$found = false;
 		for ($i = 0; $i <= count($steps); $i++)
 		{
 			if ($found)
 			{
 				// Revert changes
-				$replace[] = $steps[$i]['code'];
 				unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
-				$search[] = $steps[++$i]['code'];
+				$changes[] = array('replace' => $steps[$i]['code'], 'search' => $steps[++$i]['code']);
 				unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
 
 				if (isset($steps[$i+1]['command']) && $steps[$i+1]['command'] == 'OPEN')
@@ -936,7 +936,18 @@ class PATCHER
 			$found = true;
 			unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
 		}
-		$this->cur_file = str_replace($search, $replace, $this->cur_file);
+		$changes = array_reverse($changes);
+		$end_pos = strlen($this->cur_file);
+		foreach ($changes as $cur_change)
+		{
+			$pos = strrpos(substr($this->cur_file, 0, $end_pos), $cur_change['search']);
+			if ($pos === false)
+				$pos = strrpos($this->cur_file, $cur_change['search']); // as the changes are sorted by string position this should never happen
+			else
+				$end_pos = $pos;
+
+			$this->cur_file = substr_replace($this->cur_file, $cur_change['replace'], $pos, strlen($cur_change['search']));
+		}
 	}
 	
 	
@@ -963,7 +974,11 @@ class PATCHER
 	// If friendly url mod is installed apply its changes
 	function friendly_url_upload($cur_file_name)
 	{
-		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !in_array(trim(dirname($cur_file_name), '\\/'), array('', 'include', 'include/attach')))
+		global $fs;
+
+		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled'])
+			|| substr($cur_file_name, -4) != '.php' || in_array($cur_file_name, array('gen.php', 'install_mod.php'))
+			|| !in_array(dirname($cur_file_name), array('.', 'include', 'include/attach')))
 			return;
 
 		$gen_file = 'friendly-url/files/gen.php';
@@ -977,8 +992,36 @@ class PATCHER
 			$cur_file = file_get_contents(PUN_ROOT.$cur_file_name);
 			$cur_file = url_replace_file($cur_file_name, $cur_file, $changes);
 			if (count($changes) > 0)
-				file_put_contents(PUN_ROOT.$cur_file_name, $cur_file);
+				$fs->put(PUN_ROOT.$cur_file_name, $cur_file);
 			$this->config['steps'][$gen_file] = array_merge($this->config['steps'][$gen_file], url_get_steps($changes));
+		}
+	}
+	
+	
+	function friendly_url_uninstall_upload()
+	{
+		$gen_file = 'friendly-url/files/gen.php';
+		if (!isset($this->config['steps'][$gen_file]))
+			return;
+
+		foreach ($this->flux_mod->files_to_upload as $from => $to)
+		{
+			$remove_steps = false;
+			foreach ($this->config['steps'][$gen_file] as $key => $cur_step)
+			{
+				if ($remove_steps)
+				{
+					if (in_array($cur_step['command'], $this->modify_file_commands))
+						unset($this->config['steps'][$gen_file][$key]);
+					else
+						break;
+				}
+				elseif ($cur_step['command'] == 'OPEN' && $cur_step['code'] == $to)
+				{
+					unset($this->config['steps'][$gen_file][$key]);
+					$remove_steps = true;
+				}
+			}
 		}
 	}
 

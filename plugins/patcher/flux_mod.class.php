@@ -388,15 +388,21 @@ class FLUX_MOD
 		elseif (is_dir($this->readme_file_dir.'/files'))
 			$files_to_upload = list_files_to_upload($this->readme_file_dir, 'files');
 
-		// Ignore mod installer files
-		foreach ($files_to_upload as $from => $to)
+		foreach ($files_to_upload as $from => &$to)
 		{
+			if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
+				$to .= (substr($to, -1) == '/' ? '' : '/').basename($from);
+
+			$to = ltrim($to, '\\/');
+
+			// Ignore mod installer files
 			if (preg_match('/plugins\/.*?\/(mod_config|search_insert|lang\/.*\/mod_admin).php$/', $from))
 				unset($files_to_upload[$from]);
 
 			// Do not upload language files when language folder does not exist
 			elseif (preg_match('#lang\/(.+?)\/#i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
 				unset($files_to_upload[$from]);
+			
 		}
 
 		ksort($files_to_upload);
