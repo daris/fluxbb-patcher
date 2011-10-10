@@ -41,9 +41,7 @@ class PATCHER
 			require PUN_ROOT.'patcher_config.php';
 		$this->config = $this->config_org = $patcher_config;
 		
-		$this->action = $action;
-		$this->$action = true;
-		$this->steps = $this->get_steps();
+		$this->set_action($action);
 	}
 	
 	
@@ -51,6 +49,15 @@ class PATCHER
 	{
 		$function_name = 'get_'.$name;
 		return $this->$name = $this->$function_name();
+	}
+	
+	
+	function set_action($action)
+	{
+		$this->install = $this->uninstall = $this->update = $this->disable = $this->enable = false;
+		$this->action = $action;
+		$this->$action = true;
+		$this->steps = $this->get_steps();
 	}
 	
 	
@@ -217,10 +224,17 @@ class PATCHER
 			$this->friendly_url_uninstall_upload();
 
 		$i = 1;
+		foreach ($this->log as $log)
+			foreach ($log as $cur_action_log)
+				$i += count($cur_action_log);
+		$this->log[$this->action] = array();
+
 		$steps = $this->steps; // TODO: there is something wrong with variables visiblity
 //		foreach ($this->steps as $cur_readme_file => &$step_list)
 		while (list($cur_readme_file, $step_list) = each($this->steps)) // Allow to add steps inside loop
 		{
+			$log_readme = array();
+			
 			foreach ($step_list as $key => $cur_step)
 			{
 				$cur_step['status'] = STATUS_UNKNOWN;
@@ -261,17 +275,15 @@ class PATCHER
 							$cur_step['substeps'][0] = array('code' => implode("\n", $code));
 							unset($cur_step['code']);
 						}
-						
-						if (!isset($this->log[$cur_readme_file]))
-							$this->log[$cur_readme_file] = array();
-						$this->log[$cur_readme_file][$i] = $cur_step;
+
+						$log_readme[$i] = $cur_step;
 					}
 					else
 					{
-						if (!isset($this->log[$cur_readme_file][$this->global_step]['substeps']))
-							$this->log[$cur_readme_file][$this->global_step]['substeps'] = array();
+						if (!isset($log_readme[$this->global_step]['substeps']))
+							$log_readme[$this->global_step]['substeps'] = array();
 						
-						$this->log[$cur_readme_file][$this->global_step]['substeps'][$i] = $cur_step;
+						$log_readme[$this->global_step]['substeps'][$i] = $cur_step;
 					}
 				}
 				
@@ -304,6 +316,8 @@ class PATCHER
 
 				$i++;
 			}
+			
+			$this->log[$this->action][$cur_readme_file] = $log_readme;
 			
 			$step_list = array_values($step_list);
 			if ($this->uninstall)
@@ -461,7 +475,7 @@ class PATCHER
 		if ($pos === false)
 		{
 			$pos = strpos($this->cur_file, $find);
-			$this->comments[] = 'Whole file';
+			$this->comments[0] = 'Whole file';
 		}
 		else
 			$this->start_pos = $pos + strlen($replace);
@@ -702,7 +716,10 @@ class PATCHER
 			}
 
 			if ($this->install || $this->enable || strpos($this->cur_file, $this->code) !== false)
+			{
 				$status = $this->replace_code(trim($this->find), trim($this->code));
+				$this->comments[] = 'Query ID';
+			}
 		}
 		$this->find = $this->code;
 		return $status;
@@ -846,14 +863,12 @@ class PATCHER
 			}
 			return STATUS_DONE;
 		}
-		else
-		{
-			ob_start();
-			require_once PUN_ROOT.$this->code;
-			$this->result = ob_get_contents();
-			ob_end_clean();
-			return STATUS_DONE;
-		}
+
+		ob_start();
+		require_once PUN_ROOT.$this->code;
+		$this->result = ob_get_contents();
+		ob_end_clean();
+		return STATUS_DONE;
 	}
 	
 	
@@ -1014,7 +1029,7 @@ class PATCHER
 					if (in_array($cur_step['command'], $this->modify_file_commands))
 						unset($this->config['steps'][$gen_file][$key]);
 					else
-						break;
+						$remove_steps = false;
 				}
 				elseif ($cur_step['command'] == 'OPEN' && $cur_step['code'] == $to)
 				{

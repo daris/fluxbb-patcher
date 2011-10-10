@@ -169,12 +169,14 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		{
 			$patcher = new PATCHER($flux_mod, 'disable');
 			$done = $patcher->patch();
-			$logs['disable'] = $patcher->log;
+//			$logs['disable'] = $patcher->log;
+			$patcher->set_action($action);
 		}
+		else
+			$patcher = new PATCHER($flux_mod, $action);
 	
-		$patcher = new PATCHER($flux_mod, $action);
 		$done = $patcher->patch();
-		$logs[$action] = $patcher->log;
+		$logs = $patcher->log;
 	
 		$_SESSION['patcher_logs'] = serialize($logs);
 
