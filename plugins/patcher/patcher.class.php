@@ -993,7 +993,7 @@ class PATCHER
 
 		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled'])
 			|| substr($cur_file_name, -4) != '.php' || in_array($cur_file_name, array('gen.php', 'install_mod.php'))
-			|| !in_array(dirname($cur_file_name), array('.', 'include', 'include/attach')))
+			|| dirname($cur_file_name) != '.' && substr($cur_file_name, 0, 7) != 'include') // directory other than PUN_ROOT and include
 			return;
 
 		$gen_file = 'friendly-url/files/gen.php';
