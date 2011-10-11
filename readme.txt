@@ -21,8 +21,6 @@ If you want to speedup extracting process install and enable ZIP extension.
 Known issues:
 - ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of 
 topictags should delete <div class="postmsg"> from its readme)
-- User Management v1.4.2 makes Patcher to think that there are new updates while there aren't 
-any. This is due to version 1.4 defined in its readme.txt file.
 
 Tips:
 - If you have some modification installed and you have changed something in its readme file, 
