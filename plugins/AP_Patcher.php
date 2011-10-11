@@ -25,7 +25,8 @@ require PATCHER_ROOT.'functions.php';
 require PATCHER_ROOT.'flux_mod.class.php';
 require PATCHER_ROOT.'patcher.class.php';
 require PATCHER_ROOT.'filesystem.class.php';
-require PATCHER_ROOT.'config.php';
+if (file_exists(PATCHER_ROOT.'config.php'))
+	require PATCHER_ROOT.'config.php';
 
 $fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
 
