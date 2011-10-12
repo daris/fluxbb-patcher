@@ -273,6 +273,10 @@ class FLUX_MOD
 			if (strpos($cur_file, ' [') !== false)
 				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
 			
+			// Does not look like a file?
+			if (($pos = strrpos($cur_file, '.')) === false || $pos < strlen($cur_file) - 5 || $pos >= strlen($cur_file) - 1)
+				continue;
+			
 			if (!empty($cur_file) && !in_array(strtolower($cur_file), array('null', 'none', 'no')))
 				$files[] = trim($cur_file);
 		}

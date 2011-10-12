@@ -18,6 +18,8 @@ if (!defined('PATCHER_ROOT'))
 
 //define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
 define('PATCHER_VERSION', '2.0-dev');
+define('PATCHER_CONFIG_REV', '1');
+
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
@@ -710,7 +712,7 @@ else
 				$update_version = '';
 				if (isset($has_update['local']) && isset($has_update['repo']))
 				{
-					if (version_compare($has_update['local'], $has_update['repo'], '>'))
+					if (version_compare($has_update['local'], $has_update['repo'], '>='))
 					{
 						$update_version = $has_update['local'];
 						unset($has_update['repo']);

@@ -40,6 +40,7 @@ class PATCHER
 		if (file_exists(PUN_ROOT.'patcher_config.php'))
 			require PUN_ROOT.'patcher_config.php';
 		$this->config = $this->config_org = $patcher_config;
+		$this->config['patcher_config_rev'] = PATCHER_CONFIG_REV;
 		
 		$this->set_action($action);
 	}
