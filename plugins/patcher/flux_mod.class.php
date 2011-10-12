@@ -171,12 +171,15 @@ class FLUX_MOD
 			return '';
 	
 		$author = $this->mod_info['author'];
-		if (preg_match('#(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
-			|| preg_match('#([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
+		if (preg_match('#^(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
+			|| preg_match('#^([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
 			$author = $m[1];
 		
 		if (strpos($author, ';') !== false)
 			$author = substr($author, 0, strpos($author, ';'));
+
+		if (strpos($author, ' - ') !== false)
+			$author = substr($author, 0, strpos($author, ' - '));
 
 		return trim($author);
 	}
