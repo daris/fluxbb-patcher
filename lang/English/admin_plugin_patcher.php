@@ -11,6 +11,7 @@ $lang_admin_plugin_patcher = array(
 'File does not exist'			=> 'The %s file does not exist.',
 'Invalid mod dir'				=> 'This directory does not have a valid mod package.',
 'Cannot write to'				=> 'Cannot write file to %s.',
+'Failed to extract file'		=> 'Failed to extract file',
 
 'Can\'t copy file'				=> 'Can\'t copy "%s" file to "%s".',
 

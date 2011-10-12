@@ -19,6 +19,9 @@ if (!defined('PATCHER_ROOT'))
 //define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
 define('PATCHER_VERSION', '2.0-dev');
 define('PATCHER_CONFIG_REV', '1');
+if (!defined('PUN_DEBUG'))
+	define('PUN_DEBUG', 1);
+error_reporting(E_ALL);
 
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';

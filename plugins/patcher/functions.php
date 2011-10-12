@@ -337,8 +337,7 @@ function revert($file)
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		$fs->delete(PUN_ROOT.'patcher_config.php');
 
-	$files = zip_extract(BACKUPS_DIR.$file, PUN_ROOT, true);
-	if (!$files)
+	if (!zip_extract(BACKUPS_DIR.$file, PUN_ROOT))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 
 	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Files reverted redirect']);
@@ -440,11 +439,7 @@ function extract_mod_package($mod_id, $file, $action)
 		'update'	=> 'Modification updated redirect',
 		'download'	=> 'Modification downloaded redirect',
 	);
-	
-	$patcher_config = array('installed_mods' => array(), 'steps' => array());
-	if (file_exists(PUN_ROOT.'patcher_config.php'))
-		require PUN_ROOT.'patcher_config.php';
-	
+
 	$redirect_url = '&mod_id='.$mod_id.($action == 'update' ? '&action=update' : '');
 	if ($action == 'update' && !isset($_GET['update']))
 		$redirect_url = '';
@@ -609,10 +604,10 @@ function do_clickable_html($text)
 	ZIP functions
 */
 
-function zip_extract($file, $extract_to, $list_files = false)
+function zip_extract($file, $extract_to, &$files = array())
 {
 	global $lang_admin_plugin_patcher, $fs;
-	$files = array();
+
 	if (class_exists('ZipArchive'))
 	{
 		$zip = new ZipArchive;
@@ -639,7 +634,7 @@ function zip_extract($file, $extract_to, $list_files = false)
 			$files[] = $cur_file['name'];
 		}
 
-		$zip->close();
+		return $zip->close();
 	}
 	else
 	{
@@ -657,7 +652,7 @@ function zip_extract($file, $extract_to, $list_files = false)
 			$files[] = $cur_file['stored_filename'];
 		}
 	}
-	return ($list_files ? $files : true);
+	return true;
 }
 
 
