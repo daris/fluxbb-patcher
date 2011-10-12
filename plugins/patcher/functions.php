@@ -365,12 +365,9 @@ function upload_mod()
 	$mod_id = substr($filename, 0, -4);
 	if (strpos($mod_id, '_v') !== false)
 		$mod_id = substr($mod_id, 0, strpos($mod_id, '_v'));
-		
-	if (is_dir(MODS_DIR.$mod_id) && file_exists(MODS_DIR.$mod_id))
+	
+	if (is_dir(MODS_DIR.$mod_id) && !is_empty_directory(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory already exists'], pun_htmlspecialchars($mod_id)));
-
-	if (!mkdir(MODS_DIR.$mod_id))
-		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
 	extract_mod_package($mod_id, $_FILES['upload_mod']['tmp_name'], 'upload');
 }
@@ -393,8 +390,6 @@ function download_update($mod_id, $version)
 	$filename = basename($mod_id.'_v'.$version.'.zip');
 	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $fs->tmpname());
 
-	$fs->mkdir(MODS_DIR.$mod_id);
-
 	extract_mod_package($mod_id, MODS_DIR.$filename, 'update');
 }
 
@@ -405,7 +400,7 @@ function download_mod($mod_id)
 	if (!$fs->is_writable(MODS_DIR))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods'));
 
-	if (file_exists(MODS_DIR.$mod_id))
+	if (is_dir(MODS_DIR.$mod_id) && !is_empty_directory(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory already exists'], 'mods/'.pun_htmlspecialchars($mod_id)));
 	
 //	$mod_id = preg_replace('/-+v[\d\.]+$/', '', str_replace('_', '-', $mod_id)); // strip version number
@@ -422,8 +417,6 @@ function download_mod($mod_id)
 	$tmpname = $fs->tmpname();
 	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), $tmpname);
 
-	$fs->mkdir(MODS_DIR.$mod_id);
-
 	extract_mod_package($mod_id, $tmpname, 'download');
 }
 
@@ -431,6 +424,10 @@ function download_mod($mod_id)
 function extract_mod_package($mod_id, $file, $action)
 {
 	global $lang_admin_plugin_patcher, $fs;
+
+	if (!is_dir(MODS_DIR.$mod_id))
+		if (!$fs->mkdir(MODS_DIR.$mod_id))
+			message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
 	if (!zip_extract($file, MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
