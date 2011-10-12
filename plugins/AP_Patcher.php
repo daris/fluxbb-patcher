@@ -630,7 +630,7 @@ else
 										<span><?php echo $lang_admin_plugin_patcher['Revert info'] ?><br /><strong><?php echo $lang_admin_plugin_patcher['Warning'] ?></strong>: <?php echo $lang_admin_plugin_patcher['Revert info 2'] ?></span>
 									</td>
 <?php else : ?>
-									<td><?php echo $lang_admin_plugin_patcher['No backups'] ?></td>
+									<td colspan="2"><?php echo $lang_admin_plugin_patcher['No backups'] ?></td>
 <?php endif; ?>
 								</tr>
 							</table>

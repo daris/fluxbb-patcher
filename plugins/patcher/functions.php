@@ -660,7 +660,7 @@ function zip_files($file, $files)
 			message($lang_admin_plugin_patcher['Can\'t create zip archive.']);
 		
 		foreach ($files as $cur_file)
-			if (is_file(PUN_ROOT.$cur_file))
+			if (is_readable(PUN_ROOT.$cur_file))
 				$zip->addFile(PUN_ROOT.$cur_file, $cur_file);
 
 		$zip->close();
@@ -670,8 +670,9 @@ function zip_files($file, $files)
 		require_once PATCHER_ROOT.'pclzip.lib.php';
 		
 		$archive = new PclZip($tmpfile);
-		if ($archive->add(implode(',', $files)) == 0)
-			message($archive->errorInfo(true));
+		foreach ($files as $cur_file)
+			if (is_readable(PUN_ROOT.$cur_file))
+				$archive->add(PUN_ROOT.$cur_file);
 	}
 	$fs->move($tmpfile, $file);
 }
