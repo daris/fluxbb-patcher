@@ -52,7 +52,7 @@ class JError
 	static function raiseWarning()
 	{
 		$args = func_get_args();
-		trigger_error('ftp: '.implode(', ', $args));
+		trigger_error(implode(', ', $args), E_USER_WARNING);
 	}
 }
 
@@ -61,13 +61,13 @@ class JText
 	static function sprintf()
 	{
 		$args = func_get_args();
-		echo implode(', ', $args);
+		return implode(', ', $args);
 	}
 	
 	static function _()
 	{
 		$args = func_get_args();
-		echo implode(', ', $args);
+		return implode(', ', $args);
 	}
 }
 

@@ -64,9 +64,16 @@ class FILESYSTEM
 		require_once PATCHER_ROOT.'ftp.class.php';
 
 		$this->ftp = new JFTP();
-		$this->ftp->connect($this->ftp_data['host'], $this->ftp_data['port']);
-		$this->ftp->login($this->ftp_data['user'], $this->ftp_data['pass']);
-		$this->ftp->chdir($this->ftp_data['path']);
+		if (!$this->ftp->connect($this->ftp_data['host'], $this->ftp_data['port']))
+			error('FTP: Connection failed', __FILE__, __LINE__);
+		if (!$this->ftp->login($this->ftp_data['user'], $this->ftp_data['pass']))
+			error('FTP: Login failed', __FILE__, __LINE__);
+		if (!$this->ftp->chdir($this->ftp_data['path']))
+			error('FTP: Directory change failed', __FILE__, __LINE__);
+		
+		if (!@$this->ftp->listDetails($this->fix_path('config.php')) || !@$this->ftp->listDetails($this->fix_path('admin_index.php')))
+			error('FTP: The FluxBB root directory is not valid', __FILE__, __LINE__);
+
 		$this->root = $this->ftp_data['path'];
 		
 		$this->is_connected = true;
