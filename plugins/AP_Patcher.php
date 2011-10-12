@@ -99,7 +99,7 @@ if (isset($_GET['download']))
 if ($fs->is_writable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
 	create_backup('fluxbb-'.FORUM_VERSION);
 
-if (isset($_POST['backup']) && !isset($_POST['patch'])) // TODO: is $_POST['patch'] used somewhere?
+if (isset($_POST['backup']))
 {
 	$backup_name = isset($_POST['backup_name']) ? basename($_POST['backup_name']) : 'fluxbb_'.time();
 	create_backup($backup_name);
