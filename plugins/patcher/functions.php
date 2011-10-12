@@ -44,7 +44,7 @@ function list_files_to_upload($path, $from_dir = '', $to_dir = '')
 	$d = dir($path.'/'.$from_dir);
 	while ($f = $d->read())
 	{
-		if (!in_array($f, array('.', '..', '.svn', 'Thumbs.db')) && !preg_match('/^(readme|update).*?\.txt$/', $f))
+		if (!in_array($f, array('.', '..', '.svn', 'Thumbs.db', 'LICENSE', 'README')) && !preg_match('/^(readme|update).*?\.txt$/', $f))
 		{
 			if (is_dir($path.'/'.$from_dir.'/'.$f))
 				$files = array_merge($files, list_files_to_upload($path, $from_dir.'/'.$f, $to_dir.'/'.$f));

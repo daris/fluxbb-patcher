@@ -273,7 +273,7 @@ class FLUX_MOD
 			if (strpos($cur_file, ' [') !== false)
 				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
 			
-			if (!empty($cur_file) && !in_array($cur_file, array('Null', 'None')))
+			if (!empty($cur_file) && !in_array(strtolower($cur_file), array('null', 'none', 'no')))
 				$files[] = trim($cur_file);
 		}
 
@@ -546,29 +546,22 @@ class FLUX_MOD
 			if (strpos($cur_command, 'REPLACE') !== false)
 				$cur_command = 'REPLACE';
 			
-			$correct_action = array(
-				'ADD AFTER'		=> 'AFTER ADD',
-				'AFTER INSERT'	=> 'AFTER ADD',
-				'ADD BEFORE'	=> 'BEFORE ADD',
-				'OPEN FILE'		=> 'OPEN',
-				'FIND LINE'		=> 'FIND',
-				'SEARCH'		=> 'FIND',
-				'ADD AT THE BOTTOM OF THE FILE' => 'AT THE END OF FILE ADD',
-				'ADD AT THE BOTTOM OF THE FUNCTION' => 'AT THE END OF FILE ADD',
-				'AT THE END ADD' => 'AT THE END OF FILE ADD',
-				'IN THE SAME LINE FIND' => 'IN THIS LINE FIND',
-				'IN THESE LINES FIND'	=> 'IN THIS LINE FIND',
-				'EVER IN THESE LINES FIND'	=> 'IN THIS LINE FIND',
-				'GO TO LINE'	=> 'FIND',
-				'VISIT'			=> 'NOTE',
-				'NOTES'			=> 'NOTE',
-				'UPLOAD THE CONTENT OF' => 'UPLOAD',
+			$command_transformations = array(
+				'AFTER ADD'					=> array('ADD AFTER', 'AFTER INSERT'),
+				'BEFORE ADD'				=> array('ADD BEFORE'),
+				'OPEN'						=> array('OPEN FILE'),
+				'FIND'						=> array('FIND LINE', 'SEARCH', 'GO TO LINE'),
+				'AT THE END OF FILE ADD'	=> array('ADD AT THE BOTTOM OF THE FILE', 'ADD AT THE BOTTOM OF THE FUNCTION', 'AT THE END ADD'),
+				'IN THIS LINE FIND' 		=> array('IN THE SAME LINE FIND', 'IN THESE LINES FIND', 'EVER IN THESE LINES FIND'),
+				'NOTE'						=> array('VISIT', 'NOTES'),
+				'UPLOAD'					=> array('UPLOAD THE CONTENT OF', 'SEND ON THE SERVER TO THE ROOT OF THE FORUM'),
+				'RUN'						=> array('LAUNCH'),
 			);
-			foreach ($correct_action as $before => $after)
+			foreach ($command_transformations as $new_command => $commands_to_fix)
 			{
-				if ($cur_command == $before)
+				if (in_array($cur_command, $commands_to_fix))
 				{
-					$cur_command = $after;
+					$cur_command = $new_command;
 					break;
 				}
 			}

@@ -17,9 +17,7 @@ $lang_admin_plugin_patcher = array(
 'Actions'						=> 'Actions',
 'NOT DONE'						=> 'NOT DONE',
 'DONE'							=> 'DONE',
-'ALREADY DONE'					=> 'ALREADY DONE',
 'REVERTED'						=> 'REVERTED',
-'ALREADY REVERTED'				=> 'ALREADY REVERTED',
 
 'Patcher head'					=> 'Patcher plugin v%s',
 
@@ -66,6 +64,7 @@ $lang_admin_plugin_patcher = array(
 
 'Database prepared for'			=> 'Your database has been successfully prepared for %s mod',
 'Database restored'				=> 'Your database has been successfully restored',
+'Database not restored'			=> 'Your database has not been restored, as the author of this mod have not implemented restore function',
 'Patching file'					=> 'Patching file %s',
 'Running'						=> 'Running %s',
 'Deleting'						=> 'Deleting %s',
@@ -107,8 +106,6 @@ $lang_admin_plugin_patcher = array(
 'Backup filename'				=> 'Backup filename',
 'Backup filename info'			=> 'Filename of new backup.',
 'Make backup'					=> 'Make backup',
-
-'Patch'							=> 'Patch',
 
 'Backup tool info'				=> 'This tool makes a backup of FluxBB root, include and lang/English directory. All backups are placed in <strong>backups</strong> directory inside FluxBB root directory.',
 
@@ -186,7 +183,6 @@ $lang_admin_plugin_patcher = array(
 
 'Check for updates'				=> 'Check for updates',
 'Check for updates info'		=> '(automatically checking in every hour)',
-'Checking for updates'			=> 'Checking for updates... This might take a while :)',
 
 // Actions
 'OPEN'							=> 'OPEN',

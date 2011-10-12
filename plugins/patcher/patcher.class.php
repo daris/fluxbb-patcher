@@ -852,6 +852,11 @@ class PATCHER
 				eval($install_code);
 				if ($this->uninstall)
 				{
+					if (!function_exists('restore'))
+					{
+						$this->result = $lang_admin_plugin_patcher['Database not restored'];
+						return STATUS_UNKNOWN;
+					}
 					restore();
 					$this->result = $lang_admin_plugin_patcher['Database restored'];
 				}
