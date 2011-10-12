@@ -294,6 +294,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					elseif ($cur_step['command'] == 'DELETE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 					
+					elseif ($cur_step['command'] == 'RUN CODE' && !in_array($cur_action, array('enable', 'disable')))
+						$actions[] = array($lang_admin_plugin_patcher['Running code'], $cur_step['status'] != STATUS_NOT_DONE);
+					
 					elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
 						$notes[] = $cur_step['result'];
 				}

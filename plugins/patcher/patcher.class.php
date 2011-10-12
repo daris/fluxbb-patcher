@@ -31,6 +31,7 @@ class PATCHER
 	var $enable = false;
 	
 	var $modify_file_commands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
+	var $global_commands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
 	
 	function __construct($flux_mod, $action = 'install')
 	{
@@ -264,7 +265,7 @@ class PATCHER
 				if (!(($this->uninstall || $this->disable) && $cur_step['command'] == 'NOTE') // Don't display Note message when uninstalling mod
 					&& $cur_step['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
 				{
-					if (in_array($cur_step['command'], array('OPEN', 'RUN', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE')))
+					if (in_array($cur_step['command'], $this->global_commands))
 					{
 						$this->global_step = $i; // it is a global action
 						
@@ -274,6 +275,11 @@ class PATCHER
 							foreach ($this->flux_mod->files_to_upload as $from => $to)
 								$code[] = $from.' to '.$to;
 							$cur_step['substeps'][0] = array('code' => implode("\n", $code));
+							unset($cur_step['code']);
+						}
+						elseif ($cur_step['command'] == 'RUN CODE')
+						{
+							$cur_step['substeps'][0] = array('code' => $cur_step['code']);
 							unset($cur_step['code']);
 						}
 
@@ -804,11 +810,9 @@ class PATCHER
 		if (defined('PATCHER_NO_SAVE'))
 			return STATUS_UNKNOWN;
 		
-		if ($this->install)
-		{
-			eval($this->code);
-			return STATUS_DONE; // done
-		}
+		global $db;
+		eval($this->code);
+		return STATUS_DONE; // done
 	}
 	
 	function step_run()

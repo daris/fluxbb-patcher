@@ -635,8 +635,11 @@ class FLUX_MOD
 			$d = dir($plugins_dir);
 			while ($f = $d->read())
 			{
+				if (substr($f, 0, 1) == '.')
+					continue;
+
 				// Mod installer
-				if ($f{0} != '.' && is_dir($plugins_dir.'/'.$f) && file_exists($plugins_dir.'/'.$f.'/search_insert.php'))
+				if (is_dir($plugins_dir.'/'.$f) && file_exists($plugins_dir.'/'.$f.'/search_insert.php'))
 				{
 					require $plugins_dir.'/'.$f.'/search_insert.php';
 					$list_files = array();
@@ -684,7 +687,7 @@ class FLUX_MOD
 								}
 							}
 						}
-						$steps[] = array('action' => 'RUN CODE', 'code' => implode("\n", $code_array));
+						$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->install)'."\n{\n".implode("\n", $code_array)."\n}\n");
 					}
 
 					foreach($list_files as $file_name) 
@@ -739,6 +742,16 @@ class FLUX_MOD
 							}*/
 						}
 					}
+				}
+				// Mod installer
+				if (is_dir($plugins_dir.'/'.$f) && file_exists($plugins_dir.'/'.$f.'/update_install.php'))
+				{
+					$code = 'if ($this->install)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_install.php')."<?php\n".'}';
+					if (file_exists($plugins_dir.'/'.$f.'/update_uninstall.php'))
+						$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
+					
+					$code = str_replace('?><?php', '', $code);
+					$steps[] = array('command' => 'RUN CODE', 'code' => $code);
 				}
 			}
 		}

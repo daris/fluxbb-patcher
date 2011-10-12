@@ -67,6 +67,7 @@ $lang_admin_plugin_patcher = array(
 'Database not restored'			=> 'Your database has not been restored, as the author of this mod have not implemented restore function',
 'Patching file'					=> 'Patching file %s',
 'Running'						=> 'Running %s',
+'Running code'					=> 'Running code',
 'Deleting'						=> 'Deleting %s',
 'Num changes'					=> '%s changes',
 'Num changes reverted'			=> '%s changes reverted',
