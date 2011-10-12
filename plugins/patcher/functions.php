@@ -507,6 +507,21 @@ function remove_dir($path)
 }
 
 
+function is_empty_directory($dir)
+{
+	$d = dir($dir);
+	while ($f = $d->read())
+	{
+		if ($f != '.' && $f != '..')
+		{
+			$d->close();
+			return false;
+		}
+	}
+	$d->close();
+	return true;
+}
+
 function get_mod_repo($refresh = false)
 {
 	global $mod_repo;

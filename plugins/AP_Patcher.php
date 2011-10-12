@@ -690,7 +690,7 @@ else
 	$dir = dir(MODS_DIR);
 	while ($mod_id = $dir->read())
 	{
-		if (substr($mod_id, 0, 1) != '.' && is_dir(MODS_DIR.$mod_id))
+		if (substr($mod_id, 0, 1) != '.' && is_dir(MODS_DIR.$mod_id) && !is_empty_directory(MODS_DIR.$mod_id))
 		{
 			$flux_mod = new FLUX_MOD($mod_id);
 			$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]['version']);
