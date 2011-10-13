@@ -526,21 +526,9 @@ class PATCHER
 			rsort($directories);
 			foreach ($directories as $cur_dir)
 			{
-				// Checking that current directory is empty as we can't remove directory that have some files/directories
-				$is_empty = true;
-				$d = dir(PUN_ROOT.$cur_dir);
-				while ($f = $d->read())
-				{
-					if ($f != '.' && $f != '..')
-					{
-						$is_empty = false;
-						break;
-					}
-				}
-				$d->close();
-				
-				if ($is_empty)
-					$fs->delete(PUN_ROOT.$cur_dir);
+				// Remove directories that are empty
+				if ($fs->is_empty_directory(PUN_ROOT.$cur_dir))
+					$fs->remove_directory(PUN_ROOT.$cur_dir);
 			}
 			
 			return STATUS_REVERTED;
@@ -549,7 +537,7 @@ class PATCHER
 		foreach ($this->flux_mod->files_to_upload as $from => $to)
 		{
 			if (is_dir($this->flux_mod->readme_file_dir.'/'.$from))
-				copy_dir($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.$to);
+				$fs->copy_directory($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.$to);
 				// TODO: friendly_url_upload for directory
 			else
 			{

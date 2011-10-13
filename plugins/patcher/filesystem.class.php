@@ -117,10 +117,87 @@ class FILESYSTEM
 		if ($this->is_ftp) 
 			return $this->ftp->delete($this->fix_path($file));
 		
-		if (is_dir($file))
-			return rmdir($file);
 		return unlink($file);
 	}
+	
+	// Recursive directory remove
+	function remove_directory($path)
+	{
+		if (!is_dir($path))
+			return true;
+		
+		$this->check_connection();
+		if ($this->is_ftp) 
+			return $this->ftp->delete($this->fix_path($file));
+		
+		$files = array();
+		$d = dir($path);
+		while ($f = $d->read())
+		{
+			if ($f != '.' && $f != '..')
+			{
+				if (is_file($path.'/'.$f))
+					$files[] = $path.'/'.$f;
+			}
+		}
+		$d->close();
+		
+		// It files aren't writable the rest of this function will not be executed
+		$this->are_files_writable($files);
+		
+		foreach ($files as $cur_file)
+			$this->delete($cur_file);
+
+		$d = dir($path);
+		while ($f = $d->read())
+		{
+			if ($f != '.' && $f != '..')
+			{
+				if (is_dir($path.'/'.$f))
+					$this->remove_directory($path.'/'.$f);
+			}
+		}
+		$d->close();
+
+		return rmdir($path);
+	}
+	
+	
+	function copy_directory($source, $dest)
+	{
+		if (!is_dir($dest))
+			$this->mkdir($dest);
+
+		$d = dir($source);
+		while ($f = $d->read())
+		{
+			if ($f != '.' && $f != '..' && $f != '.git' && $f != '.svn')
+			{
+				if (is_dir($source.'/'.$f))
+					$this->copy_directory($source.'/'.$f, $dest.'/'.$f);
+				else
+					$this->copy($source.'/'.$f, $dest.'/'.$f);
+			}
+		}
+		$d->close();
+		return true;
+	}
+	
+	function is_empty_directory($dir)
+	{
+		$d = dir($dir);
+		while ($f = $d->read())
+		{
+			if ($f != '.' && $f != '..')
+			{
+				$d->close();
+				return false;
+			}
+		}
+		$d->close();
+		return true;
+	}
+
 	
 	function is_writable($path)
 	{
@@ -171,6 +248,25 @@ class FILESYSTEM
 		}
 
 		return is_writable($path);
+	}
+	
+
+	function are_files_writable($files)
+	{
+		global $lang_admin_plugin_patcher;
+
+		$not_writable = array();
+		foreach ($files as $cur_file)
+		{
+			if (!$this->is_writable($cur_file))
+				$not_writable[] = $cur_file;
+			if (!$this->is_writable(dirname($cur_file)))
+				$not_writable[] = dirname($cur_file);
+		}
+
+		if (count($not_writable) > 0)
+			message($lang_admin_plugin_patcher['Directories not writable info'].'<br />'.implode('<br />', $not_writable));
+		return true;
 	}
 }
 
