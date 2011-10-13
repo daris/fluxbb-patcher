@@ -24,6 +24,9 @@ class ZIP_ARCHIVE
 		if (isset($file))
 			$this->file = $file;
 		
+		if (!file_exists($this->file))
+			message('File does not exist '.$this->file);
+		
 		if (ZIP_NATIVE)
 		{
 			$this->zip = new ZipArchive;
@@ -66,6 +69,8 @@ class ZIP_ARCHIVE
 		if (ZIP_NATIVE)
 		{
 			$files = $this->list_content();
+			if (!$files)
+				return false;
 
 			foreach ($files as $cur_file)
 			{
@@ -89,6 +94,9 @@ class ZIP_ARCHIVE
 		}
 
 		$files = $this->zip->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
+		if (!$files)
+			return false;
+	
 		foreach ($files as $cur_file)
 		{
 			if ($cur_file['folder'] == 1)
