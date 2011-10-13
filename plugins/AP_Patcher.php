@@ -176,7 +176,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		$logs = array();
 
 		// Disable mod if we want to update it
-		if ($action == 'update')
+		if ($action == 'update' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		{
 			$patcher = new PATCHER($flux_mod, 'disable');
 			$done = $patcher->patch();
