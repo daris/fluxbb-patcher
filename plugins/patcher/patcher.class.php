@@ -392,7 +392,7 @@ class PATCHER
 		}
 		elseif ($this->enable && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']))
 			unset($this->config['installed_mods'][$this->flux_mod->id]['disabled']);
-		elseif ($this->disable)
+		elseif ($this->disable && $GLOBALS['action'] != 'update')
 			$this->config['installed_mods'][$this->flux_mod->id]['disabled'] = 1;
 	
 		// if some file was opened, save it
