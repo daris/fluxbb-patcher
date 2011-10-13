@@ -121,6 +121,8 @@ class FLUX_MOD
 		if (!isset($this->readme_file) || empty($this->readme_file))
 			return array();
 		
+		$mod_info = array();
+		
 		$file = substr($file, 0, strpos($file, '#--'));
 		$file = trim($file, '# '."\n\r\t");
 		

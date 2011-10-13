@@ -305,7 +305,7 @@ function create_backup($backup)
 	// Add FluxBB root directory to backup
 	$dir = dir(PUN_ROOT);
 	while ($file = $dir->read())
-		if (!in_array($file, array('.', '..', 'config.php', 'install_mod.php', 'gen.php')) && is_file(PUN_ROOT.$file))
+		if (!in_array($file, array('.', '..', 'config.php', 'install_mod.php', 'gen.php', 'revert_backup.php')) && is_file(PUN_ROOT.$file))
 			$files[] = $file;
 
 	// Add include directory to backup
@@ -322,7 +322,13 @@ function create_backup($backup)
 
 	$files[] = 'style/Air.css';
 
-	zip_files($backup_file, $files);
+	$tmpfile = $fs->tmpname();
+	$zip = new ZIP_ARCHIVE($tmpfile, true);
+	if (!$zip->add($files))
+		message('Cannot add files to archive');
+	$zip->close();
+	
+	$fs->move($tmpfile, $backup_file);
 }
 
 function revert($file)
@@ -337,8 +343,10 @@ function revert($file)
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		$fs->delete(PUN_ROOT.'patcher_config.php');
 
-	if (!zip_extract(BACKUPS_DIR.$file, PUN_ROOT))
+	$zip = new ZIP_ARCHIVE(BACKUPS_DIR.$file);
+	if (!$zip->extract(PUN_ROOT))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
+	$zip->close();
 
 	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Files reverted redirect']);
 }
@@ -368,7 +376,16 @@ function upload_mod()
 	if (is_dir(MODS_DIR.$mod_id) && !is_empty_directory(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory already exists'], pun_htmlspecialchars($mod_id)));
 
-	extract_mod_package($mod_id, $_FILES['upload_mod']['tmp_name'], 'upload');
+	if (!is_dir(MODS_DIR.$mod_id))
+		if (!$fs->mkdir(MODS_DIR.$mod_id))
+			message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
+
+	$zip = new ZIP_ARCHIVE(MODS_DIR.$filename);
+	if (!$zip->extract(MODS_DIR.$mod_id))
+		message($lang_admin_plugin_patcher['Failed to extract file']);
+	$zip->close();
+
+	redirect(PLUGIN_URL.'&mod_id='.$mod_id, $lang_admin_plugin_patcher['Modification uploaded redirect']);
 }
 
 
@@ -382,14 +399,26 @@ function download_update($mod_id, $version)
 	if (!$fs->is_writable(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Directory not writable'], 'mods/'.pun_htmlspecialchars($mod_id)));
 
-	// Empty modification dir
-	remove_dir(MODS_DIR.$mod_id);
-
 //	$mod_id = preg_replace('/-+v[\d\.]+$/', '', str_replace('_', '-', $mod_id)); // strip version number
 	$filename = basename($mod_id.'_v'.$version.'.zip');
-	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $fs->tmpname());
+	$tmpname = $fs->tmpname();
+	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $tmpname);
 
-	extract_mod_package($mod_id, MODS_DIR.$filename, 'update');
+	// Clean modification directory
+	if (is_dir(MODS_DIR.$mod_id))
+		remove_dir(MODS_DIR.$mod_id);
+
+	if (!$fs->mkdir(MODS_DIR.$mod_id))
+		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
+
+	$zip = new ZIP_ARCHIVE($tmpname);
+	if (!$zip->extract(MODS_DIR.$mod_id))
+		message($lang_admin_plugin_patcher['Failed to extract file']);
+	$zip->close();
+
+	$redirect_url = (isset($_GET['update'])) ? '&mod_id='.$mod_id.'&action=update' : '';
+
+	redirect(PLUGIN_URL.$redirect_url, $lang_admin_plugin_patcher['Modification updated redirect']);
 }
 
 function download_mod($mod_id)
@@ -416,35 +445,16 @@ function download_mod($mod_id)
 	$tmpname = $fs->tmpname();
 	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), $tmpname);
 
-	extract_mod_package($mod_id, $tmpname, 'download');
-}
-
-
-function extract_mod_package($mod_id, $file, $action)
-{
-	global $lang_admin_plugin_patcher, $fs;
-
 	if (!is_dir(MODS_DIR.$mod_id))
 		if (!$fs->mkdir(MODS_DIR.$mod_id))
 			message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
-	if (!zip_extract($file, MODS_DIR.$mod_id))
+	$zip = new ZIP_ARCHIVE($tmpname);
+	if (!$zip->extract(MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
-		
-	// if ($action != 'upload')
-		// $fs->delete($file);
-	
-	$redirect_message = array(
-		'upload'	=> 'Modification uploaded redirect',
-		'update'	=> 'Modification updated redirect',
-		'download'	=> 'Modification downloaded redirect',
-	);
+	$zip->close();
 
-	$redirect_url = '&mod_id='.$mod_id.($action == 'update' ? '&action=update' : '');
-	if ($action == 'update' && !isset($_GET['update']))
-		$redirect_url = '';
-	
-	redirect(PLUGIN_URL.$redirect_url, $lang_admin_plugin_patcher[$redirect_message[$action]]);
+	redirect(PLUGIN_URL.'&mod_id='.$mod_id, $lang_admin_plugin_patcher['Modification downloaded redirect']);
 }
 
 
@@ -475,16 +485,23 @@ function remove_dir($path)
 	if (!is_dir($path))
 		return;
 	
+	$files = array();
 	$d = dir($path);
 	while ($f = $d->read())
 	{
 		if ($f != '.' && $f != '..')
 		{
 			if (is_file($path.'/'.$f))
-				$fs->delete($path.'/'.$f);
+				$files[] = $path.'/'.$f;
 		}
 	}
 	$d->close();
+	
+	are_files_writable($files);
+
+	foreach ($files as $cur_file)
+		$fs->delete($cur_file);
+		
 	$d = dir($path);
 	while ($f = $d->read())
 	{
@@ -495,6 +512,7 @@ function remove_dir($path)
 		}
 	}
 	$d->close();
+
 	$fs->delete($path);
 }
 
@@ -600,26 +618,69 @@ function do_clickable_html($text)
 }
 
 
+function are_files_writable($files)
+{
+	global $lang_admin_plugin_patcher, $fs;
+
+	$not_writable = array();
+	foreach ($files as $cur_file)
+	{
+		if (!$fs->is_writable($cur_file))
+			$not_writable[] = $cur_file;
+		if (!$fs->is_writable(dirname($cur_file)))
+			$not_writable[] = dirname($cur_file);
+	}
+
+	if (count($not_writable) > 0)
+		message($lang_admin_plugin_patcher['Directories not writable info'].'<br />'.implode('<br />', $not_writable));
+}
+
 /*
 	ZIP functions
 */
 
-function zip_extract($file, $extract_to, &$files = array())
-{
-	global $lang_admin_plugin_patcher, $fs;
 
+function zip_list_files($file)
+{
 	if (class_exists('ZipArchive'))
 	{
 		$zip = new ZipArchive;
 		if ($zip->open($file) !== true)
 			return false;
 
-		//$zip->extractTo($extract_to);
-
 		$i = 0;
 		while ($cur_file = $zip->statIndex($i++))
+			$files[] = $cur_file['name'];
+		$zip->close();
+	}
+	else
+	{
+		require_once PATCHER_ROOT.'pclzip.lib.php';
+		
+		$archive = new PclZip($file);
+		$files = $archive->listContent();
+		$archive->close();
+	}
+
+	return $files;
+}
+
+function zip_extract($file, $extract_to, &$files = array())
+{
+	global $lang_admin_plugin_patcher, $fs;
+	
+	are_files_writable($files);
+	
+	// Extract contents
+	if (class_exists('ZipArchive'))
+	{
+		$zip = new ZipArchive;
+		if ($zip->open($file) !== true)
+			return false;
+
+		foreach ($files as $cur_file)
 		{
-			$fp = $zip->getStream($cur_file['name']);
+			$fp = $zip->getStream($cur_file);
 			if (!$fp)
 				message('Failed');
 			$contents = '';
@@ -627,13 +688,11 @@ function zip_extract($file, $extract_to, &$files = array())
 				$contents .= fread($fp, 2);
 			fclose($fp);
 
-			if (in_array(substr($cur_file['name'], -1), array('/', '\\')))
-				$fs->mkdir($extract_to.'/'.$cur_file['name']);
+			if (in_array(substr($cur_file, -1), array('/', '\\')))
+				$fs->mkdir($extract_to.'/'.$cur_file);
 			else
-				$fs->put($extract_to.'/'.$cur_file['name'], $contents);
-			$files[] = $cur_file['name'];
+				$fs->put($extract_to.'/'.$cur_file, $contents);
 		}
-
 		return $zip->close();
 	}
 	else
@@ -641,15 +700,13 @@ function zip_extract($file, $extract_to, &$files = array())
 		require_once PATCHER_ROOT.'pclzip.lib.php';
 		
 		$archive = new PclZip($file);
-		$p_list = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
-		foreach ($p_list as $cur_file)
+		$files = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
+		foreach ($files as $cur_file)
 		{
 			if ($cur_file['folder'] == 1)
 				$fs->mkdir($extract_to.'/'.$cur_file['stored_filename']);
 			else
 				$fs->put($extract_to.'/'.$cur_file['stored_filename'], $cur_file['content']);
-
-			$files[] = $cur_file['stored_filename'];
 		}
 	}
 	return true;
@@ -706,4 +763,90 @@ function convert_mods_to_config()
 	
 	if (!defined('PATCHER_NO_SAVE'))
 		file_put_contents(PUN_ROOT.'patcher_config.php', '<?php'."\n\n".'// DO NOT EDIT THIS FILE!'."\n\n".'$patcher_config = '.var_export($patcher_config, true).';');
+}
+
+
+
+function patcher_error_handler($errno, $errstr, $errfile, $errline)
+{
+    if (!(error_reporting() & $errno)) {
+        // This error code is not included in error_reporting
+        return;
+    }
+
+	echo '<span style="color: red">';
+    switch ($errno)
+	{
+		case E_USER_ERROR:
+			echo "<b>My ERROR</b> [$errno] $errstr<br />\n";
+			echo "  Fatal error on line $errline in file $errfile";
+			echo ", PHP " . PHP_VERSION . " (" . PHP_OS . ")<br />\n";
+			echo "Aborting...<br />\n";
+			break;
+
+		case E_USER_WARNING:
+			echo "<b>My WARNING</b> [$errno] $errstr";
+			break;
+
+		case E_USER_NOTICE:
+			echo "<b>My NOTICE</b> [$errno] $errstr";
+			break;
+			
+		case E_WARNING:
+			echo "<b>Warning</b> [$errno] $errstr";
+			break;
+
+		default:
+			echo "Unknown error type: [$errno] $errstr";
+			break;
+    }
+	
+	$path = realpath(PUN_ROOT);
+	if (isset($errfile))
+	{
+		$file = realpath($errfile);
+		if (substr($file, 0, strlen($path)) == $path)
+			$file = substr($file, strlen($path));
+		echo ' in '.htmlspecialchars($file).', '.$errline;
+	}
+	
+	echo '</span><br />';
+	$backtrace = debug_backtrace();
+	foreach ($backtrace as $cur_backtrace)
+	{
+		if (isset($cur_backtrace['file']))
+		{
+			$file = realpath($cur_backtrace['file']);
+			if (substr($file, 0, strlen($path)) == $path)
+				$file = substr($file, strlen($path));
+			echo htmlspecialchars($file).', '.$cur_backtrace['line'].': ';
+;
+		}
+		if (isset($cur_backtrace['function']))
+		{
+			if (isset($cur_backtrace['class']))
+				echo htmlspecialchars($cur_backtrace['class']).'->';
+			
+			echo htmlspecialchars($cur_backtrace['function']);
+			echo '(<span style="color: 999">';
+		}
+		if (isset($cur_backtrace['args']))
+		{
+			$args = array();
+			foreach ($cur_backtrace['args'] as $cur_arg)
+			{
+				$args[] = var_export($cur_arg, true);
+			}
+			echo implode(', ', $args);
+		}
+		echo '</span>);<br />';
+	}
+	echo '<br />';
+
+	if ($errno == E_USER_ERROR)
+		exit(1);
+	$GLOBALS['pun_config']['o_redirect_delay'] = 10000; // :)
+
+    /* Don't execute PHP internal error handler */
+    return true;
 }

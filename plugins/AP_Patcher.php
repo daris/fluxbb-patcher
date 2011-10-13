@@ -21,17 +21,22 @@ define('PATCHER_VERSION', '2.0-dev');
 define('PATCHER_CONFIG_REV', '1');
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
+	
 error_reporting(E_ALL);
+require PATCHER_ROOT.'functions.php';
+set_error_handler('patcher_error_handler');
 
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
-require PATCHER_ROOT.'functions.php';
+if (file_exists(PATCHER_ROOT.'config.php'))
+	require PATCHER_ROOT.'config.php';
+
 require PATCHER_ROOT.'flux_mod.class.php';
 require PATCHER_ROOT.'patcher.class.php';
 require PATCHER_ROOT.'filesystem.class.php';
-if (file_exists(PATCHER_ROOT.'config.php'))
-	require PATCHER_ROOT.'config.php';
+require PATCHER_ROOT.'zip.class.php';
+
 
 $fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
 
@@ -519,7 +524,7 @@ elseif (isset($_GET['show_log']))
 					<thead>
 						<tr>
 <?php if (isset($cur_step['command']) && (isset($cur_step['code']) || isset($cur_step['substeps']))) : ?>
-							<th id="a<?php echo $key ?>" style="<?php echo ($cur_step['status'] == STATUS_NOT_DONE) ? 'font-weight: bold; color: #a00' : '' ?>"><span style="float: right"><a href="#a<?php echo $key ?>">#<?php echo $key ?></a></span><?php echo pun_htmlspecialchars($cur_step['command']).' '.pun_htmlspecialchars($cur_step['code']) ?></th>
+							<th id="a<?php echo $key ?>" style="<?php echo ($cur_step['status'] == STATUS_NOT_DONE) ? 'font-weight: bold; color: #a00' : '' ?>"><span style="float: right"><a href="#a<?php echo $key ?>">#<?php echo $key ?></a></span><?php echo pun_htmlspecialchars($cur_step['command']).' '.(isset($cur_step['code']) ? pun_htmlspecialchars($cur_step['code']) : '') ?></th>
 <?php elseif (isset($cur_step['command'])) : ?>
 							<th><?php echo pun_htmlspecialchars($cur_step['command']) ?></th>
 <?php else : ?>
