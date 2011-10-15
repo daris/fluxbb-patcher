@@ -199,4 +199,6 @@ $lang_admin_plugin_patcher = array(
 'RENAME'						=> 'RENAME',
 'RUN CODE'						=> 'RUN CODE',
 
+'Root directory not writable message' => 'FluxBB root directory is not writable.<br /><br />The basic Linux server permission settings does not allow to modify files via PHP.<br />There are two ways of making Patcher to do this:<br />1. Change chmod of each FluxBB directory to 0777 (and apply for each file) - but it is a seciurity issue and I suggest you to do step 2 instead :)<br />2. Enable FTP layer by renaming plugins/patcher/config_sample.php to config.php and filling the FTP login details. This way Patcher will use a FTP account to make changes to the files.<br /><br />More details about permission problem:<br /><a href="http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems">http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems</a>',
+
 );

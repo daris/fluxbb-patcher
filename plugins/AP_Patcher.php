@@ -37,12 +37,20 @@ require PATCHER_ROOT.'patcher.class.php';
 require PATCHER_ROOT.'filesystem.class.php';
 require PATCHER_ROOT.'zip.class.php';
 
+// Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
+if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php'))
+	require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php';
+else
+	require PATCHER_ROOT.'../../lang/English/admin_plugin_patcher.php';
 
 $fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
+
+if (!$fs->is_writable(PUN_ROOT))
+	message($lang_admin_plugin_patcher['Root directory not writable message']);
 
 // Get the patcher directories
 if (!defined('MODS_DIR'))
@@ -58,12 +66,6 @@ if (!defined('BACKUPS_DIR'))
 		$fs->mkdir(PUN_ROOT.'backups');
 	define('BACKUPS_DIR', PUN_ROOT.'backups/');
 }
-
-// Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
-if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php'))
-	require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php';
-else
-	require PATCHER_ROOT.'../../lang/English/admin_plugin_patcher.php';
 
 // Need sesion for storing/retrieving patching log
 if (!session_id())

@@ -322,13 +322,12 @@ function create_backup($backup)
 
 	$files[] = 'style/Air.css';
 
-	$tmpfile = $fs->tmpname();
-	$zip = new ZIP_ARCHIVE($tmpfile, true);
+	$zip = new ZIP_ARCHIVE($fs->tmpname(), true);
 	if (!$zip->add($files))
 		message('Cannot add files to archive');
 	$zip->close();
 
-	$fs->move($tmpfile, $backup_file);
+	$fs->move($zip->file, $backup_file);
 }
 
 function revert($file)
