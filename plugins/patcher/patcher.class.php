@@ -825,17 +825,20 @@ class PATCHER
 			{
 				$install_code = file_get_contents(PUN_ROOT.'install_mod.php');
 				$install_code = substr($install_code, strpos($install_code, '<?php') + 5);
-				if (strpos($install_code, '// DO NOT EDIT ANYTHING BELOW THIS LINE!') !== false)
-					$install_code = substr($install_code, 0, strpos($install_code, '// DO NOT EDIT ANYTHING BELOW THIS LINE!'));
-				elseif (($install_pos = strpos($install_code, 'function install(')) !== false && strpos($install_code, '/***', $install_pos) !== false)
-					$install_code = substr($install_code, 0, strpos($install_code, '/***', $install_pos));
+				$len = strlen($install_code);
+
+				if (($pos = strpos($install_code, '// DO NOT EDIT ANYTHING BELOW THIS LINE!')) !== false)
+					$len = $pos;
+				elseif (($pos = strpos($install_code, 'function install(')) !== false && ($pos2 = strpos($install_code, '/***', $pos)) !== false)
+					$len = $pos2;
 
 				// Fix for changes in install_mod.php for another private messaging system
-				elseif (strpos($install_code, '// Make sure we are running a FluxBB version') !== false)
+				elseif (($pos = strpos($install_code, '// Make sure we are running a FluxBB version')) !== false)
 				{
-					$install_code = substr($install_code, 0, strpos($install_code, '// Make sure we are running a FluxBB version'));
+					$len = $pos;
 					$install_code = str_replace(array('define(\'PUN_TURN_OFF_MAINT\', 1);', 'define(\'PUN_ROOT\', \'./\');', 'require PUN_ROOT.\'include/common.php\';'), '', $install_code);
 				}
+				$install_code = substr($install_code, 0, $len);
 
 				$lines = explode("\n", $install_code);
 				foreach ($lines as $cur_line)
@@ -864,8 +867,7 @@ class PATCHER
 
 		ob_start();
 		require_once PUN_ROOT.$this->code;
-		$this->result = ob_get_contents();
-		ob_end_clean();
+		$this->result = ob_get_clean();
 		return STATUS_DONE;
 	}
 

@@ -575,23 +575,23 @@ class FLUX_MOD
 			if (trim($readme) == '')
 				break;
 
-			if (strpos($readme, '#--') !== false)
-				$cur_step = substr($readme, 0, strpos($readme, '#--'));
+			if (($pos = strpos($readme, '#--')) !== false)
+				$cur_step = substr($readme, 0, $pos);
 
 			$cur_step = substr($cur_step, strpos($cur_step, '[') + 1);
 //			$cur_step = substr($cur_step, strpos($cur_step, '.') + 1); // +1 = dot
 			$cur_command = substr($cur_step, 0, strpos($cur_step, ']') - 1);
 
 			$cur_info = null;
-			if (strpos($cur_command, '(') !== false)
+			if (($pos = strpos($cur_command, '(')) !== false)
 			{
-				$cur_info = substr($cur_command, strpos($cur_command, '(') + 1);
+				$cur_info = substr($cur_command, $pos + 1);
 				$cur_info = substr($cur_info, 0, strpos($cur_info, ')'));
 				$cur_command = substr($cur_command, 0, strpos($cur_command, '('));
 			}
 
-			if (strpos($cur_command, '.') !== false)
-				$cur_command = substr($cur_command, strpos($cur_command, '.') + 1);
+			if (($pos = strpos($cur_command, '.')) !== false)
+				$cur_command = substr($cur_command, $pos + 1);
 
 			$cur_command = trim(preg_replace('#[^A-Z\s]#', '', strtoupper($cur_command)));
 
