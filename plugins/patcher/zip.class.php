@@ -12,33 +12,33 @@ class ZIP_ARCHIVE
 	var $file;
 	private $zip; // ZipArchive or PclZip object
 	var $is_open = false;
-	
+
 	function __construct($file, $create = false)
 	{
 		$this->file = $file;
 		$this->open(null, $create);
 	}
-	
+
 	function open($file = null, $create = false)
 	{
 		if (isset($file))
 			$this->file = $file;
-		
+
 		if (!file_exists($this->file))
 			message('File does not exist '.$this->file);
-		
+
 		if (ZIP_NATIVE)
 		{
 			$this->zip = new ZipArchive;
 			$this->is_open = ($this->zip->open($this->file, ($create ? ZIPARCHIVE::CREATE : null)) === true);
 			return $this->is_open;
 		}
-		
+
 		$this->zip = new PclZip($this->file);
 		$this->is_open = true; // TODO: what if it fails?
 		return $this->is_open;
 	}
-	
+
 	function list_content()
 	{
 		if (!$this->is_open)
@@ -55,14 +55,14 @@ class ZIP_ARCHIVE
 
 		return $archive->listContent();
 	}
-	
+
 	function extract($extract_to)
 	{
 		global $fs;
-		
+
 		if (!$this->is_open)
 			return false;
-		
+
 		if (!is_dir($extract_to))
 			message('Can\'t extract files. Directory '.pun_htmlspecialchars($extract_to).' does not exist');
 
@@ -96,7 +96,7 @@ class ZIP_ARCHIVE
 		$files = $this->zip->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
 		if (!$files)
 			return false;
-	
+
 		foreach ($files as $cur_file)
 		{
 			if ($cur_file['folder'] == 1)
@@ -109,8 +109,8 @@ class ZIP_ARCHIVE
 		}
 		return true;
 	}
-	
-	
+
+
 	function add($files)
 	{
 		if (!$this->is_open)
@@ -123,13 +123,13 @@ class ZIP_ARCHIVE
 					$this->zip->addFile(PUN_ROOT.$cur_file, $cur_file);
 			return true;
 		}
-		
+
 		foreach ($files as $cur_file)
 			if (is_readable(PUN_ROOT.$cur_file))
 				$this->archive->add(PUN_ROOT.$cur_file);
 		return true;
 	}
-	
+
 	function close()
 	{
 		if (ZIP_NATIVE)

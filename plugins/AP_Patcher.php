@@ -21,7 +21,7 @@ define('PATCHER_VERSION', '2.0-dev');
 define('PATCHER_CONFIG_REV', '1');
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
-	
+
 error_reporting(E_ALL);
 require PATCHER_ROOT.'functions.php';
 set_error_handler('patcher_error_handler');
@@ -47,7 +47,7 @@ if (!defined('PUN_DEBUG'))
 // Get the patcher directories
 if (!defined('MODS_DIR'))
 	define('MODS_DIR', PUN_ROOT.'mods/');
-	
+
 if (!is_dir(MODS_DIR))
 	error('Mods directory does not exist');
 
@@ -113,7 +113,7 @@ if (isset($_POST['backup']))
 {
 	$backup_name = isset($_POST['backup_name']) ? basename($_POST['backup_name']) : 'fluxbb_'.time();
 	create_backup($backup_name);
-	
+
 	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Backup created redirect']);
 }
 $notes = array();
@@ -125,18 +125,26 @@ $mod_repo = get_mod_repo(isset($_GET['check_for_updates']));
 if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
 	$notes[] = sprintf($lang_admin_plugin_patcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>');
 
-// Show warning if there are directories not writable
+// Check needed directories to be writable
 $dirs_not_writable = array();
-$check_dirs = array('root' => PUN_ROOT, 'include' => PUN_ROOT.'include/', 'lang' => PUN_ROOT.'lang/', 'lang/English' => PUN_ROOT.'lang/English/', 'backups' => BACKUPS_DIR, 'mods' => MODS_DIR);
+$check_dirs = array(
+	'root' => PUN_ROOT,
+	'include' => PUN_ROOT.'include/',
+	'lang' => PUN_ROOT.'lang/',
+	'lang/English' => PUN_ROOT.'lang/English/',
+	'backups' => BACKUPS_DIR,
+	'mods' => MODS_DIR
+);
 foreach ($check_dirs as $name => $cur_dir)
 {
 	if (!$fs->is_writable($cur_dir))
 		$dirs_not_writable[] = pun_htmlspecialchars($name);
 }
 
+// Show a warning info if there are some directories not writable
 if (count($dirs_not_writable) > 0)
 	$notes[] = '<strong>'.$lang_admin_plugin_patcher['Directories not writable info'].'</strong>: '.implode(', ', $dirs_not_writable).'<br />'.$lang_admin_plugin_patcher['Disabled features info'];
-	
+
 $warning = '';
 if (count($notes) > 0)
 {
@@ -146,6 +154,7 @@ if (count($notes) > 0)
 	$warning .= "\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
 }
 
+// User wants to do some action?
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
 	$patcher_config = array('installed_mods' => array(), 'steps' => array());
@@ -160,12 +169,12 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Mod already enabled']);
 	elseif ($action == 'disable' && isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		message($lang_admin_plugin_patcher['Mod already disabled']);
-	
+
 	$flux_mod = new FLUX_MOD($mod_id);
 	if (!$flux_mod->is_valid)
 		message($lang_admin_plugin_patcher['Invalid mod dir']);
-	
-	// Check requirements
+
+	// Get the requirenment list
 	$requirements = $flux_mod->check_requirements();
 
 	// Do patching! :)
@@ -175,7 +184,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		$_SESSION['patcher_log'] = '';
 		$logs = array();
 
-		// Disable mod if we want to update it
+		// If user wants to update mod, first remove its code from files (disable mod) and then update it
 		if ($action == 'update' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		{
 			$patcher = new PATCHER($flux_mod, 'disable');
@@ -185,14 +194,14 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		}
 		else
 			$patcher = new PATCHER($flux_mod, $action);
-	
+
 		$done = $patcher->patch();
 		$logs = $patcher->log;
-	
+
 		$_SESSION['patcher_logs'] = serialize($logs);
 
 		generate_admin_menu($plugin);
-	
+
 ?>
 	<div class="blockform">
 		<h2><span><?php echo $lang_admin_plugin_patcher['Mod installation'] ?></span></h2>
@@ -205,7 +214,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 <?php
 
 		$notes = array();
-		
+
 		$done_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Mod installed'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Mod uninstalled'],
@@ -213,7 +222,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'disable'	=> $lang_admin_plugin_patcher['Mod disabled'],
 			'update'	=> $lang_admin_plugin_patcher['Mod updated'],
 		);
-		
+
 		$failed_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Install failed'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Uninstall failed'],
@@ -221,7 +230,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'disable'	=> $lang_admin_plugin_patcher['Disable failed'],
 			'update'	=> $lang_admin_plugin_patcher['Update failed']
 		);
-		
+
 		$action_info = array(
 			'install'	=> $lang_admin_plugin_patcher['Installing'],
 			'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
@@ -234,7 +243,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		{
 			echo "\n\t\t\t\t\t\t".'<p>'.$action_info[$cur_action].'...<br />';
 			$actions = array();
-			
+
 			foreach ($log as $cur_step_list)
 			{
 				foreach ($cur_step_list as $id => $cur_step)
@@ -271,7 +280,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						}
 						if ($cur_step['status'] == STATUS_NOT_DONE)
 							$steps_failed[$id] = $id;
-						
+
 						$color = (count($steps_failed) > 0) ? 'red' : 'green';
 
 						$sub_msg = array();
@@ -301,10 +310,10 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					}
 					elseif ($cur_step['command'] == 'DELETE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
-					
+
 					elseif ($cur_step['command'] == 'RUN CODE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array($lang_admin_plugin_patcher['Running code'], $cur_step['status'] != STATUS_NOT_DONE);
-					
+
 					elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
 						$notes[] = $cur_step['result'];
 				}
@@ -312,10 +321,10 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 			foreach ($actions as $cur_action)
 				echo "\n\t\t\t\t\t\t\t".'<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
-			
+
 			echo '</p>'."\n";
 		}
-		
+
 ?>
 <?php if ($done) : ?>
 							<p><strong><?php echo $lang_admin_plugin_patcher['Congratulations'] ?></strong><br /><?php echo $done_info[$action] ?></p>
@@ -323,15 +332,15 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 							<p><strong><?php echo $failed_info[$action] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed'] ?></p>
 							<p><strong><?php echo $lang_admin_plugin_patcher['What to do now'] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed info 1'] ?></p>
 <?php endif; ?>
-	<?php 	if (count($notes) > 0) 
+	<?php 	if (count($notes) > 0)
 			{
 				echo "\n\t\t\t\t\t\t".'<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
 				foreach ($notes as $cur_note)
-					echo "\n\t\t\t\t\t\t\t".'<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>'; 
+					echo "\n\t\t\t\t\t\t\t".'<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>';
 				echo "\n\t\t\t\t\t\t".'</p>';
 			} ?>
 							<p>
-								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> | 
+								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> |
 <?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=update"><?php echo $lang_admin_plugin_patcher['Update'] ?></a> | <?php endif; ?>
 <?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a> |  <?php endif; ?>
 								<a href="<?php echo PLUGIN_URL ?>"><?php echo $lang_admin_plugin_patcher['Return to mod list'] ?></a>
@@ -348,7 +357,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 	else
 	{
-		require PUN_ROOT.'include/parser.php'; // handle_url_tag()
+		require PUN_ROOT.'include/parser.php'; // need for handle_url_tag()
 
 		$detailed_info = array();
 		// Generate mod info
@@ -361,23 +370,23 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			$info .= ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
 		elseif (isset($flux_mod->author))
 			$info .= ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
-		
+
 		if (isset($flux_mod->description))
 			$info .= '<br />'.pun_htmlspecialchars($flux_mod->description);
-		
+
 		$detailed_info[$lang_admin_plugin_patcher['Description']] = $info;
 
 		if (isset($flux_mod->works_on))
 			$detailed_info[$lang_admin_plugin_patcher['Works on FluxBB']] = pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
-		
+
 		if (isset($flux_mod->release_date))
 			$detailed_info[$lang_admin_plugin_patcher['Release date']] = pun_htmlspecialchars($flux_mod->release_date);
 
 		if (isset($flux_mod->affects_db))
 			$detailed_info[$lang_admin_plugin_patcher['Affects DB']] = pun_htmlspecialchars($flux_mod->affects_db);
-		
+
 		generate_admin_menu($plugin);
-		
+
 		echo $warning;
 ?>
 	<div class="blockform">
@@ -393,7 +402,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($flux_mod->id).'&version='.$mod_updates[$flux_mod->id]['release'].'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($mod_updates[$flux_mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 			</div>
-			
+
 <?php if (isset($requirements['failed'])) : ?>
 					<fieldset>
 						<legend><?php echo $lang_admin_plugin_patcher['Unmet requirements'] ?></legend>
@@ -435,7 +444,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 <?php
 			$req_type = array(
 				'files_to_upload' 	=> array($lang_admin_plugin_patcher['Files to upload'], $lang_admin_plugin_patcher['Files to upload info']),
-				'directories' 		=> array($lang_admin_plugin_patcher['Directories'], $lang_admin_plugin_patcher['Directories info']), 
+				'directories' 		=> array($lang_admin_plugin_patcher['Directories'], $lang_admin_plugin_patcher['Directories info']),
 				'affected_files' 	=> array($lang_admin_plugin_patcher['Affected files'], $lang_admin_plugin_patcher['Affected files info'])
 			);
 			foreach ($requirements as $type => $cur_requirements)
@@ -483,7 +492,7 @@ elseif (isset($_GET['show_log']))
 {
 	$first = true;
 	generate_admin_menu($plugin);
-	
+
 	if (!isset($_SESSION['patcher_logs']))
 		message($lang_common['Bad request']);
 	$logs = unserialize($_SESSION['patcher_logs']);
@@ -548,7 +557,7 @@ elseif (isset($_GET['show_log']))
 							$cur_substep['command'] = $lang_admin_plugin_patcher[$cur_substep['command']];
 						$style = '';
 						$comments = array();
-						
+
 						if (!isset($cur_substep['status']))
 							$cur_substep['status'] = STATUS_UNKNOWN;
 						switch ($cur_substep['status'])
@@ -557,7 +566,7 @@ elseif (isset($_GET['show_log']))
 							case STATUS_DONE:			$style = 'color: #0a0'; 		$comments[] = $lang_admin_plugin_patcher['DONE']; break;
 							case STATUS_REVERTED:		$style = 'color: #00a'; 		$comments[] = $lang_admin_plugin_patcher['REVERTED']; break;
 						}
-						
+
 						if (isset($cur_substep['comments']))
 							$comments = array_merge($comments, $cur_substep['comments']);
 
@@ -617,7 +626,7 @@ else
 										<span><?php echo $lang_admin_plugin_patcher['Backup tool info'] ?></span>
 									</td>
 								</tr>
-			
+
 
 <?php
 	$backups = array();
@@ -708,21 +717,21 @@ else
 		$flux_mod->is_installed = isset($patcher_config['installed_mods'][$flux_mod->id]['version']);
 		$flux_mod->is_enabled = isset($patcher_config['installed_mods'][$flux_mod->id]) && !isset($patcher_config['installed_mods'][$flux_mod->id]['disabled']);
 		$section = $flux_mod->is_installed ? 'Installed mods' : 'Mods not installed';
-		
+
 		if (isset($patcher_config['installed_mods'][$flux_mod->id]['uninstall_failed']))
 			$section = 'Mods failed to uninstall';
-		
+
 		if ($flux_mod->is_installed)
 		{
 			$has_update = array();
 			// new update in local copy
 			if (isset($patcher_config['installed_mods'][$mod_id]['version']) && version_compare($flux_mod->version, $patcher_config['installed_mods'][$mod_id]['version'], '>'))
 				$has_update['local'] = $flux_mod->version;
-		
+
 			// new update available to download from fluxbb.org repo
 			if (isset($mod_repo['mods'][$flux_mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$flux_mod->id]['last_release']['version'], $patcher_config['installed_mods'][$mod_id]['version'], '>'))
 				$has_update['repo'] = $mod_repo['mods'][$flux_mod->id]['last_release']['version'];
-			
+
 			// get newest update
 			$update_version = '';
 			if (isset($has_update['local']) && isset($has_update['repo']))
@@ -742,7 +751,7 @@ else
 				$update_version = $has_update['local'];
 			elseif (isset($has_update['repo']))
 				$update_version = $has_update['repo'];
-			
+
 			if ($update_version != '')
 			{
 				$updated_mod = new FLUX_MOD($mod_id);
@@ -769,7 +778,7 @@ else
 
 		$mod_list[$section][$mod_id] = $flux_mod;
 	}
-	
+
 	// Get the mod list from the FluxBB repo
 	if (isset($mod_repo['mods']))
 		foreach ($mod_repo['mods'] as $cur_mod_id => $cur_mod)
@@ -781,9 +790,11 @@ else
 	{
 		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && count($mods) == 0)
 			continue;
-	
+
 		$i = 0;
-		uasort($mods, 'mod_title_compare'); 
+
+		// Sort mod list using mod_title_compare function
+		uasort($mods, 'mod_title_compare');
 ?>
 				<div class="inform">
 					<fieldset>
@@ -815,18 +826,18 @@ else
 					continue;
 
 				$info = array('<strong>'.pun_htmlspecialchars($flux_mod->title).'</strong>');
-			
+
 				if (isset($flux_mod->repository_url))
 					$info[0] = '<a href="'.$flux_mod->repository_url.'">'.$info[0].'</a>';
 
 				if (isset($flux_mod->version))
 					$info[] = ' <strong>v'.pun_htmlspecialchars($flux_mod->version).'</strong>';
-				
+
 				if (isset($flux_mod->author_email) && isset($flux_mod->author))
 					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($flux_mod->author_email).'">'.pun_htmlspecialchars($flux_mod->author).'</a>';
 				elseif (isset($flux_mod->author))
 					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($flux_mod->author);
-				
+
 				if (isset($flux_mod->description))
 				{
 					if (strlen($flux_mod->description) > 400)
@@ -845,7 +856,7 @@ else
 				$works_on = '';
 				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->works_on))
 					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
-				
+
 				$status = '';
 				$actions = array(array(), array());
 				if (get_class($flux_mod) == 'FLUX_MOD')
@@ -907,7 +918,7 @@ else
 					$actions_info[] = implode(' | ', $action_list);
 				}
 
-			
+
 ?>
 									<tr class="mod-info <?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
 										<td><?php echo implode("\n", $info) ?></td>
@@ -920,7 +931,7 @@ else
 				$i++;
 			}
 		}
-		
+
 ?>
 								</tbody>
 							</table>

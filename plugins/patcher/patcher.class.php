@@ -7,7 +7,7 @@
 class PATCHER
 {
 	var $flux_mod = null;
-	
+
 	var $config = array();
 	var $config_org = array();
 
@@ -17,43 +17,43 @@ class PATCHER
 	var $find = null;
 	var $start_pos = 0;
 	var $global_step = 1;
-	
+
 	var $action = null;
-	
+
 	var $steps = array();
 	var $log = array();
-	
+
 	// Determine current action
 	var $install = false;
 	var $uninstall = false;
 	var $update = false;
 	var $disable = false;
 	var $enable = false;
-	
+
 	var $modify_file_commands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
 	var $global_commands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
-	
+
 	function __construct($flux_mod, $action = 'install')
 	{
 		$this->flux_mod = $flux_mod;
-		
+
 		$patcher_config = array('installed_mods' => array(), 'steps' => array());
 		if (file_exists(PUN_ROOT.'patcher_config.php'))
 			require PUN_ROOT.'patcher_config.php';
 		$this->config = $this->config_org = $patcher_config;
 		$this->config['patcher_config_rev'] = PATCHER_CONFIG_REV;
-		
+
 		$this->set_action($action);
 	}
-	
-	
+
+
 	function __get($name)
 	{
 		$function_name = 'get_'.$name;
 		return $this->$name = $this->$function_name();
 	}
-	
-	
+
+
 	function set_action($action)
 	{
 		$this->install = $this->uninstall = $this->update = $this->disable = $this->enable = false;
@@ -61,17 +61,17 @@ class PATCHER
 		$this->$action = true;
 		$this->steps = $this->get_steps();
 	}
-	
-	
+
+
 	function get_steps()
 	{
 		$steps = array();
-		
+
 		if ($this->install || $this->update)
 		{
 			// Load steps for current mod
 			$steps[$this->flux_mod->id.'/'.$this->flux_mod->readme_file_name] = $this->flux_mod->get_steps();
-			
+
 			// Load steps for related mods (readme_mod_name.txt)
 			foreach ($this->flux_mod->readme_file_list as $cur_readme_file)
 			{
@@ -93,7 +93,7 @@ class PATCHER
 				foreach ($flux_mod->readme_file_list as $cur_readme_file)
 				{
 					$cur_readme_file = ltrim($cur_readme_file, '/');
-		
+
 					// skip if readme was already installed
 					if (in_array($cur_readme_file, $inst_mods_readme_files))
 						continue;
@@ -107,7 +107,7 @@ class PATCHER
 				}
 			}
 		}
-		
+
 		// Uninstall, disable, enable
 		else
 		{
@@ -122,7 +122,7 @@ class PATCHER
 			{
 				// Reverse readme list
 				$steps = array_reverse($steps);
-				
+
 				// Correct the order of steps
 				foreach ($steps as $cur_readme_file => &$step_list)
 				{
@@ -133,38 +133,38 @@ class PATCHER
 						if (in_array($cur_step['command'], array('RUN', 'DELETE')))
 						{
 							$code = trim($cur_step['code']);
-							
+
 							// Uninstall mod at the end
 							if ($code == 'install_mod.php')
 							{
 								$run_steps_end[] = $cur_step;
 							}
-							
+
 							// Other files (eg. gen.php) move to start
 							else
 							{
 								$run_steps_start[] = $cur_step;
 							}
 						}
-						
+
 						// Delete files at the end
 						elseif ($cur_step['command'] == 'UPLOAD')
 						{
 							$upload_steps_end[] = $cur_step;
 						}
-						
+
 						elseif (in_array($cur_step['command'], array('OPEN')))
 						{
 							$cur_step['substeps'] = array();
 							$cur_step_list[] = $cur_step;
 						}
-						
+
 						elseif (in_array($cur_step['command'], array('FIND')))
 						{
 							$idx = count($cur_step_list) - 1;
 							$cur_step_list[$idx]['substeps'][][0] = $cur_step;
 						}
-						
+
 						elseif (in_array($cur_step['command'], array('REPLACE', 'AFTER ADD', 'BEFORE ADD')))
 						{
 							$idx = count($cur_step_list) - 1;
@@ -172,14 +172,14 @@ class PATCHER
 							$idx2 = count($arr) - 1;
 							$cur_step_list[$idx]['substeps'][$idx2][] = $cur_step;
 						}
-						
+
 						else
 						{
 							$cur_step_list[] = $cur_step;
 						}
 
 					}
-					
+
 					$new_step_list = array();
 					foreach ($cur_step_list as $key => $c_step_list)
 					{
@@ -196,7 +196,7 @@ class PATCHER
 							foreach ($cur_step as $cur_step_sub)
 								$new_step_list[] = $cur_step_sub;
 					}
-					
+
 					$step_list = array_merge($run_steps_start, $new_step_list, $run_steps_end, $upload_steps_end);
 				}
 			}
@@ -210,7 +210,7 @@ class PATCHER
 	{
 		global $fs;
 		$failed = false;
-		
+
 		if ($this->uninstall || $this->disable)
 		{
 			foreach ($this->flux_mod->files_to_upload as $from => $to)
@@ -236,11 +236,11 @@ class PATCHER
 		while (list($cur_readme_file, $step_list) = each($this->steps)) // Allow to add steps inside loop
 		{
 			$log_readme = array();
-			
+
 			foreach ($step_list as $key => $cur_step)
 			{
 				$cur_step['status'] = STATUS_UNKNOWN;
-				
+
 				$function = 'step_'.str_replace(' ', '_', strtolower($cur_step['command']));
 				if (is_callable(array($this, $function)))
 				{
@@ -248,27 +248,27 @@ class PATCHER
 					$this->code = $cur_step['code'];
 					$this->comments = array();
 					$this->result = '';
-					
+
 					// Execute current step
 					$cur_step['status'] = $this->$function();
-					
+
 					// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
 					if (($this->uninstall || $this->disable) && $cur_step['status'] == STATUS_DONE)
 						$cur_step['status'] = STATUS_REVERTED;
 
 					if ($this->result != '')
 						$cur_step['result'] = $this->result;
-					
+
 					$cur_step['comments'] = $this->comments;
 				}
-				
+
 				if (!(($this->uninstall || $this->disable) && $cur_step['command'] == 'NOTE') // Don't display Note message when uninstalling mod
 					&& $cur_step['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
 				{
 					if (in_array($cur_step['command'], $this->global_commands))
 					{
 						$this->global_step = $i; // it is a global action
-						
+
 						if ($cur_step['command'] == 'UPLOAD')
 						{
 							$code = array();
@@ -289,20 +289,20 @@ class PATCHER
 					{
 						if (!isset($log_readme[$this->global_step]['substeps']))
 							$log_readme[$this->global_step]['substeps'] = array();
-						
+
 						$log_readme[$this->global_step]['substeps'][$i] = $cur_step;
 					}
 				}
-				
+
 				if (($cur_step['status'] == STATUS_DONE || $cur_step['status'] == STATUS_REVERTED) && $cur_step['command'] != 'OPEN' && !$this->cur_file_modified)
 					$this->cur_file_modified = true;
-				
+
 				if ($cur_step['status'] == STATUS_NOT_DONE)
 				{
 					// If some step fail, make whole mod install fail
 					if (!$failed)
 						$failed = true;
-				
+
 					// Delete step if it fails
 					if ($this->install || $this->update)
 					{
@@ -311,7 +311,7 @@ class PATCHER
 						unset($step_list[$key]);
 					}
 				}
-				
+
 				// Delete step for uninstall when step was done
 				if ($this->uninstall && $cur_step['status'] != STATUS_NOT_DONE && !in_array($cur_step['command'], array('FIND', 'OPEN')))
 				{
@@ -323,9 +323,9 @@ class PATCHER
 
 				$i++;
 			}
-			
+
 			$this->log[$this->action][$cur_readme_file] = $log_readme;
-			
+
 			$step_list = array_values($step_list);
 			if ($this->uninstall)
 			{
@@ -337,16 +337,16 @@ class PATCHER
 				}
 				$step_list = array_values($step_list);
 			}
-			
+
 			// Update patcher config
 			$cur_mod = substr($cur_readme_file, 0, strpos($cur_readme_file, '/'));
 			$cur_readme = substr($cur_readme_file, strpos($cur_readme_file, '/') + 1);
-			
+
 			if ($this->uninstall)
 			{
 				if (count($step_list) == 0 && isset($this->config['installed_mods'][$cur_mod]) && in_array($cur_readme, $this->config['installed_mods'][$cur_mod]))
 					$this->config['installed_mods'][$cur_mod] = array_diff($this->config['installed_mods'][$cur_mod], array($cur_readme)); // delete an element
-					
+
 				if (empty($step_list))
 					unset($this->config['steps'][$cur_readme_file]);
 				else
@@ -363,7 +363,7 @@ class PATCHER
 				$this->config['steps'][$cur_readme_file] = $step_list;
 			}
 		}
-		
+
 		// Update patcher config
 		if ($this->uninstall)
 		{
@@ -372,7 +372,7 @@ class PATCHER
 
 			if (isset($this->config['installed_mods'][$this->flux_mod->id]['version']))
 				unset($this->config['installed_mods'][$this->flux_mod->id]['version']);
-			
+
 			if ($failed)
 				$this->config['installed_mods'][$this->flux_mod->id]['uninstall_failed'] = true;
 			else
@@ -394,10 +394,10 @@ class PATCHER
 			unset($this->config['installed_mods'][$this->flux_mod->id]['disabled']);
 		elseif ($this->disable && $GLOBALS['action'] != 'update')
 			$this->config['installed_mods'][$this->flux_mod->id]['disabled'] = 1;
-	
+
 		// if some file was opened, save it
 		$this->step_save();
-		
+
 		if ($this->config != $this->config_org)
 		{
 			if (!defined('PATCHER_NO_SAVE'))
@@ -405,17 +405,17 @@ class PATCHER
 			elseif (defined('PATCHER_DEBUG'))
 				$fs->put(PATCHER_ROOT.'debug/patcher_config.php', '<?php'."\n\n".'// DO NOT EDIT THIS FILE!'."\n\n".'$patcher_config = '.var_export($this->config, true).';');
 		}
-		
+
 		return !$failed;
 	}
-	
-	
+
+
 	function check_code(&$code)
 	{
 		$reg = preg_quote($code, '#');
 		if (preg_match('#'.$reg.'#si', $this->cur_file))
 			return;
-			
+
 		// Code was not found
 		// Ignore multiple tab characters
 		$reg = preg_replace("#\t+#", '\t*', $reg);
@@ -425,7 +425,7 @@ class PATCHER
 			$code = $matches[0];
 			return;
 		}
-		
+
 		// Ignore spaces
 		$reg = preg_replace('#\s+#', '\s*', $reg);
 		$this->comments[] = 'Spaces ignored';
@@ -435,8 +435,8 @@ class PATCHER
 			return;
 		}
 	}
-	
-	
+
+
 	function replace_code($find, $replace)
 	{
 		// Mod was already disabled before
@@ -449,13 +449,13 @@ class PATCHER
 			$tmp = $find;
 			$find = $replace;
 			$replace = $tmp;
-			
+
 			$pos = strrpos(substr($this->cur_file, 0, $this->start_pos), $find);
 			if ($pos === false)
 			{
 				$pos = strrpos($this->cur_file, $find);
 				$this->comments[] = 'Whole file';
-				
+
 				if ($pos === false && in_array($this->command, array('BEFORE ADD', 'AFTER ADD')))
 				{
 					if ($this->command == 'BEFORE ADD')
@@ -470,14 +470,14 @@ class PATCHER
 			}
 			else
 				$this->start_pos = $pos;
-	
+
 			if ($pos === false)
 				return STATUS_NOT_DONE;
 
 			$this->cur_file = substr_replace($this->cur_file, $replace, $pos, strlen($find));
 			return STATUS_DONE;
 		}
-		
+
 		$pos = strpos($this->cur_file, $find, $this->start_pos);
 		if ($pos === false)
 		{
@@ -486,7 +486,7 @@ class PATCHER
 		}
 		else
 			$this->start_pos = $pos + strlen($replace);
-		
+
 		if ($pos === false)
 			return STATUS_NOT_DONE;
 
@@ -494,7 +494,7 @@ class PATCHER
 		return STATUS_DONE;
 	}
 
-	
+
 	function step_upload()
 	{
 		global $lang_admin_plugin_patcher, $fs;
@@ -505,15 +505,15 @@ class PATCHER
 		// Should never happen
 		if ($this->enable || $this->disable)
 			return STATUS_NOTHING_TO_DO;
-		
+
 		if ($this->uninstall)
 		{
 			$directories = array();
 			foreach ($this->flux_mod->files_to_upload as $from => $to)
-			{			
+			{
 				if (file_exists(PUN_ROOT.$to))
 					$fs->delete(PUN_ROOT.$to);
-				
+
 				$cur_path = '';
 				$dir_structure = explode('/', $to);
 				foreach ($dir_structure as $cur_dir)
@@ -530,7 +530,7 @@ class PATCHER
 				if ($fs->is_empty_directory(PUN_ROOT.$cur_dir))
 					$fs->remove_directory(PUN_ROOT.$cur_dir);
 			}
-			
+
 			return STATUS_REVERTED;
 		}
 
@@ -543,21 +543,21 @@ class PATCHER
 			{
 				if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
 					$to .= (substr($to, -1) == '/' ? '' : '/').basename($from);
-				
+
 				if (!$fs->copy($this->flux_mod->readme_file_dir.'/'.$from, PUN_ROOT.$to))
 					message(sprintf($lang_admin_plugin_patcher['Can\'t copy file'], pun_htmlspecialchars($from), pun_htmlspecialchars($to))); // TODO: move message somewhere :)
-				
+
 				$this->friendly_url_upload($to);
 			}
 		}
 		return STATUS_DONE;
 	}
-	
+
 
 	function step_open()
 	{
 		global $lang_admin_plugin_patcher, $fs;
-		
+
 		// if some file was opened, save it
 		$this->step_save();
 
@@ -566,7 +566,7 @@ class PATCHER
 			return STATUS_NOTHING_TO_DO;
 
 		$this->code = trim($this->code);
-		
+
 		if (!file_exists(PUN_ROOT.$this->code))
 		{
 			// Language file that is not English does not exist?
@@ -576,37 +576,37 @@ class PATCHER
 				$this->cur_file_path = '';
 				return STATUS_NOTHING_TO_DO;
 			}
-		
+
 			$this->cur_file = '';
 			$this->cur_file_path = $this->code;
 			$this->result = $lang_admin_plugin_patcher['File does not exist error'];
 			return STATUS_NOT_DONE;
 		}
-		
+
 		$this->cur_file_path = $this->code;
-		
+
 		if (!$fs->is_writable(PUN_ROOT.$this->code))
 			message(sprintf($lang_admin_plugin_patcher['File not writable'], pun_htmlspecialchars($this->code)));
-		
+
 		$this->cur_file = file_get_contents(PUN_ROOT.$this->code);
-		
+
 		// Convert EOL to Unix style
 		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
-		
+
 		$this->friendly_url_open();
 
 		$this->start_pos = $this->uninstall ? strlen($this->cur_file) : 0;
 		$this->cur_file_modified = false;
 		return STATUS_DONE;
 	}
-	
-	
+
+
 	function step_save()
 	{
 		global $fs;
 		if (empty($this->cur_file_path) || !$this->cur_file_modified || empty($this->cur_file))
 			return;
-			
+
 		$this->friendly_url_save();
 
 		if (!defined('PATCHER_NO_SAVE'))
@@ -618,8 +618,8 @@ class PATCHER
 		$this->cur_file_path = '';
 		$this->cur_file_modified = false;
 	}
-	
-	
+
+
 	function step_find()
 	{
 		$this->find = $this->code;
@@ -627,12 +627,12 @@ class PATCHER
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
-		
+
 		$this->check_code($this->find);
 		return STATUS_UNKNOWN;
 	}
-	
-	
+
+
 	function step_replace()
 	{
 		// Mod was already disabled before
@@ -644,7 +644,7 @@ class PATCHER
 
 		// Add QUERY ID at end of query line
 		if (strpos($this->code, 'query(') !== false)
-		{		
+		{
 			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$this->find."\n", $first_m, PREG_SET_ORDER);
 			preg_match_all('#\n\t*.*?query\(.*?\) or error.*\n#', "\n".$this->code."\n", $second_m, PREG_SET_ORDER);
 
@@ -675,7 +675,7 @@ class PATCHER
 				$query_id = md5($find_line);
 
 				// Some mod modified this query before
-				if (preg_match('#\n\t*.*?query\((.*?)\) or error.*?\/\/ QUERY ID: '.preg_quote($query_id).'#', $this->cur_file, $matches)) 
+				if (preg_match('#\n\t*.*?query\((.*?)\) or error.*?\/\/ QUERY ID: '.preg_quote($query_id).'#', $this->cur_file, $matches))
 				{
 					$query_line = trim($matches[0]);
 					$cur_file_query = $matches[1];
@@ -720,7 +720,7 @@ class PATCHER
 		return $status;
 	}
 
-	
+
 	function step_after_add()
 	{
 		// Mod was already disabled before
@@ -732,34 +732,34 @@ class PATCHER
 
 		return $this->replace_code($this->find, $this->find."\n".$this->code);
 	}
-	
-	
+
+
 	function step_before_add()
 	{
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
-	
+
 		if (empty($this->find) || empty($this->cur_file))
 			return STATUS_NOT_DONE;
 
 		return $this->replace_code($this->find, $this->code."\n".$this->find);
 	}
-	
-	
+
+
 	function step_at_the_end_of_file_add()
 	{
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
-		
+
 		// TODO: not tested
 		if ($this->uninstall || $this->disable)
 		{
 			$pos = strrpos($this->cur_file, "\n\n".$this->code);
 			if ($pos === false)
 				return STATUS_NOT_DONE;
-			
+
 			$this->cur_file = substr_replace($this->cur_file, '', $pos, strlen("\n\n".$this->code));
 			return STATUS_REVERTED;
 		}
@@ -767,14 +767,14 @@ class PATCHER
 		$this->cur_file .= "\n\n".$this->code;
 		return STATUS_DONE;
 	}
-	
-	
+
+
 	function step_add_new_elements_of_array()
 	{
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
-	
+
 		$count = 0;
 		if ($this->uninstall || $this->disable)
 		{
@@ -791,18 +791,18 @@ class PATCHER
 
 		return STATUS_NOT_DONE;
 	}
-	
-	
+
+
 	function step_run_code()
 	{
 		if (defined('PATCHER_NO_SAVE'))
 			return STATUS_UNKNOWN;
-		
+
 		global $db;
 		eval($this->code);
 		return STATUS_DONE; // done
 	}
-	
+
 	function step_run()
 	{
 		global $lang_admin_plugin_patcher;
@@ -812,7 +812,7 @@ class PATCHER
 
 		if (defined('PATCHER_NO_SAVE'))
 			return STATUS_UNKNOWN;
-		
+
 		if ($this->code == 'install_mod.php')
 		{
 			if (!file_exists(PUN_ROOT.$this->code))
@@ -829,7 +829,7 @@ class PATCHER
 					$install_code = substr($install_code, 0, strpos($install_code, '// DO NOT EDIT ANYTHING BELOW THIS LINE!'));
 				elseif (($install_pos = strpos($install_code, 'function install(')) !== false && strpos($install_code, '/***', $install_pos) !== false)
 					$install_code = substr($install_code, 0, strpos($install_code, '/***', $install_pos));
-				
+
 				// Fix for changes in install_mod.php for another private messaging system
 				elseif (strpos($install_code, '// Make sure we are running a FluxBB version') !== false)
 				{
@@ -868,8 +868,8 @@ class PATCHER
 		ob_end_clean();
 		return STATUS_DONE;
 	}
-	
-	
+
+
 	function step_delete()
 	{
 		global $fs;
@@ -884,7 +884,7 @@ class PATCHER
 		// Delete step is usually for install_mod.php so when uninstalling that file does not exist
 		if ($this->uninstall)
 			return STATUS_UNKNOWN;
-		
+
 		$this->code = trim($this->code);
 		if (!file_exists(PUN_ROOT.$this->code))
 			return STATUS_UNKNOWN;
@@ -895,8 +895,8 @@ class PATCHER
 		$this->result = $lang_admin_plugin_patcher['Can\'t delete file error'];
 		return STATUS_NOT_DONE;
 	}
-	
-	
+
+
 	function step_rename()
 	{
 		global $fs;
@@ -904,31 +904,31 @@ class PATCHER
 			return STATUS_UNKNOWN;
 
 		$this->code = trim($this->code);
-		
+
 		$lines = explode("\n", $this->code);
 		foreach ($lines as $line)
 		{
 			$files = explode('to', $line);
 			$file_to_rename = trim($files[0]);
 			$new_file = trim($files[1]);
-			
+
 			// TODO: fix status as it indicates last renamed file
 			if (!file_exists($new_file) && $fs->move(PUN_ROOT.$file_to_rename, PUN_ROOT.$new_file))
 				$status = STATUS_DONE;
 		}
 		return $status;
 	}
-	
-	
+
+
 	// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
 	function friendly_url_open()
 	{
 		if ($this->flux_mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !isset($this->config['steps']['friendly-url/files/gen.php']))
 			return;
-		
+
 		$steps = $this->config['steps']['friendly-url/files/gen.php'];
 		$cur_file = '';
-		
+
 		$changes = array();
 		$found = false;
 		for ($i = 0; $i <= count($steps); $i++)
@@ -943,7 +943,7 @@ class PATCHER
 				if (isset($steps[$i+1]['command']) && $steps[$i+1]['command'] == 'OPEN')
 					break;
 			}
-			
+
 			if (!$found && (!isset($steps[$i]['command']) || $steps[$i]['command'] != 'OPEN' || $steps[$i]['code'] != $this->cur_file_path))
 				continue;
 			$found = true;
@@ -962,8 +962,8 @@ class PATCHER
 			$this->cur_file = substr_replace($this->cur_file, $cur_change['replace'], $pos, strlen($cur_change['search']));
 		}
 	}
-	
-	
+
+
 	// If friendly url mod is installed apply its changes again (as patcher reverted them in open step)
 	function friendly_url_save()
 	{
@@ -973,7 +973,7 @@ class PATCHER
 		$cur_readme_file = 'friendly-url/files/gen.php';
 		if (!isset($this->config['steps'][$cur_readme_file]))
 			$this->config['steps'][$cur_readme_file] = array();
-	
+
 		if (file_exists(MODS_DIR.'friendly-url/files/gen.php'))
 		{
 			$changes = array();
@@ -983,7 +983,7 @@ class PATCHER
 		}
 	}
 
-	
+
 	// If friendly url mod is installed apply its changes
 	function friendly_url_upload($cur_file_name)
 	{
@@ -997,7 +997,7 @@ class PATCHER
 		$gen_file = 'friendly-url/files/gen.php';
 		if (!isset($this->config['steps'][$gen_file]))
 			$this->config['steps'][$gen_file] = array();
-	
+
 		if (file_exists(MODS_DIR.$gen_file))
 		{
 			$changes = array();
@@ -1009,8 +1009,8 @@ class PATCHER
 			$this->config['steps'][$gen_file] = array_merge($this->config['steps'][$gen_file], url_get_steps($changes));
 		}
 	}
-	
-	
+
+
 	function friendly_url_uninstall_upload()
 	{
 		$gen_file = 'friendly-url/files/gen.php';

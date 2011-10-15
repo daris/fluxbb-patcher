@@ -5,6 +5,7 @@ $lang_admin_plugin_patcher = array(
 'Backup created redirect'		=> 'Backup created. Redirecting …',
 'Important'						=> 'Important',
 'Directories not writable info'	=> 'The following directories are not writable',
+'Files not writable info'		=> 'The following files are not writable',
 'Disabled features info'		=> 'Some features might be disabled until you correct permissions to these directories.',
 'Directory not writable'		=> 'The %s directory is not writable.',
 'File not writable'				=> 'The %s file is not writable.',

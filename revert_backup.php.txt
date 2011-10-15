@@ -103,7 +103,7 @@ function zip_extract($file, $extract_to, $list_files = false)
 	else
 	{
 		require_once PATCHER_ROOT.'pclzip.lib.php';
-		
+
 		$archive = new PclZip($file);
 		$p_list = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
 		foreach ($p_list as $cur_file)

@@ -451,7 +451,7 @@ class FLUX_MOD
 					$cur_path .= $cur_dir.'/';
 					
 					if (!is_dir(PUN_ROOT.$cur_path))
-						$requirements['directories'][$cur_path] = array($fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
+						$requirements['directories'][$cur_path] = array(@$fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
 				}
 				
 				if (!isset($requirements['directories'][$cur_dir_to_check]))

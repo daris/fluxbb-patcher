@@ -63,7 +63,7 @@ class JText
 		$args = func_get_args();
 		return implode(', ', $args);
 	}
-	
+
 	static function _()
 	{
 		$args = func_get_args();
