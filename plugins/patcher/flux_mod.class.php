@@ -456,44 +456,55 @@ class FLUX_MOD
 		$dirs_to_check = array();
 		$requirements = array('files_to_upload' => array(), 'directories' => array(), 'affected_files' => array());
 
-		foreach ($this->files_to_upload as $from => $to)
+		if ($GLOBALS['action'] == 'uninstall')
 		{
-			if (!file_exists($this->readme_file_dir.'/'.$from))
-				$requirements['files_to_upload'][$from] = array(false, '', $lang_admin_plugin_patcher['Not exists']);
-
-			$cur_dir = $to;
-			// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
-			if (strpos($to, '.') !== false)
-				$cur_dir = dirname($cur_dir);
-
-			// Add directory if it was not added ealier
-			if (!in_array($cur_dir, $dirs_to_check))
-				$dirs_to_check[] = $cur_dir;
-		}
-
-		sort($dirs_to_check);
-		foreach ($dirs_to_check as $cur_dir_to_check)
-		{
-			if (!is_dir(PUN_ROOT.$cur_dir_to_check))
+			foreach ($this->files_to_upload as $from => $to)
 			{
-				$directories = explode('/', $cur_dir_to_check);
-				$cur_path = '';
-				foreach ($directories as $cur_dir)
-				{
-					$cur_path .= $cur_dir.'/';
+				$dir = dirname($to);
+				$requirements['directories'][$dir] = array($fs->is_writable(PUN_ROOT.$dir), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+			}
+		}
+		elseif (in_array($GLOBALS['action'], array('update', 'install')))
+		{
+			foreach ($this->files_to_upload as $from => $to)
+			{
+				if (!file_exists($this->readme_file_dir.'/'.$from))
+					$requirements['files_to_upload'][$from] = array(false, '', $lang_admin_plugin_patcher['Not exists']);
 
-					// Attempt to create directory
-					if (!is_dir(PUN_ROOT.$cur_path))
-						$requirements['directories'][$cur_path] = array(@$fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
-				}
+				$cur_dir = $to;
+				// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
+				if (strpos($to, '.') !== false)
+					$cur_dir = dirname($cur_dir);
 
-				if (!isset($requirements['directories'][$cur_dir_to_check]))
-					$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+				// Add directory if it was not added ealier
+				if (!in_array($cur_dir, $dirs_to_check))
+					$dirs_to_check[] = $cur_dir;
 			}
 
-			// Check that directory is writable
-			else
-				$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+			sort($dirs_to_check);
+			foreach ($dirs_to_check as $cur_dir_to_check)
+			{
+				if (!is_dir(PUN_ROOT.$cur_dir_to_check))
+				{
+					$directories = explode('/', $cur_dir_to_check);
+					$cur_path = '';
+					foreach ($directories as $cur_dir)
+					{
+						$cur_path .= $cur_dir.'/';
+
+						// Attempt to create directory
+						if (!is_dir(PUN_ROOT.$cur_path))
+							$requirements['directories'][$cur_path] = array(@$fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
+					}
+
+					if (!isset($requirements['directories'][$cur_dir_to_check]))
+						$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+				}
+
+				// Check that directory is writable
+				else
+					$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
+			}
 		}
 
 		if (count($this->affected_files) > 0)

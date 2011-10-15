@@ -578,18 +578,18 @@ function patcher_error_handler($errno, $errstr, $errfile, $errline)
 	switch ($errno)
 	{
 		case E_USER_ERROR:
-			echo "<b>My ERROR</b> [$errno] $errstr<br />\n";
+			echo "<b>Error</b> [$errno] $errstr<br />\n";
 			echo "  Fatal error on line $errline in file $errfile";
 			echo ", PHP " . PHP_VERSION . " (" . PHP_OS . ")<br />\n";
 			echo "Aborting...<br />\n";
 			break;
 
 		case E_USER_WARNING:
-			echo "<b>My WARNING</b> [$errno] $errstr";
+			echo "<b>Warning</b> [$errno] $errstr";
 			break;
 
 		case E_USER_NOTICE:
-			echo "<b>My NOTICE</b> [$errno] $errstr";
+			echo "<b>Notice</b> [$errno] $errstr";
 			break;
 
 		case E_WARNING:

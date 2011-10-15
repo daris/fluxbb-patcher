@@ -1,33 +1,5 @@
 <?php
 
-if (!function_exists('sys_get_temp_dir'))
-{
-	function sys_get_temp_dir()
-	{
-		 // Try to get from environment variable
-		if (!empty($_ENV['TMP']))
-			return realpath($_ENV['TMP']);
-		elseif (!empty($_ENV['TMPDIR']))
-			return realpath($_ENV['TMPDIR']);
-		elseif (!empty($_ENV['TEMP']))
-			return realpath( $_ENV['TEMP'] );
-
-		// Detect by creating a temporary file
-		else
-		{
-			// Try to use system's temporary directory as random name shouldn't exist
-			$temp_file = tempnam(md5(uniqid(rand(), TRUE)), '');
-			if ($temp_file)
-			{
-				$temp_dir = realpath(dirname($temp_file));
-				unlink($temp_file);
-				return $temp_dir;
-			}
-		}
-		return false;
-	}
-}
-
 
 class FILESYSTEM
 {
@@ -39,10 +11,6 @@ class FILESYSTEM
 
 	function __construct($ftp_data = null)
 	{
-		$this->tmp = @sys_get_temp_dir();
-		if (!$this->tmp)
-			$this->tmp = FORUM_CACHE_DIR; // fallback - this directory is writable for sure :)
-
 		if (isset($ftp_data) && is_array($ftp_data))
 		{
 			$this->is_ftp = true;
@@ -52,7 +20,7 @@ class FILESYSTEM
 
 	function tmpname()
 	{
-		return realpath($this->tmp).'/'.md5(time().rand());
+		return FORUM_CACHE_DIR.'/'.md5(time().rand());
 	}
 
 
@@ -128,7 +96,7 @@ class FILESYSTEM
 
 		$this->check_connection();
 		if ($this->is_ftp)
-			return $this->ftp->delete($this->fix_path($file));
+			return $this->ftp->delete($this->fix_path($path));
 
 		$list = $this->list_to_remove($path);
 
@@ -219,8 +187,11 @@ class FILESYSTEM
 				if ($fixed_path == './')
 					$fixed_path = '';
 				$details = @$this->ftp->listDetails($fixed_path.'../');
+
+				// Can't read directory contents?
 				if (!is_array($details))
 					return false;
+
 				$name = basename($path);
 
 				foreach ($details as $cur_details)
