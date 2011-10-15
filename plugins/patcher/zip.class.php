@@ -24,7 +24,7 @@ class ZIP_ARCHIVE
 		if (isset($file))
 			$this->file = $file;
 
-		if (!file_exists($this->file))
+		if (!file_exists($this->file) && !$create)
 			message('File does not exist '.$this->file);
 
 		if (ZIP_NATIVE)
