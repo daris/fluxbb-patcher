@@ -35,7 +35,7 @@ class FLUX_MOD
 	var $mod_dir = null; // main readme file dir
 	private $readme_file = null; // main readme file content
 //	var $readme_file_list = null; // list of readme files in current mod directory (including subdirectory)
-	
+
 	function __construct($mod_id)
 	{
 		$this->id = $mod_id;
@@ -48,8 +48,8 @@ class FLUX_MOD
 		$this->readme_file_dir = $this->mod_dir.dirname($this->readme_file_name);
 		$this->readme_file = file_get_contents($this->mod_dir.$this->readme_file_name);
 	}
-	
-	
+
+
 	// Used for: readme_file_list, files_to_upload, upload_code
 	function __get($name)
 	{
@@ -60,15 +60,16 @@ class FLUX_MOD
 		$this->$name = $this->$function_name();
 		return $this->$name;
 	}
-	
+
 
 	function __isset($name)
 	{
 		$value = $this->$name;
 		return isset($value) && !empty($value);
 	}
-	
 
+
+	// Looks for readme file
 	function get_readme_file_name()
 	{
 		if (file_exists(MODS_DIR.$this->id.'/readme.txt'))
@@ -85,14 +86,15 @@ class FLUX_MOD
 
 		return false;
 	}
-	
 
+
+	// Gets the readme file list for specified directory
 	function get_readme_file_list($dirpath = '', $subdirectory = true)
 	{
 		// Load readme file list
 		if ($dirpath == '')
 			$dirpath = $this->mod_dir;
-		
+
 		$result = array();
 		$dir = dir($dirpath);
 		while ($file = $dir->read())
@@ -112,20 +114,21 @@ class FLUX_MOD
 
 		return $result;
 	}
-	
-	
+
+
+	// Returns array with mod information
 	function get_mod_info()
 	{
 		$file = $this->readme_file;
-		
+
 		if (!isset($this->readme_file) || empty($this->readme_file))
 			return array();
-		
+
 		$mod_info = array();
-		
+
 		$file = substr($file, 0, strpos($file, '#--'));
 		$file = trim($file, '# '."\n\r\t");
-		
+
 		// Gizzmo's syntax - strip out *****
 		$file = preg_replace('#\*{5,}#', '', $file);
 
@@ -155,13 +158,13 @@ class FLUX_MOD
 			elseif ($last_info != '')
 				$mod_info[$last_info] .= "\n".trim($line);
 		}
-		
+
 		$this->is_valid = isset($mod_info['mod version']);
-		
+
 		return $mod_info;
 	}
 
-	
+
 	function get_is_valid()
 	{
 		return isset($this->version);
@@ -171,12 +174,12 @@ class FLUX_MOD
 	{
 		if (!isset($this->mod_info['author']))
 			return '';
-	
+
 		$author = $this->mod_info['author'];
 		if (preg_match('#^(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
 			|| preg_match('#^([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
 			$author = $m[1];
-		
+
 		if (strpos($author, ';') !== false)
 			$author = substr($author, 0, strpos($author, ';'));
 
@@ -185,22 +188,22 @@ class FLUX_MOD
 
 		return trim($author);
 	}
-	
+
 	function get_author_email()
 	{
 		if (!isset($this->mod_info['author']))
 			return '';
-		
+
 		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
 			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
 			return trim($m[1]);
 	}
-	
+
 	function get_title()
 	{
 		if (!isset($this->mod_info['mod title']))
 			return ucfirst(str_replace(array('-', '_'), ' ', $this->id));
-		
+
 		return trim($this->mod_info['mod title']);
 	}
 
@@ -208,23 +211,23 @@ class FLUX_MOD
 	{
 		if (!isset($this->mod_info['mod version']))
 			return '';
-		
+
 		return $this->mod_info['mod version'];
 	}
-	
+
 	function get_description()
 	{
 		if (!isset($this->mod_info['description']))
 			return '';
-		
+
 		return $this->mod_info['description'];
 	}
-	
+
 	function get_affects_db()
 	{
 		if (!isset($this->mod_info['affects db']))
 			return '';
-		
+
 		return $this->mod_info['affects db'];
 	}
 
@@ -232,15 +235,15 @@ class FLUX_MOD
 	{
 		if (!isset($this->mod_info['important']))
 			return '';
-		
+
 		return $this->mod_info['important'];
 	}
-	
+
 	function get_release_date()
 	{
 		if (!isset($this->mod_info['release date']))
 			return '';
-		
+
 		return $this->mod_info['release date'];
 	}
 
@@ -248,16 +251,16 @@ class FLUX_MOD
 	{
 		if (!isset($this->mod_info['works on fluxbb']))
 			return '';
-		
+
 		$this->mod_info['works on fluxbb'] = str_replace(' and ', ', ', $this->mod_info['works on fluxbb']);
 		return array_map('trim', explode(',', $this->mod_info['works on fluxbb']));
 	}
-	
+
 	function get_repository_url()
 	{
 		if (!isset($this->mod_info['repository url']) || strpos($this->mod_info['repository url'], '(Leave unedited)') !== false)
 			return '';
-		
+
 		return $this->mod_info['repository url'];
 	}
 
@@ -265,23 +268,27 @@ class FLUX_MOD
 	{
 		if (!isset($this->mod_info['affected files']))
 			return '';
-		
+
 		$files = array();
 		$delimiter = (strpos($this->mod_info['affected files'], ', ') !== false) ? ',' : "\n";
 		$affected_files = explode($delimiter, $this->mod_info['affected files']);
 		foreach ($affected_files as $cur_file)
 		{
+			// Do some fix for current file :)
 			$cur_file = str_replace(array('[language]', 'your_lang'), 'English', trim($cur_file));
 			$cur_file = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $cur_file);
+
+			// Delete everything after ( and [ charachters
 			if (strpos($cur_file, ' (') !== false)
 				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ('));
 			if (strpos($cur_file, ' [') !== false)
 				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
-			
+
 			// Does not look like a file?
 			if (($pos = strrpos($cur_file, '.')) === false || $pos < strlen($cur_file) - 5 || $pos >= strlen($cur_file) - 1)
 				continue;
-			
+
+			// Exclude lines that has Null, None or No word
 			if (!empty($cur_file) && !in_array(strtolower($cur_file), array('null', 'none', 'no')))
 				$files[] = trim($cur_file);
 		}
@@ -293,7 +300,7 @@ class FLUX_MOD
 		return array_unique($files);
 	}
 
-	
+
 	function is_compatible()
 	{
 		global $pun_config;
@@ -317,30 +324,32 @@ class FLUX_MOD
 		return false;
 	}
 
-	
+
 	function get_upload_code()
 	{
 		if (strpos($this->readme_file, 'UPLOAD ]--') === false)
 			return false;
-	
+
 		$upload_code = substr($this->readme_file, strpos($this->readme_file, 'UPLOAD ]--'));
-		
+
 		// Mpok's style (first line - English, second - translation)
 		if (preg_match('/\]-+\s*\n#-+\[/si', $upload_code))
 			$upload_code = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $upload_code, 1);
-		
+
 		$upload_code = substr($upload_code, strpos($upload_code, "\n") + 1);
 		$upload_code = substr($upload_code, 0, strpos($upload_code, '#--'));
 		return trim($upload_code, '#'."\n\r");
 	}
-	
+
 
 	function get_files_to_upload()
 	{
 		$files_to_upload = array();
 
+		// Get files to upload from mod readme
 		if ($this->upload_code)
 		{
+			// Mod author was too lazy? :P
 			if (preg_match('/(upload.+from|all).+files.+/', strtolower($this->upload_code)) || preg_match('/file.+folders?/', strtolower($this->upload_code)))
 			{
 				if (is_dir($this->readme_file_dir.'/files'))
@@ -348,45 +357,61 @@ class FLUX_MOD
 				else
 					$files_to_upload = list_files_to_upload($this->readme_file_dir, '');
 			}
+
+			// We have the list of files to upload :)
 			else
 			{
 				$lines = explode("\n", $this->upload_code);
 				foreach ($lines as $line)
 				{
+					// Remove spaces from start or end of line
 					$line = trim($line);
-					
+
 					if ($line == '' || strtoupper($line) == 'OR' || substr($line, 0, 2) == '# ')
 						continue;
-						
+
 					if (strpos($line, ' (') !== false)
 						$line = substr($line, 0, strpos($line, ' ('));
 
+					// directory/filename.php to directory/filename.php
 					if (preg_match('/^([a-zA-Z0-9_\-\(\)\/\.]+).*?\s+to\s+([a-zA-Z0-9_\-\(\)\/\.]+)/', $line, $parts))
 					{
 						$from = $parts[1];
 						$to = $parts[2];
 					}
+
+					// Only file name
 					elseif (preg_match('/^([a-zA-Z0-9_\-\(\)\/\.]+).*/', $line, $parts))
 						$from = $to = $parts[1];
+
+					// Evertying else :)
 					else
 						$from = $to = $line;
-					
+
+					// Some mod uses your_forum_folder or your_forum_file prefix for path
 					$to = str_replace(array('/your_forum_folder', '/your_forum_file'), '', $to);
 
+					// We can't the $to variable so it should be / (PUN_ROOT)
 					if ($to == '')
 						$to = '/';
-					
+
 					// Why should I correct mod author mistakes? :P
 					if (!file_exists($this->readme_file_dir.'/'.$from))
 					{
-						if (file_exists($this->readme_file_dir.'/files/'.$from)) // Try to find it in files directory
+						 // Try to find file in files directory
+						if (file_exists($this->readme_file_dir.'/files/'.$from))
 							$from = 'files/'.$from;
-						elseif (file_exists($this->readme_file_dir.'/new_files/'.$from)) // maybe new_files dir?
+
+						 // maybe new_files dir?
+						elseif (file_exists($this->readme_file_dir.'/new_files/'.$from))
 							$from = 'new_files/'.$from;
-						elseif (file_exists($this->readme_file_dir.'/'.str_replace('files/', 'new_files/', $from))) // maybe new_files instead of files?
+
+						// maybe new_files instead of files?
+						elseif (file_exists($this->readme_file_dir.'/'.str_replace('files/', 'new_files/', $from)))
 							$from = str_replace('files/', 'new_files/', $from);
 					}
-					
+
+					// If the current path is a directory, read and add its contents
 					if (is_dir($this->readme_file_dir.'/'.$from))
 						$files_to_upload = array_merge($files_to_upload, list_files_to_upload($this->readme_file_dir, rtrim($from, '/'), rtrim($to, '/')));
 					else
@@ -394,14 +419,18 @@ class FLUX_MOD
 				}
 			}
 		}
+
+		// Look files to upload in the files directory
 		elseif (is_dir($this->readme_file_dir.'/files'))
 			$files_to_upload = list_files_to_upload($this->readme_file_dir, 'files');
 
 		foreach ($files_to_upload as $from => &$to)
 		{
-			if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
+			// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
+			if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false)
 				$to .= (substr($to, -1) == '/' ? '' : '/').basename($from);
 
+			// Strip slash
 			$to = ltrim($to, '\\/');
 
 			// Ignore mod installer files
@@ -411,34 +440,37 @@ class FLUX_MOD
 			// Do not upload language files when language folder does not exist
 			elseif (preg_match('#lang\/(.+?)\/#i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
 				unset($files_to_upload[$from]);
-			
+
 		}
 
+		// Sort by the $from value
 		ksort($files_to_upload);
 		return $files_to_upload;
 	}
 
-	
+
 	function check_requirements()
 	{
 		global $lang_admin_plugin_patcher, $fs;
-		
+
 		$dirs_to_check = array();
 		$requirements = array('files_to_upload' => array(), 'directories' => array(), 'affected_files' => array());
-		
+
 		foreach ($this->files_to_upload as $from => $to)
 		{
 			if (!file_exists($this->readme_file_dir.'/'.$from))
 				$requirements['files_to_upload'][$from] = array(false, '', $lang_admin_plugin_patcher['Not exists']);
-			
+
 			$cur_dir = $to;
-			if (strpos($to, '.') !== false) // it is not good way to determine file but works :)
+			// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
+			if (strpos($to, '.') !== false)
 				$cur_dir = dirname($cur_dir);
 
+			// Add directory if it was not added ealier
 			if (!in_array($cur_dir, $dirs_to_check))
 				$dirs_to_check[] = $cur_dir;
 		}
-	//	print_r($dirs_to_check);
+
 		sort($dirs_to_check);
 		foreach ($dirs_to_check as $cur_dir_to_check)
 		{
@@ -449,14 +481,17 @@ class FLUX_MOD
 				foreach ($directories as $cur_dir)
 				{
 					$cur_path .= $cur_dir.'/';
-					
+
+					// Attempt to create directory
 					if (!is_dir(PUN_ROOT.$cur_path))
 						$requirements['directories'][$cur_path] = array(@$fs->mkdir(PUN_ROOT.$cur_path), $lang_admin_plugin_patcher['Created'], $lang_admin_plugin_patcher['Can\'t create']);
 				}
-				
+
 				if (!isset($requirements['directories'][$cur_dir_to_check]))
 					$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
 			}
+
+			// Check that directory is writable
 			else
 				$requirements['directories'][$cur_dir_to_check] = array($fs->is_writable(PUN_ROOT.$cur_dir_to_check), $lang_admin_plugin_patcher['Found, writable'], $lang_admin_plugin_patcher['Not writable']);
 		}
@@ -474,12 +509,12 @@ class FLUX_MOD
 					$error = $lang_admin_plugin_patcher['Not exists'];
 				elseif (!$fs->is_writable(PUN_ROOT.$cur_file))
 					$error = $lang_admin_plugin_patcher['Not writable'];
-	
+
 				$requirements['affected_files'][$cur_file] = array(empty($error), $lang_admin_plugin_patcher['Found, writable'], $error);
 			}
 		}
-		
-		// Check if there exist any step that fails
+
+		// Check if there exist any requirement that fails
 		foreach ($requirements as &$cur_requirements)
 		{
 			ksort($cur_requirements);
@@ -491,15 +526,15 @@ class FLUX_MOD
 					break;
 				}
 			}
-			
+
 			if (isset($requirements['failed']))
 				break;
 		}
-		
+
 		return $requirements;
 	}
 
-	
+
 	function get_steps($readme_file = null)
 	{
 		if ($readme_file == null)
@@ -508,34 +543,34 @@ class FLUX_MOD
 			$readme = file_get_contents(MODS_DIR.$this->id.'/'.$readme_file);
 
 		$readme = substr($readme, strpos($readme, '#--'));
-		
+
 		// Mpok's style (first line - English, second - translation)
 		if (preg_match('/\]-+\s*\n#-+\[/si', $readme))
 			$readme = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $readme);
-			
+
 		// Convert EOL to Unix style
 		$readme = str_replace("\r\n", "\n", $readme);
-		
+
 		$readme .= '#--';
 		$do_inline_find = false;
-		
+
 		$steps = array();
-		
-		while (strpos($readme, '#--') !== false)
+
+		while (($pos = strpos($readme, '#--')) !== false)
 		{
-			$readme = substr($readme, strpos($readme, '#--') + 3);
-			
-			// End of file
+			$readme = substr($readme, $pos + 3);
+
+			// We've reached end of file
 			if (trim($readme) == '')
 				break;
 
 			if (strpos($readme, '#--') !== false)
 				$cur_step = substr($readme, 0, strpos($readme, '#--'));
-				
+
 			$cur_step = substr($cur_step, strpos($cur_step, '[') + 1);
-	//		$cur_step = substr($cur_step, strpos($cur_step, '.') + 1); // +1 = dot
+//			$cur_step = substr($cur_step, strpos($cur_step, '.') + 1); // +1 = dot
 			$cur_command = substr($cur_step, 0, strpos($cur_step, ']') - 1);
-			
+
 			$cur_info = null;
 			if (strpos($cur_command, '(') !== false)
 			{
@@ -546,15 +581,16 @@ class FLUX_MOD
 
 			if (strpos($cur_command, '.') !== false)
 				$cur_command = substr($cur_command, strpos($cur_command, '.') + 1);
-				
+
 			$cur_command = trim(preg_replace('#[^A-Z\s]#', '', strtoupper($cur_command)));
-			
+
 			if (empty($cur_command))
 				continue;
 
+			// REPLACE WITH command for example
 			if (strpos($cur_command, 'REPLACE') !== false)
 				$cur_command = 'REPLACE';
-			
+
 			$command_transformations = array(
 				'AFTER ADD'					=> array('ADD AFTER', 'AFTER INSERT'),
 				'BEFORE ADD'				=> array('ADD BEFORE'),
@@ -574,18 +610,19 @@ class FLUX_MOD
 					break;
 				}
 			}
-			
+
 			if (!$do_inline_find && $cur_command == 'IN THIS LINE FIND')
 				$do_inline_find = true;
-			
+
+			// We don't want SAVE and END commands
 			if (strpos($cur_command, 'SAVE') !== false || $cur_command == 'END')
 				continue;
 
 			$cur_code = substr($cur_step, strpos($cur_step, "\n") + 1);
-			
+
 			// Gizzmo's syntax - strip out ***** at end
 			$cur_code = preg_replace('#\*{5,}$#', '', $cur_code);
-			
+
 			// Remove blank string after # at start and at end
 			$cur_code = preg_replace('#^\#[ \r\t]*#', '', $cur_code);
 			$cur_code = preg_replace('#\s*\#\s*$#s', '', $cur_code);
@@ -599,7 +636,7 @@ class FLUX_MOD
 				$cur_code = str_replace(array('[language]', 'your_language'), 'English', $cur_code);
 				$cur_code = str_replace(array('[style]', 'Your_style'), 'Air.css', $cur_code);
 				$cur_code = ltrim(trim($cur_code), '/');
-				
+
 				if (!file_exists(PUN_ROOT.$cur_code) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.php#i', $cur_code, $matches) && file_exists(PUN_ROOT.$matches[0]))
 					$cur_code = $matches[0];
 			}
@@ -617,18 +654,19 @@ class FLUX_MOD
 						continue;
 				}
 			}
-			
+
 			$new_step = array('command' => $cur_command);
 			if ($cur_command == 'NOTE')
 				$new_step['result'] = $cur_code;
 			else
 				$new_step['code'] = $cur_code;
-			
+
 			if (isset($cur_info))
 				$new_step['info'] = $cur_info;
 			$steps[] = $new_step;
 		}
-		
+
+		// Support for mod installer
 		$plugins_dir = null;
 		if (is_dir($this->readme_file_dir.'/plugins/'))
 			$plugins_dir = $this->readme_file_dir.'/plugins/';
@@ -662,7 +700,7 @@ class FLUX_MOD
 					//Database to modify
 					if(isset($fields_to_add)) $list_tables[] = "fields_to_add";
 					if(isset($config_to_insert)) $list_tables[] = "config_to_insert";
-					
+
 					//is there database modifications to do?
 					if(!empty($list_tables))
 					{
@@ -695,12 +733,12 @@ class FLUX_MOD
 						$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->install)'."\n{\n".implode("\n", $code_array)."\n}\n");
 					}
 
-					foreach($list_files as $file_name) 
+					foreach($list_files as $file_name)
 					{
 						foreach($$file_name as $file_value)
 						{
 							$steps[] = array('command' => 'OPEN', 'code' => $file_value);
-							
+
 							list($name_file,$ext_file) = explode('.',$file_value);
 
 							if($file_name == "files_to_insert")
@@ -738,7 +776,7 @@ class FLUX_MOD
 									$pos_start = strpos($file_content, $move_get_start[$name_file][$i]) + strlen($move_get_start[$name_file][$i]);
 								$pos_end = strpos($file_content, $move_get_end[$name_file][$i]);
 									$move_string = substr($file_content, $pos_start, $pos_end - $pos_start);
-						
+
 									$searching[] = $move_get_start[$name_file][$i].$move_string.$move_get_end[$name_file][$i];
 									$replacement[] = $move_get_start[$name_file][$i].$move_get_end[$name_file][$i];
 									$searching[] = $move_to_start[$name_file][$i].$move_to_end[$name_file][$i];
@@ -754,13 +792,13 @@ class FLUX_MOD
 					$code = 'if ($this->install)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_install.php')."<?php\n".'}';
 					if (file_exists($plugins_dir.'/'.$f.'/update_uninstall.php'))
 						$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
-					
+
 					$code = str_replace('?><?php', '', $code);
 					$steps[] = array('command' => 'RUN CODE', 'code' => $code);
 				}
 			}
 		}
-		
+
 		// Correct action IN THIS LINE FIND
 		if ($do_inline_find)
 		{
@@ -775,7 +813,7 @@ class FLUX_MOD
 				{
 					if ($inline_replace != '')
 						$steps[$last_find_key + 1] = array('command' => 'REPLACE', 'code' => $inline_replace);
-						
+
 					$find = $cur_step['code'];
 					$inline_find = $inline_replace = '';
 					$last_find_key = $key;
@@ -797,13 +835,13 @@ class FLUX_MOD
 				elseif ($cur_step['command'] == 'REPLACE' && $inline_find != '')
 					$inline_replace = str_replace($inline_find, $inline_find.$inline_replace, $inline_replace);
 			}
-			
+
 			// Fix section numbering
 			$steps = array_values($steps);
 		}
-		
+
 		return $steps;
 	}
-	
-	
+
+
 }

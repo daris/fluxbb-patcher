@@ -157,16 +157,24 @@ if (count($notes) > 0)
 // User wants to do some action?
 if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 {
+	// Load patcher config from file
 	$patcher_config = array('installed_mods' => array(), 'steps' => array());
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		require PUN_ROOT.'patcher_config.php';
 
+	// Mod is installed and we want to install again
 	if ($action == 'install' && isset($patcher_config['installed_mods'][$mod_id]))
 		message($lang_admin_plugin_patcher['Mod already installed']);
+
+	// Do not allow to uninstall mod if it is not installed
 	elseif ($action == 'uninstall' && !isset($patcher_config['installed_mods'][$mod_id]))
 		message($lang_admin_plugin_patcher['Mod already uninstalled']);
+
+	// Mod is already enabled
 	elseif ($action == 'enable' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		message($lang_admin_plugin_patcher['Mod already enabled']);
+
+	// Mod is disabled and we want to disable again
 	elseif ($action == 'disable' && isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		message($lang_admin_plugin_patcher['Mod already disabled']);
 
@@ -195,9 +203,11 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		else
 			$patcher = new PATCHER($flux_mod, $action);
 
+		// Do the patching
 		$done = $patcher->patch();
 		$logs = $patcher->log;
 
+		// Store logs in session as we may want to view logs in another page
 		$_SESSION['patcher_logs'] = serialize($logs);
 
 		generate_admin_menu($plugin);
@@ -239,18 +249,24 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			'update'	=> $lang_admin_plugin_patcher['Updating']
 		);
 
+		// Loop through each action
 		foreach ($logs as $cur_action => $log)
 		{
 			echo "\n\t\t\t\t\t\t".'<p>'.$action_info[$cur_action].'...<br />';
+
+			// The array containing list of actions that were done
 			$actions = array();
 
+			// Loop through each readme file of current action
 			foreach ($log as $cur_step_list)
 			{
+				// Loop through each step
 				foreach ($cur_step_list as $id => $cur_step)
 				{
 					if (!isset($cur_step['command']))
 						continue;
 
+					// Uploading... or Deleting...
 					if ($cur_step['command'] == 'UPLOAD')
 					{
 						$num_files = count(explode("\n", $cur_step['substeps'][0]['code']));
@@ -259,12 +275,16 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						elseif (in_array($cur_action, array('install', 'update')))
 							$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $cur_step['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
 					}
+
+					// Opening...
 					elseif ($cur_step['command'] == 'OPEN')
 					{
 						$steps_failed = array();
 						$num_changes = $num_failed = 0;
+
 						if (isset($cur_step['substeps']))
 						{
+							// We're looking for any steps that failed to do
 							foreach ($cur_step['substeps'] as $key => $cur_substep)
 							{
 								if ($cur_substep['status'] == STATUS_DONE || $cur_substep['status'] == STATUS_REVERTED)
@@ -296,6 +316,8 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($cur_step['code'])), count($steps_failed) == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
 					}
+
+					// Running...
 					elseif ($cur_step['command'] == 'RUN' && !in_array($cur_action, array('enable', 'disable')))
 					{
 						$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
@@ -308,17 +330,22 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 						}
 						$actions[] = $new_action;
 					}
+
+					// Deleting...
 					elseif ($cur_step['command'] == 'DELETE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($cur_step['code'])), $cur_step['status'] != STATUS_NOT_DONE);
 
+					// Running code...
 					elseif ($cur_step['command'] == 'RUN CODE' && !in_array($cur_action, array('enable', 'disable')))
 						$actions[] = array($lang_admin_plugin_patcher['Running code'], $cur_step['status'] != STATUS_NOT_DONE);
 
+					// Add current note to the $notes array
 					elseif ($cur_step['command'] == 'NOTE' && isset($cur_step['result']))
 						$notes[] = $cur_step['result'];
 				}
 			}
 
+			// Print output of each action
 			foreach ($actions as $cur_action)
 				echo "\n\t\t\t\t\t\t\t".'<strong style="color: '.($cur_action[1] ? 'green' : 'red').'">'.$cur_action[0].'</strong>... '.(isset($cur_action[2]) ? $cur_action[2] : '').'<br />';
 
@@ -555,11 +582,13 @@ elseif (isset($_GET['show_log']))
 					{
 						if (isset($cur_substep['command']) && isset($lang_admin_plugin_patcher[$cur_substep['command']]))
 							$cur_substep['command'] = $lang_admin_plugin_patcher[$cur_substep['command']];
+
 						$style = '';
 						$comments = array();
 
 						if (!isset($cur_substep['status']))
 							$cur_substep['status'] = STATUS_UNKNOWN;
+
 						switch ($cur_substep['status'])
 						{
 							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00'; $comments[] = $lang_admin_plugin_patcher['NOT DONE']; break;
@@ -721,6 +750,7 @@ else
 		if (isset($patcher_config['installed_mods'][$flux_mod->id]['uninstall_failed']))
 			$section = 'Mods failed to uninstall';
 
+		// Look for updates
 		if ($flux_mod->is_installed)
 		{
 			$has_update = array();
