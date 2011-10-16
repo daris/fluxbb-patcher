@@ -896,7 +896,7 @@ class PATCHER
 				$lines = explode("\n", $install_code);
 				foreach ($lines as $cur_line)
 					if (preg_match('#^\$[a-zA-Z0-9_-]+#', $cur_line, $matches))
-						$_SESSION['patcher_eval'] .= 'global '.$matches[0].';';
+						eval('global '.$matches[0].';');
 
 				eval($install_code);
 				if ($this->uninstall)
