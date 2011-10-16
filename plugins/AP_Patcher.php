@@ -482,7 +482,8 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 			$req_type = array(
 				'files_to_upload' 	=> array($lang_admin_plugin_patcher['Files to upload'], $lang_admin_plugin_patcher['Files to upload info']),
 				'directories' 		=> array($lang_admin_plugin_patcher['Directories'], $lang_admin_plugin_patcher['Directories info']),
-				'affected_files' 	=> array($lang_admin_plugin_patcher['Affected files'], $lang_admin_plugin_patcher['Affected files info'])
+				'affected_files' 	=> array($lang_admin_plugin_patcher['Affected files'], $lang_admin_plugin_patcher['Affected files info']),
+				'missing_strings' 	=> array($lang_admin_plugin_patcher['Missing strings'], $lang_admin_plugin_patcher['Missing strings info'])
 			);
 			foreach ($requirements as $type => $cur_requirements)
 			{
@@ -496,14 +497,11 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 							<p><?php echo isset($req_type[$type][1]) ? $req_type[$type][1] : $type ?></p>
 							<table>
 <?php
-				foreach ($cur_requirements as $text => $cur_requirement)
+				foreach ($cur_requirements as $cur_requirement)
 				{
-					if ($cur_requirement[0])
-						$status = '<strong style="color: green">'.$cur_requirement[1].'</strong>';
-					else
-						$status = '<strong style="color: red">'.$cur_requirement[2].'</strong>';
+					$status = '<strong style="color: '.($cur_requirement[0] ? 'green' : 'red') .'">'.$cur_requirement[2].'</strong>';
 
-					echo '<tr><td style="width: 50%">'.pun_htmlspecialchars($text).'</td><td>'.$status.'</td></tr>';
+					echo '<tr><td style="width: 50%">'.pun_htmlspecialchars($cur_requirement[1]).'</td><td>'.$status.'</td></tr>';
 				}
 ?>
 							</table>
@@ -601,9 +599,9 @@ elseif (isset($_GET['show_log']))
 
 						switch ($cur_substep['status'])
 						{
-							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00'; $comments[] = $lang_admin_plugin_patcher['NOT DONE']; break;
-							case STATUS_DONE:			$style = 'color: #0a0'; 		$comments[] = $lang_admin_plugin_patcher['DONE']; break;
-							case STATUS_REVERTED:		$style = 'color: #00a'; 		$comments[] = $lang_admin_plugin_patcher['REVERTED']; break;
+							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00';/* $comments[] = $lang_admin_plugin_patcher['NOT DONE']*/; break;
+							case STATUS_DONE:			$style = 'color: #0a0'; 		/*$comments[] = $lang_admin_plugin_patcher['DONE']*/; break;
+							case STATUS_REVERTED:		$style = 'color: #00a'; 		/*$comments[] = $lang_admin_plugin_patcher['REVERTED']*/; break;
 						}
 
 						if (isset($cur_substep['comments']))
