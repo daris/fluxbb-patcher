@@ -36,6 +36,8 @@ class PATCHER
 	// Validate only
 	var $validate = false;
 
+	var $opened_files = array();
+
 	function __construct($flux_mod)
 	{
 		$this->flux_mod = $flux_mod;
@@ -121,6 +123,16 @@ class PATCHER
 		}
 
 		return $requirements;
+	}
+
+
+	function revert_modified_files()
+	{
+		global $fs;
+
+		// Revert modified files
+		foreach ($this->opened_files as $cur_file => $contents)
+			$fs->put(PUN_ROOT.$cur_file, $contents);
 	}
 
 
@@ -637,6 +649,7 @@ class PATCHER
 			message(sprintf($lang_admin_plugin_patcher['File not writable'], pun_htmlspecialchars($this->code)));
 
 		$this->cur_file = file_get_contents(PUN_ROOT.$this->code);
+		$this->opened_files[$this->code] = $this->cur_file;
 
 		// Convert EOL to Unix style
 		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
@@ -682,11 +695,14 @@ class PATCHER
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 
-		if (!$this->check_code($this->find))
+		if ($this->uninstall || $this->disable)
+			return STATUS_UNKNOWN;
+		elseif (!$this->check_code($this->find))
 		{
 			$this->find = '';
 			return STATUS_NOT_DONE;
 		}
+
 		return STATUS_UNKNOWN;
 	}
 
@@ -697,8 +713,11 @@ class PATCHER
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled']) || $this->cur_file_path == '')
 			return STATUS_NOTHING_TO_DO;
 
-		if (empty($this->find) || empty($this->cur_file))
+		if ((!$this->uninstall && !$this->disable && empty($this->find)))
 			return STATUS_UNKNOWN;
+
+		if (empty($this->find) || empty($this->cur_file))
+			return STATUS_NOT_DONE;
 
 		// Add QUERY ID at end of query line
 		if (strpos($this->code, 'query(') !== false)
@@ -892,11 +911,11 @@ class PATCHER
 
 				// Fix for changes in install_mod.php for another private messaging system
 				elseif (($pos = strpos($install_code, '// Make sure we are running a FluxBB version')) !== false)
-				{
 					$len = $pos;
-					$install_code = str_replace(array('define(\'PUN_TURN_OFF_MAINT\', 1);', 'define(\'PUN_ROOT\', \'./\');', 'require PUN_ROOT.\'include/common.php\';'), '', $install_code);
-				}
+
 				$install_code = substr($install_code, 0, $len);
+				$install_code = str_replace(array('define(\'PUN_TURN_OFF_MAINT\', 1);', 'define(\'PUN_ROOT\', \'./\');', 'require PUN_ROOT.\'include/common.php\';'), '', $install_code);
+				$install_code = str_replace('or error(', 'or myerror(', $install_code);
 
 				$lines = explode("\n", $install_code);
 				foreach ($lines as $cur_line)
@@ -1097,5 +1116,4 @@ class PATCHER
 			}
 		}
 	}
-
 }
