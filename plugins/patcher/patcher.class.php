@@ -97,7 +97,7 @@ class PATCHER
 			{
 				foreach ($cur_steps as $key => $cur_step)
 				{
-					if ($cur_step['status'] == STATUS_NOT_DONE)
+					if (isset($cur_step['status']) && $cur_step['status'] == STATUS_NOT_DONE)
 					{
 						if (!isset($requirements['cannot_open']))
 							$requirements['cannot_open'] = array();
