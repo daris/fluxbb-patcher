@@ -130,28 +130,16 @@ class PATCHER
 					$cur_open_steps = array();
 					foreach ($step_list as $key => $cur_step)
 					{
+						// Move RUN and DELEtE steps at the end
 						if (in_array($cur_step['command'], array('RUN', 'DELETE')))
 						{
 							$code = trim($cur_step['code']);
-
-							// Uninstall mod at the end
-							if ($code == 'install_mod.php')
-							{
-								$run_steps_end[] = $cur_step;
-							}
-
-							// Other files (eg. gen.php) move to start
-							else
-							{
-								$run_steps_start[] = $cur_step;
-							}
+							$run_steps_end[] = $cur_step;
 						}
 
 						// Delete files at the end
 						elseif ($cur_step['command'] == 'UPLOAD')
-						{
 							$upload_steps_end[] = $cur_step;
-						}
 
 						elseif (in_array($cur_step['command'], array('OPEN')))
 						{
@@ -174,10 +162,7 @@ class PATCHER
 						}
 
 						else
-						{
 							$cur_step_list[] = $cur_step;
-						}
-
 					}
 
 					$new_step_list = array();
