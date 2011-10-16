@@ -126,7 +126,7 @@ class ZIP_ARCHIVE
 
 		foreach ($files as $cur_file)
 			if (is_readable(PUN_ROOT.$cur_file))
-				$this->archive->add(PUN_ROOT.$cur_file);
+				$this->zip->add(PUN_ROOT.$cur_file);
 		return true;
 	}
 
