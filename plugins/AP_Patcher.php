@@ -24,7 +24,6 @@ if (!defined('PUN_DEBUG'))
 
 error_reporting(E_ALL);
 require PATCHER_ROOT.'functions.php';
-set_error_handler('patcher_error_handler');
 
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
@@ -187,30 +186,39 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	// Get the requirenment list
 	$requirements = $flux_mod->check_requirements();
 
+	$_SESSION['patcher_log'] = '';
+	$logs = array();
+
+	$patcher = new PATCHER($flux_mod);
+	$is_valid = true;
+
+	// If user wants to update mod, first remove its code from files (disable mod) and then update it
+	if ($action == 'update' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
+	{
+		$is_valid = $patcher->execute_action('disable', true);
+	}
+
+	$is_valid &= $patcher->execute_action($action, true);
+
+	// Do the patching
+	$logs = $patcher->log;
+	$done = $is_valid; // TODO: remove
+
+	if (!$is_valid)
+	{
+		$requirements['failed'] = true;
+		$requirements = array_merge($requirements, $patcher->unmet_requirements());
+	}
+
+	// Store logs in session as we may want to view logs in another page
+	$_SESSION['patcher_logs'] = serialize($logs);
+
 	// Do patching! :)
 	if (!isset($requirements['failed']) // there are no unment requirements
+		&& $is_valid
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
-		$_SESSION['patcher_log'] = '';
-		$logs = array();
-
-		// If user wants to update mod, first remove its code from files (disable mod) and then update it
-		if ($action == 'update' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
-		{
-			$patcher = new PATCHER($flux_mod, 'disable');
-			$done = $patcher->patch();
-//			$logs['disable'] = $patcher->log;
-			$patcher->set_action($action);
-		}
-		else
-			$patcher = new PATCHER($flux_mod, $action);
-
-		// Do the patching
-		$done = $patcher->patch();
-		$logs = $patcher->log;
-
-		// Store logs in session as we may want to view logs in another page
-		$_SESSION['patcher_logs'] = serialize($logs);
+		$patcher->make_changes();
 
 		generate_admin_menu($plugin);
 
@@ -483,9 +491,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 ?>
 					<fieldset>
-						<legend><?php echo $req_type[$type][0] ?></legend>
+						<legend><?php echo isset($req_type[$type][0]) ? $req_type[$type][0] : $type ?></legend>
 						<div class="infldset">
-							<p><?php echo $req_type[$type][1] ?></p>
+							<p><?php echo isset($req_type[$type][1]) ? $req_type[$type][1] : $type ?></p>
 							<table>
 <?php
 				foreach ($cur_requirements as $text => $cur_requirement)
