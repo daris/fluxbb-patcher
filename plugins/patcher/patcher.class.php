@@ -36,7 +36,8 @@ class PATCHER
 	// Validate only
 	var $validate = false;
 
-	var $opened_files = array();
+	var $orginal_files = array();
+	var $modifed_files = array();
 
 	function __construct($flux_mod)
 	{
@@ -77,9 +78,9 @@ class PATCHER
 //		if (isset($_SESSION['patcher_config']))
 //			$this->config = unserialize($_SESSION['patcher_config']);
 
-		if (isset($_SESSION['patcher_files']))
+		if (isset($this->modifed_files))
 		{
-			foreach ($_SESSION['patcher_files'] as $cur_file => $contents)
+			foreach ($this->modifed_files as $cur_file => $contents)
 				$fs->put(PUN_ROOT.$cur_file, $contents);
 		}
 
@@ -131,7 +132,7 @@ class PATCHER
 		global $fs;
 
 		// Revert modified files
-		foreach ($this->opened_files as $cur_file => $contents)
+		foreach ($this->orginal_files as $cur_file => $contents)
 			$fs->put(PUN_ROOT.$cur_file, $contents);
 	}
 
@@ -317,6 +318,7 @@ class PATCHER
 					if ($this->result != '')
 						$cur_step['result'] = $this->result;
 
+					$cur_step['code'] = $this->code;
 					$cur_step['comments'] = $this->comments;
 				}
 
@@ -493,6 +495,33 @@ class PATCHER
 			return true;
 		}
 
+		// has query?
+		$check_code = $code;
+		if (strpos($check_code, 'query(') !== false)
+		{
+			preg_match_all('#\n\t*.*?query\((.*?)\) or error.*\n#', "\n".$check_code."\n", $find_m, PREG_SET_ORDER);
+
+			foreach ($find_m as $key => $cur_find_m)
+			{
+				$find_line = trim($cur_find_m[0]);
+				$find_query = trim($cur_find_m[1]);
+
+				$query_id = md5($find_line);
+
+				// Some mod modified this query before
+				if (preg_match('#\n\t*.*?query\((.*?)\) or error.*?\/\/ QUERY ID: '.preg_quote($query_id).'#', $this->cur_file, $matches))
+				{
+					$query_line = trim($matches[0]);
+					$cur_file_query = $matches[1];
+
+					$check_code = str_replace($find_line, $query_line, $check_code);
+				}
+			}
+			$this->comments[] = 'Query match';
+			if (strpos($this->cur_file, $check_code) !== false)
+				return true;
+		}
+
 		return false;
 	}
 
@@ -559,7 +588,7 @@ class PATCHER
 	{
 		global $lang_admin_plugin_patcher, $fs;
 
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || ($this->validate && $this->uninstall))
 			return STATUS_UNKNOWN;
 
 		// Should never happen
@@ -648,8 +677,13 @@ class PATCHER
 		if (!$fs->is_writable(PUN_ROOT.$this->code))
 			message(sprintf($lang_admin_plugin_patcher['File not writable'], pun_htmlspecialchars($this->code)));
 
-		$this->cur_file = file_get_contents(PUN_ROOT.$this->code);
-		$this->opened_files[$this->code] = $this->cur_file;
+		if (isset($this->modifed_files[$this->code]))
+			$this->cur_file = $this->modifed_files[$this->code];
+		else
+		{
+			$this->cur_file = file_get_contents(PUN_ROOT.$this->code);
+			$this->orginal_files[$this->code] = $this->cur_file;
+		}
 
 		// Convert EOL to Unix style
 		$this->cur_file = str_replace("\r\n", "\n", $this->cur_file);
@@ -672,9 +706,7 @@ class PATCHER
 
 		if ($this->validate)
 		{
-			if (!isset($_SESSION['patcher_files']))
-				$_SESSION['patcher_files'] = array();
-			$_SESSION['patcher_files'][$this->cur_file_path] = $this->cur_file;
+			$this->modifed_files[$this->cur_file_path] = $this->cur_file;
 		}
 		elseif (!defined('PATCHER_NO_SAVE'))
 			$fs->put(PUN_ROOT.$this->cur_file_path, $this->cur_file);
@@ -702,6 +734,7 @@ class PATCHER
 			$this->find = '';
 			return STATUS_NOT_DONE;
 		}
+		$this->code = $this->find;
 
 		return STATUS_UNKNOWN;
 	}
