@@ -80,7 +80,7 @@ class FLUX_MOD
 
 		foreach ($this->readme_file_list as $key => $cur_readme)
 		{
-			if (preg_match('#(install|read\s?me).*?\.txt#i', $cur_readme))
+			if (preg_match('#(install|read\s?me|lisezmoi).*?\.txt#i', $cur_readme))
 				return $cur_readme;
 		}
 
@@ -106,7 +106,7 @@ class FLUX_MOD
 					if ($subdirectory)
 						$result = array_merge($result, $this->get_readme_file_list($dirpath.'/'.$file, false));
 				}
-				else if (strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false && strpos(strtolower($file), '.txt') !== false)
+				else if ((strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false || strpos(strtolower($file), 'lisezmoi') !== false) && strpos(strtolower($file), '.txt') !== false)
 					$result[] = ltrim(str_replace($this->mod_dir, '', $dirpath.'/'.$file), '/');
 			}
 		}
