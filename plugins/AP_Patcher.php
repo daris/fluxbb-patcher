@@ -204,10 +204,13 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	$logs = $patcher->log;
 	$done = $is_valid; // TODO: remove
 
+	unset($_SESSION['patcher_steps']);
+
 	if (!$is_valid)
 	{
 		$requirements['failed'] = true;
 		$requirements = array_merge($requirements, $patcher->unmet_requirements());
+		$_SESSION['patcher_steps'] = serialize($patcher->steps);
 	}
 
 	// Store logs in session as we may want to view logs in another page
@@ -219,6 +222,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
 		$patcher->make_changes();
+		$logs = $patcher->log;
+		// Store logs in session as we may want to view logs in another page
+		$_SESSION['patcher_logs'] = serialize($logs);
 
 		generate_admin_menu($plugin);
 

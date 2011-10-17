@@ -74,13 +74,22 @@ class PATCHER
 	function make_changes()
 	{
 		global $fs;
-//
-//		if (isset($_SESSION['patcher_config']))
-//			$this->config = unserialize($_SESSION['patcher_config']);
 
-		if (isset($this->modifed_files))
+	//	if (isset($_SESSION['patcher_config']))
+//		{
+//			$this->config = unserialize($_SESSION['patcher_config']);
+//			unset($_SESSION['patcher_config']);
+//		}
+
+		if (isset($_SESSION['patcher_steps']))
+			$this->steps = unserialize($_SESSION['patcher_steps']);
+
+//		print_r($this->steps);
+
+		if (isset($_SESSION['patcher_files']))
 		{
-			foreach ($this->modifed_files as $cur_file => $contents)
+			$files = unserialize($_SESSION['patcher_files']);
+			foreach ($files as $cur_file => $contents)
 				$fs->put(PUN_ROOT.$cur_file, $contents);
 		}
 
@@ -309,7 +318,8 @@ class PATCHER
 					$this->result = '';
 
 					// Execute current step
-					$cur_step['status'] = $this->$function();
+					if ($this->validate || (!$this->validate && !isset($cur_step['validated'])))
+						$cur_step['status'] = $this->$function();
 
 					// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
 					if (($this->uninstall || $this->disable) && $cur_step['status'] == STATUS_DONE)
@@ -320,6 +330,9 @@ class PATCHER
 
 					$cur_step['code'] = $this->code;
 					$cur_step['comments'] = $this->comments;
+
+					if (in_array($this->command, $this->modify_file_commands) && $this->validate)
+						$this->steps[$cur_readme_file][$key]['validated'] = true;
 				}
 
 				if (!(($this->uninstall || $this->disable) && $cur_step['command'] == 'NOTE') // Don't display Note message when uninstalling mod
@@ -457,6 +470,8 @@ class PATCHER
 
 		// if some file was opened, save it
 		$this->step_save();
+
+		$_SESSION['patcher_files'] = serialize($this->modifed_files);
 
 		if ($this->config != $this->config_org)
 		{
@@ -651,7 +666,7 @@ class PATCHER
 		$this->step_save();
 
 		// Mod was already disabled before
-		if (($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled'])) || !$this->validate)
+		if (($this->uninstall && isset($this->config['installed_mods'][$this->flux_mod->id]['disabled'])))
 			return STATUS_NOTHING_TO_DO;
 
 		$this->code = trim($this->code);
@@ -978,6 +993,7 @@ class PATCHER
 		ob_start();
 		require_once PUN_ROOT.$this->code;
 		$this->result = ob_get_clean();
+
 		return STATUS_DONE;
 	}
 
