@@ -1055,11 +1055,12 @@ class PATCHER
 			return;
 
 		$steps = $this->config['steps']['friendly-url/files/gen.php'];
+		$steps = array_values($steps);
 		$cur_file = '';
 
 		$changes = array();
 		$found = false;
-		for ($i = 0; $i <= count($steps); $i++)
+		for ($i = 0; $i < count($steps) - 1; $i++)
 		{
 			if ($found)
 			{
@@ -1077,6 +1078,7 @@ class PATCHER
 			$found = true;
 			unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
 		}
+		$this->config['steps']['friendly-url/files/gen.php'] = array_values($this->config['steps']['friendly-url/files/gen.php']);
 		$changes = array_reverse($changes);
 		$end_pos = strlen($this->cur_file);
 		foreach ($changes as $cur_change)

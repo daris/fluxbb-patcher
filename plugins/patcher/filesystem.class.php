@@ -18,9 +18,10 @@ class FILESYSTEM
 		}
 	}
 
+	// Returns path of temporary file in cache directory
 	function tmpname()
 	{
-		return FORUM_CACHE_DIR.'/'.md5(time().rand());
+		return FORUM_CACHE_DIR.md5(time().rand());
 	}
 
 
@@ -49,8 +50,12 @@ class FILESYSTEM
 
 	function fix_path($path)
 	{
-		if (substr($path, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-			return ltrim(substr($path, strlen(PUN_ROOT)), '/');
+		$len = strlen(PUN_ROOT);
+
+		// Is the current path prefixed with PUN_ROOT directory?
+		if (substr($path, 0, $len) == PUN_ROOT)
+			return ltrim(substr($path, $len), '/');
+
 		return $path;
 	}
 
@@ -64,13 +69,37 @@ class FILESYSTEM
 	function move($src, $dest)
 	{
 		$this->check_connection();
-		return $this->is_ftp ? $this->ftp->store($src, $this->fix_path($dest)) && unlink($src) : rename($src, $dest);
+		if ($this->is_ftp)
+		{
+			$src_path = $this->fix_path($src);
+
+			// File is already on the FTP server (eg. in fluxbb cache directory) so move it to another location
+			if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
+				return $this->ftp->rename($src_path, $this->fix_path($dest));
+
+			// We have to upload file to the FTP server
+			else
+				return $this->ftp->store($src, $this->fix_path($dest)) && unlink($src);
+		}
+		return rename($src, $dest);
 	}
 
 	function copy($src, $dest)
 	{
 		$this->check_connection();
-		return $this->is_ftp ? $this->ftp->store($src, $this->fix_path($dest)) : copy($src, $dest);
+		if ($this->is_ftp)
+		{
+			$src_path = $this->fix_path($src);
+
+			// File is already on the FTP server (eg. in fluxbb cache directory) so copy it to another location
+			if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
+				return $this->ftp->copy($src_path, $this->fix_path($dest));
+
+			// We have to upload file to the FTP server
+			else
+				return $this->ftp->store($src, $this->fix_path($dest)) && unlink($src);
+		}
+		return copy($src, $dest);
 	}
 
 	function put($file, $data)
