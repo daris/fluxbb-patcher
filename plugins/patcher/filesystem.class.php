@@ -28,7 +28,7 @@ class FILESYSTEM
 	function check_connection()
 	{
 		if (!$this->is_ftp || $this->is_connected)
-			return;
+			return false;
 
 		require_once PATCHER_ROOT.'ftp.class.php';
 
@@ -40,7 +40,7 @@ class FILESYSTEM
 		if (!$this->ftp->chdir($this->ftp_data['path']))
 			error('FTP: Directory change failed', __FILE__, __LINE__);
 
-		if (!@$this->ftp->listDetails($this->fix_path('config.php')) || !@$this->ftp->listDetails($this->fix_path('admin_index.php')))
+		if (!@$this->ftp->listDetails($this->fix_path('config.php')))
 			error('FTP: The FluxBB root directory is not valid', __FILE__, __LINE__);
 
 		$this->root = $this->ftp_data['path'];
@@ -88,17 +88,8 @@ class FILESYSTEM
 	{
 		$this->check_connection();
 		if ($this->is_ftp)
-		{
-			$src_path = $this->fix_path($src);
+			return $this->ftp->store($src, $this->fix_path($dest));
 
-			// File is already on the FTP server (eg. in fluxbb cache directory) so copy it to another location
-			if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-				return $this->ftp->copy($src_path, $this->fix_path($dest));
-
-			// We have to upload file to the FTP server
-			else
-				return $this->ftp->store($src, $this->fix_path($dest)) && unlink($src);
-		}
 		return copy($src, $dest);
 	}
 
