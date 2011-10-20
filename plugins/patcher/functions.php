@@ -305,20 +305,26 @@ function create_backup($backup)
 	// Add FluxBB root directory to backup
 	$dir = dir(PUN_ROOT);
 	while ($file = $dir->read())
-		if (!in_array($file, array('.', '..', 'config.php', 'install_mod.php', 'gen.php', 'revert_backup.php')) && is_file(PUN_ROOT.$file))
+	{
+		if (!in_array($file, array('.', '..', 'config.php', 'install_mod.php', 'gen.php', 'revert_backup.php')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.$file))
 			$files[] = $file;
+	}
 
 	// Add include directory to backup
 	$dir = dir(PUN_ROOT.'include');
 	while ($file = $dir->read())
-		if (!in_array($file, array('.', '..')) && is_file(PUN_ROOT.'include/'.$file))
+	{
+		if (!in_array($file, array('.', '..')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.'include/'.$file))
 			$files[] = 'include/'.$file;
+	}
 
 	// Add lang/English directory to backup
 	$dir = dir(PUN_ROOT.'lang/English/');
 	while ($file = $dir->read())
-		if (!in_array($file, array('.', '..')) && is_file(PUN_ROOT.'lang/English/'.$file))
+	{
+		if (!in_array($file, array('.', '..')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.'lang/English/'.$file))
 			$files[] = 'lang/English/'.$file;
+	}
 
 	$files[] = 'style/Air.css';
 

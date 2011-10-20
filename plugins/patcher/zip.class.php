@@ -116,17 +116,26 @@ class ZIP_ARCHIVE
 		if (!$this->is_open)
 			return false;
 
+		// Check whether there are some files that we can't read
+		$not_readable = array();
+		foreach ($files as $cur_file)
+		{
+			if (!is_readable(PUN_ROOT.$cur_file))
+				$not_readable[] = $cur_file;
+		}
+		if (!empty($not_readable))
+			message('The following files are not readable:<br />'.implode('<br />', $not_readable));
+
 		if (ZIP_NATIVE)
 		{
 			foreach ($files as $cur_file)
-				if (is_readable(PUN_ROOT.$cur_file))
-					$this->zip->addFile(PUN_ROOT.$cur_file, $cur_file);
+				$this->zip->addFile(PUN_ROOT.$cur_file, $cur_file);
 			return true;
 		}
 
-		foreach ($files as $cur_file)
-			if (is_readable(PUN_ROOT.$cur_file))
-				$this->zip->add(PUN_ROOT.$cur_file);
+		if ($this->zip->add(implode(',', $files)) === false)
+			message($this->zip->errorInfo(true));
+
 		return true;
 	}
 
