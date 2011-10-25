@@ -112,11 +112,9 @@ class FILESYSTEM
 	function remove_directory($path)
 	{
 		if (!is_dir($path))
-			return true;
+			return false;
 
 		$this->check_connection();
-		if ($this->is_ftp)
-			return $this->ftp->delete($this->fix_path($path));
 
 		$list = $this->list_to_remove($path);
 
@@ -126,7 +124,12 @@ class FILESYSTEM
 		foreach ($list as $cur_file)
 		{
 			if (is_dir($cur_file))
-				rmdir($cur_file);
+			{
+				if ($this->is_ftp)
+					$this->ftp->delete($this->fix_path($cur_file));
+				else
+					rmdir($cur_file);
+			}
 			else
 				$this->delete($cur_file);
 		}
