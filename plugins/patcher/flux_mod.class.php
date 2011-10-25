@@ -487,6 +487,10 @@ class FLUX_MOD
 			sort($dirs_to_check);
 			foreach ($dirs_to_check as $cur_dir_to_check)
 			{
+				// Fix the PUN_ROOT directory path
+				if ($cur_dir_to_check == '.')
+					$cur_dir_to_check = '';
+
 				if (!is_dir(PUN_ROOT.$cur_dir_to_check))
 				{
 					$directories = explode('/', $cur_dir_to_check);
@@ -520,7 +524,7 @@ class FLUX_MOD
 					if ($fs->is_writable(PUN_ROOT.$cur_dir_to_check))
 						$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Found, writable']);
 					else
-						$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Not writable']);
+						$requirements['directories'][] = array(false, $cur_dir_to_check, $lang_admin_plugin_patcher['Not writable']);
 				}
 			}
 		}
