@@ -350,7 +350,7 @@ class FLUX_MOD
 		if ($this->upload_code)
 		{
 			// Mod author was too lazy? :P
-			if (preg_match('/(upload.+from|all).+files.+/', strtolower($this->upload_code)) || preg_match('/file.+folders?/', strtolower($this->upload_code)))
+			if (preg_match('/(upload.+from|all).+files.+/', strtolower($this->upload_code)) || preg_match('/(file|all).+folders?/', strtolower($this->upload_code)))
 			{
 				if (is_dir($this->readme_file_dir.'/files'))
 					$files_to_upload = list_files_to_upload($this->readme_file_dir, 'files');
