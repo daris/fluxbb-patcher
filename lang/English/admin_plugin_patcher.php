@@ -36,7 +36,8 @@ $lang_admin_plugin_patcher = array(
 'Missing string'				=> 'Missing string',
 'Not exists'					=> 'Not exists',
 'Not writable'					=> 'Not writable',
-'Found, writable'				=> 'Found, writable',
+'Found'							=> 'Found',
+'Writable'						=> 'Writable',
 'Created'						=> 'Created',
 'Can\'t create'					=> 'Can\'t create',
 

@@ -197,6 +197,9 @@ class FILESYSTEM
 
 	function is_writable($path)
 	{
+		if ($path == PUN_ROOT.'.')
+			return $this->is_writable(PUN_ROOT);
+
 		$this->check_connection();
 		if ($this->is_ftp)
 		{

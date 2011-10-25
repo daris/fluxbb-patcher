@@ -462,7 +462,7 @@ class FLUX_MOD
 			{
 				$dir = dirname($to);
 				if ($fs->is_writable(PUN_ROOT.$dir))
-					$requirements['directories'][$dir] = array(true, $dir, $lang_admin_plugin_patcher['Found, writable']);
+					$requirements['directories'][$dir] = array(true, $dir, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
 				else
 					$requirements['directories'][$dir] = array(false, $dir, $lang_admin_plugin_patcher['Not writable']);
 			}
@@ -487,10 +487,6 @@ class FLUX_MOD
 			sort($dirs_to_check);
 			foreach ($dirs_to_check as $cur_dir_to_check)
 			{
-				// Fix the PUN_ROOT directory path
-				if ($cur_dir_to_check == '.')
-					$cur_dir_to_check = '';
-
 				if (!is_dir(PUN_ROOT.$cur_dir_to_check))
 				{
 					$directories = explode('/', $cur_dir_to_check);
@@ -503,18 +499,15 @@ class FLUX_MOD
 						if (!is_dir(PUN_ROOT.$cur_path))
 						{
 							if (@$fs->mkdir(PUN_ROOT.$cur_path))
-								$requirements['directories'][] = array(true, $cur_path, $lang_admin_plugin_patcher['Created']);
+							{
+								if ($fs->is_writable(PUN_ROOT.$cur_path))
+									$requirements['directories'][] = array(true, $cur_path, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Writable']);
+								else
+									$requirements['directories'][] = array(false, $cur_path, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Not writable']);
+							}
 							else
 								$requirements['directories'][] = array(false, $cur_path, $lang_admin_plugin_patcher['Can\'t create']);
 						}
-					}
-
-					if (!isset($requirements['directories'][$cur_dir_to_check]))
-					{
-						if ($fs->is_writable(PUN_ROOT.$cur_dir_to_check))
-							$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Found, writable']);
-						else
-							$requirements['directories'][] = array(false, $cur_dir_to_check, $lang_admin_plugin_patcher['Not writable']);
 					}
 				}
 
@@ -522,7 +515,7 @@ class FLUX_MOD
 				else
 				{
 					if ($fs->is_writable(PUN_ROOT.$cur_dir_to_check))
-						$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Found, writable']);
+						$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
 					else
 						$requirements['directories'][] = array(false, $cur_dir_to_check, $lang_admin_plugin_patcher['Not writable']);
 				}
@@ -544,7 +537,7 @@ class FLUX_MOD
 					$error = $lang_admin_plugin_patcher['Not writable'];
 
 				if (empty($error))
-					$requirements['affected_files'][] = array(true, $cur_file, $lang_admin_plugin_patcher['Found, writable']);
+					$requirements['affected_files'][] = array(true, $cur_file, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
 				else
 					$requirements['affected_files'][] = array(false, $cur_file, $error);
 			}
