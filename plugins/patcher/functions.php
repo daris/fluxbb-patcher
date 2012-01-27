@@ -47,10 +47,7 @@ function loadPatcherConfig()
 
 			// Convert $patcher_config to $patcherConfig
 			if (!is_array($patcherConfig))
-			{
 				$patcherConfig = $patcher_config;
-				savePatcherConfig($patcherConfig);
-			}
 		}
 		else
 			$patcherConfig = array('installed_mods' => array(), 'steps' => array());
@@ -70,19 +67,19 @@ function savePatcherConfig($patcherConfig = null)
 }
 
 // Get the list of files to upload if patcher does not understand UPLOAD step
-function listFilesToUpload($path, $from_dir = '', $to_dir = '')
+function listFilesToUpload($path, $fromDir = '', $toDir = '')
 {
 	$files = array();
 
-	$d = dir($path.'/'.$from_dir);
+	$d = dir($path.'/'.$fromDir);
 	while ($f = $d->read())
 	{
 		if (!in_array($f, array('.', '..', '.svn', 'Thumbs.db', 'LICENSE', 'README')) && !preg_match('/^(readme|update).*?\.txt$/', $f))
 		{
-			if (is_dir($path.'/'.$from_dir.'/'.$f))
-				$files = array_merge($files, listFilesToUpload($path, $from_dir.'/'.$f, $to_dir.'/'.$f));
+			if (is_dir($path.'/'.$fromDir.'/'.$f))
+				$files = array_merge($files, listFilesToUpload($path, $fromDir.'/'.$f, $toDir.'/'.$f));
 			else
-				$files[ltrim($from_dir.'/'.$f, '/')] = $to_dir.'/';
+				$files[ltrim($fromDir.'/'.$f, '/')] = $toDir.'/';
 		}
 	}
 

@@ -80,7 +80,7 @@ class Patcher
 		if (isset($_SESSION['patcher_steps']))
 			$this->steps = unserialize($_SESSION['patcher_steps']);
 
-//		print_r($this->steps);
+		// print_r($this->steps);
 
 		if (isset($_SESSION['patcher_files']))
 		{
@@ -149,7 +149,7 @@ class Patcher
 		if ($this->install || $this->update)
 		{
 			// Load steps for current mod
-			$steps[$this->mod->id.'/'.$this->mod->readme_file_name] = $this->mod->getSteps();
+			$steps[$this->mod->id.'/'.$this->mod->readmeFileName] = $this->mod->getSteps();
 
 			// Load steps for related mods (readme_mod_name.txt)
 			foreach ($this->mod->readmeFileList as $curReadmeFile)
@@ -158,11 +158,11 @@ class Patcher
 				if (strpos($curReadmeFile, '_') === false)
 					continue;
 
-				$mod_key = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
-				$mod_key = substr($mod_key, 0, strpos($mod_key, '.txt'));
-				$mod_key = str_replace('_', '-', $mod_key);
+				$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
+				$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
+				$modKey = str_replace('_', '-', $modKey);
 
-				if (isset($this->config['installed_mods'][$mod_key]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
+				if (isset($this->config['installed_mods'][$modKey]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
 					$steps[$this->mod->id.'/'.$curReadmeFile] = $this->mod->getSteps($curReadmeFile);
 			}
 
@@ -177,11 +177,11 @@ class Patcher
 					if (in_array($curReadmeFile, $instModsReadmeFiles))
 						continue;
 
-					$mod_key = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
-					$mod_key = substr($mod_key, 0, strpos($mod_key, '.txt'));
-					$mod_key = str_replace('_', '-', $mod_key);
+					$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
+					$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
+					$modKey = str_replace('_', '-', $modKey);
 
-					if ($mod_key == $this->mod->id)
+					if ($modKey == $this->mod->id)
 						$steps[$mod->id.'/'.$curReadmeFile] = $mod->getSteps($curReadmeFile);
 				}
 			}
@@ -275,6 +275,8 @@ class Patcher
 		global $fs;
 		$failed = false;
 
+//		print_r($this->log);
+
 		if ($this->uninstall || $this->disable)
 		{
 			foreach ($this->mod->filesToUpload as $from => $to)
@@ -303,7 +305,8 @@ class Patcher
 
 			foreach ($stepList as $key => $curStep)
 			{
-				$curStep['status'] = STATUS_UNKNOWN;
+				if (!isset($curStep['status']))
+					$curStep['status'] = STATUS_UNKNOWN;
 
 				$function = 'step'.str_replace(' ', '', ucfirst(strtolower($curStep['command'])));
 				if (is_callable(array($this, $function)))
@@ -328,7 +331,10 @@ class Patcher
 					$curStep['comments'] = $this->comments;
 
 					if (in_array($this->command, $this->modifyFileCommands) && $this->validate)
+					{
 						$this->steps[$curReadmeFile][$key]['validated'] = true;
+						$this->steps[$curReadmeFile][$key]['status'] = $curStep['status'];
+					}
 				}
 
 				if (!(($this->uninstall || $this->disable) && $curStep['command'] == 'NOTE') // Don't display Note message when uninstalling mod
@@ -591,6 +597,7 @@ class Patcher
 			return STATUS_NOT_DONE;
 
 		$this->curFile = substr_replace($this->curFile, $replace, $pos, strlen($find));
+
 		return STATUS_DONE;
 	}
 
@@ -721,7 +728,7 @@ class Patcher
 		elseif (!defined('PATCHER_NO_SAVE'))
 			$fs->put(PUN_ROOT.$this->curFilePath, $this->curFile);
 
-		elseif (isset($GLOBALS['patcher_debug']['save']) && in_array($this->curFilePath, $GLOBALS['patcher_debug']['save']))
+		elseif (isset($GLOBALS['patcherDebug']['save']) && in_array($this->curFilePath, $GLOBALS['patcherDebug']['save']))
 			$fs->put(PATCHER_ROOT.'debug/'.basename($this->curFilePath), $this->curFile);
 
 		$this->curFile = '';

@@ -184,7 +184,8 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	// Get the requirenment list
 	$requirements = $mod->checkRequirements();
 
-	$_SESSION['patcher_log'] = '';
+	unset($_SESSION['patcher_logs']);
+	unset($_SESSION['patcher_steps']);
 	$logs = array();
 
 	$patcher = new Patcher($mod);
@@ -201,8 +202,6 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	// Do the patching
 	$logs = $patcher->log;
 	$done = $isValid; // TODO: remove
-
-	unset($_SESSION['patcher_steps']);
 
 	if (!$isValid)
 	{
