@@ -10,7 +10,7 @@ define('BACKUPS_DIR', PUN_ROOT.'backups/');
 require PATCHER_ROOT.'filesystem.class.php';
 require PATCHER_ROOT.'config.php';
 
-$fs = new Patcher_FileSystem(isset($ftp_data) ? $ftp_data : null);
+$fs = new Patcher_FileSystem(isset($ftpData) ? $ftpData : null);
 
 $revert = isset($_GET['revert']) ? basename($_GET['revert']) : null;
 
@@ -18,10 +18,10 @@ if (!isset($revert))
 {
 	$backups = array();
 	$dir = dir(BACKUPS_DIR);
-	while ($cur_file = $dir->read())
+	while ($curFile = $dir->read())
 	{
-		if (substr($cur_file, 0, 1) != '.' && substr($cur_file, strlen($cur_file) - 4) == '.zip')
-			$backups[] = '<option value="'.htmlspecialchars($cur_file).'">'.htmlspecialchars($cur_file). '</option>';
+		if (substr($curFile, 0, 1) != '.' && substr($curFile, strlen($curFile) - 4) == '.zip')
+			$backups[] = '<option value="'.htmlspecialchars($curFile).'">'.htmlspecialchars($curFile). '</option>';
 	}
 	@sort($backups);
 	if (count($backups) > 0)
@@ -41,14 +41,14 @@ else
 
 function revert($file)
 {
-	global $pun_config, $lang_admin_plugin_patcher, $fs;
+	global $pun_config, $langPatcher, $fs;
 
-	$dirs_to_check = array('./', 'include', 'lang/English');
-	foreach ($dirs_to_check as $cur_dir)
+	$dirsToCheck = array('./', 'include', 'lang/English');
+	foreach ($dirsToCheck as $curDir)
 	{
-		if (!$fs->is_writable(PUN_ROOT.$cur_dir))
+		if (!$fs->isWritable(PUN_ROOT.$curDir))
 		{
-			echo 'Directory not writable '.$cur_dir;
+			echo 'Directory not writable '.$curDir;
 			exit;
 		}
 	}
@@ -70,7 +70,7 @@ function revert($file)
 
 function zip_extract($file, $extract_to, $list_files = false)
 {
-	global $lang_admin_plugin_patcher, $fs;
+	global $langPatcher, $fs;
 	$files = array();
 	if (class_exists('ZipArchive'))
 	{
@@ -81,9 +81,9 @@ function zip_extract($file, $extract_to, $list_files = false)
 		//$zip->extractTo($extract_to);
 
 		$i = 0;
-		while ($cur_file = $zip->statIndex($i++))
+		while ($curFile = $zip->statIndex($i++))
 		{
-			$fp = $zip->getStream($cur_file['name']);
+			$fp = $zip->getStream($curFile['name']);
 			if (!$fp)
 				message('Failed');
 			$contents = '';
@@ -91,11 +91,11 @@ function zip_extract($file, $extract_to, $list_files = false)
 				$contents .= fread($fp, 2);
 			fclose($fp);
 
-			if (in_array(substr($cur_file['name'], -1), array('/', '\\')))
-				$fs->mkdir($extract_to.'/'.$cur_file['name']);
+			if (in_array(substr($curFile['name'], -1), array('/', '\\')))
+				$fs->mkdir($extract_to.'/'.$curFile['name']);
 			else
-				$fs->put($extract_to.'/'.$cur_file['name'], $contents);
-			$files[] = $cur_file['name'];
+				$fs->put($extract_to.'/'.$curFile['name'], $contents);
+			$files[] = $curFile['name'];
 		}
 
 		$zip->close();
@@ -106,14 +106,14 @@ function zip_extract($file, $extract_to, $list_files = false)
 
 		$archive = new PclZip($file);
 		$p_list = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
-		foreach ($p_list as $cur_file)
+		foreach ($p_list as $curFile)
 		{
-			if ($cur_file['folder'] == 1)
-				$fs->mkdir($extract_to.'/'.$cur_file['stored_filename']);
+			if ($curFile['folder'] == 1)
+				$fs->mkdir($extract_to.'/'.$curFile['stored_filename']);
 			else
-				$fs->put($extract_to.'/'.$cur_file['stored_filename'], $cur_file['content']);
+				$fs->put($extract_to.'/'.$curFile['stored_filename'], $curFile['content']);
 
-			$files[] = $cur_file['stored_filename'];
+			$files[] = $curFile['stored_filename'];
 		}
 	}
 	return ($list_files ? $files : true);

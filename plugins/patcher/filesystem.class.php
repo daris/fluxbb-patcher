@@ -5,16 +5,16 @@ class Patcher_FileSystem
 {
 	var $ftp;
 	var $root = PUN_ROOT;
-	var $is_ftp = false;
-	var $ftp_data = array();
-	var $is_connected = false;
+	var $isFtp = false;
+	var $ftpData = array();
+	var $isConnected = false;
 
-	function __construct($ftp_data = null)
+	function __construct($ftpData = null)
 	{
-		if (isset($ftp_data) && is_array($ftp_data))
+		if (isset($ftpData) && is_array($ftpData))
 		{
-			$this->is_ftp = true;
-			$this->ftp_data = $ftp_data;
+			$this->isFtp = true;
+			$this->ftpData = $ftpData;
 		}
 	}
 
@@ -25,30 +25,30 @@ class Patcher_FileSystem
 	}
 
 
-	function check_connection()
+	function checkConnection()
 	{
-		if (!$this->is_ftp || $this->is_connected)
+		if (!$this->isFtp || $this->isConnected)
 			return false;
 
 		require_once PATCHER_ROOT.'ftp.class.php';
 
 		$this->ftp = new JFTP();
-		if (!$this->ftp->connect($this->ftp_data['host'], $this->ftp_data['port']))
+		if (!$this->ftp->connect($this->ftpData['host'], $this->ftpData['port']))
 			error('FTP: Connection failed', __FILE__, __LINE__);
-		if (!$this->ftp->login($this->ftp_data['user'], $this->ftp_data['pass']))
+		if (!$this->ftp->login($this->ftpData['user'], $this->ftpData['pass']))
 			error('FTP: Login failed', __FILE__, __LINE__);
-		if (!$this->ftp->chdir($this->ftp_data['path']))
+		if (!$this->ftp->chdir($this->ftpData['path']))
 			error('FTP: Directory change failed', __FILE__, __LINE__);
 
-		if (!@$this->ftp->listDetails($this->fix_path('config.php')))
+		if (!@$this->ftp->listDetails($this->fixPath('config.php')))
 			error('FTP: The FluxBB root directory is not valid', __FILE__, __LINE__);
 
-		$this->root = $this->ftp_data['path'];
+		$this->root = $this->ftpData['path'];
 
-		$this->is_connected = true;
+		$this->isConnected = true;
 	}
 
-	function fix_path($path)
+	function fixPath($path)
 	{
 		$len = strlen(PUN_ROOT);
 
@@ -62,81 +62,81 @@ class Patcher_FileSystem
 
 	function mkdir($pathname)
 	{
-		$this->check_connection();
-		return $this->is_ftp ? $this->ftp->mkdir($this->fix_path($pathname)) : mkdir($pathname);
+		$this->checkConnection();
+		return $this->isFtp ? $this->ftp->mkdir($this->fixPath($pathname)) : mkdir($pathname);
 	}
 
 	function move($src, $dest)
 	{
-		$this->check_connection();
-		if ($this->is_ftp)
+		$this->checkConnection();
+		if ($this->isFtp)
 		{
-			$src_path = $this->fix_path($src);
+			$src_path = $this->fixPath($src);
 
 			// File is already on the FTP server (eg. in fluxbb cache directory) so move it to another location
 			if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-				return $this->ftp->rename($src_path, $this->fix_path($dest));
+				return $this->ftp->rename($src_path, $this->fixPath($dest));
 
 			// We have to upload file to the FTP server
 			else
-				return $this->ftp->store($src, $this->fix_path($dest)) && unlink($src);
+				return $this->ftp->store($src, $this->fixPath($dest)) && unlink($src);
 		}
 		return rename($src, $dest);
 	}
 
 	function copy($src, $dest)
 	{
-		$this->check_connection();
-		if ($this->is_ftp)
-			return $this->ftp->store($src, $this->fix_path($dest));
+		$this->checkConnection();
+		if ($this->isFtp)
+			return $this->ftp->store($src, $this->fixPath($dest));
 
 		return copy($src, $dest);
 	}
 
 	function put($file, $data)
 	{
-		$this->check_connection();
-		return $this->is_ftp ? $this->ftp->write($this->fix_path($file), $data) : file_put_contents($file, $data);
+		$this->checkConnection();
+		return $this->isFtp ? $this->ftp->write($this->fixPath($file), $data) : file_put_contents($file, $data);
 	}
 
 	function delete($file)
 	{
-		$this->check_connection();
-		if ($this->is_ftp)
-			return $this->ftp->delete($this->fix_path($file));
+		$this->checkConnection();
+		if ($this->isFtp)
+			return $this->ftp->delete($this->fixPath($file));
 
 		return unlink($file);
 	}
 
 	// Recursive directory remove
-	function remove_directory($path)
+	function rmDir($path)
 	{
 		if (!is_dir($path))
 			return false;
 
-		$this->check_connection();
+		$this->checkConnection();
 
-		$list = $this->list_to_remove($path);
+		$list = $this->listToRemove($path);
 
 		// It files aren't writable the rest of this function will not be executed
-		$this->are_files_writable($list);
+		$this->areFilesWritable($list);
 
-		foreach ($list as $cur_file)
+		foreach ($list as $curFile)
 		{
-			if (is_dir($cur_file))
+			if (is_dir($curFile))
 			{
-				if ($this->is_ftp)
-					$this->ftp->delete($this->fix_path($cur_file));
+				if ($this->isFtp)
+					$this->ftp->delete($this->fixPath($curFile));
 				else
-					rmdir($cur_file);
+					rmdir($curFile);
 			}
 			else
-				$this->delete($cur_file);
+				$this->delete($curFile);
 		}
 		return true;
 	}
 
-	function list_to_remove($path)
+	function listToRemove($path)
 	{
 		$files = array();
 		$d = dir($path);
@@ -149,7 +149,7 @@ class Patcher_FileSystem
 				$files[] = $path.'/'.$f;
 			else
 			{
-				$files = array_merge($files, $this->list_to_remove($path.'/'.$f));
+				$files = array_merge($files, $this->listToRemove($path.'/'.$f));
 				//$directories[] = $path.'/'.$f;
 			}
 		}
@@ -159,7 +159,7 @@ class Patcher_FileSystem
 	}
 
 
-	function copy_directory($source, $dest)
+	function copyDir($source, $dest)
 	{
 		if (!is_dir($dest))
 			$this->mkdir($dest);
@@ -170,7 +170,7 @@ class Patcher_FileSystem
 			if ($f != '.' && $f != '..' && $f != '.git' && $f != '.svn')
 			{
 				if (is_dir($source.'/'.$f))
-					$this->copy_directory($source.'/'.$f, $dest.'/'.$f);
+					$this->copyDir($source.'/'.$f, $dest.'/'.$f);
 				else
 					$this->copy($source.'/'.$f, $dest.'/'.$f);
 			}
@@ -179,7 +179,7 @@ class Patcher_FileSystem
 		return true;
 	}
 
-	function is_empty_directory($dir)
+	function isEmptyDir($dir)
 	{
 		$d = dir($dir);
 		while ($f = $d->read())
@@ -195,13 +195,13 @@ class Patcher_FileSystem
 	}
 
 
-	function is_writable($path)
+	function isWritable($path)
 	{
 		if ($path == PUN_ROOT.'.')
-			return $this->is_writable(PUN_ROOT);
+			return $this->isWritable(PUN_ROOT);
 
-		$this->check_connection();
-		if ($this->is_ftp)
+		$this->checkConnection();
+		if ($this->isFtp)
 		{
 			$details = array();
 			$name = '';
@@ -209,7 +209,7 @@ class Patcher_FileSystem
 			{
 				if (substr($path, -1) != '/')
 					$path .= '/';
-				$fixed_path = $this->fix_path($path);
+				$fixed_path = $this->fixPath($path);
 				if ($fixed_path == './')
 					$fixed_path = '';
 				$details = @$this->ftp->listDetails($fixed_path.'../');
@@ -235,8 +235,8 @@ class Patcher_FileSystem
 			}
 			else
 			{
-				$details = $this->ftp->listDetails($this->fix_path($path));
-				$name = $this->fix_path($path);
+				$details = $this->ftp->listDetails($this->fixPath($path));
+				$name = $this->fixPath($path);
 
 				$rights = $details[0]['rights'];
 
@@ -256,19 +256,19 @@ class Patcher_FileSystem
 	}
 
 
-	function are_files_writable($files)
+	function areFilesWritable($files)
 	{
-		global $lang_admin_plugin_patcher;
+		global $langPatcher;
 
-		$not_writable = array();
-		foreach ($files as $cur_file)
+		$notWritable = array();
+		foreach ($files as $curFile)
 		{
-			if (!$this->is_writable($cur_file))
-				$not_writable[] = $cur_file;
+			if (!$this->isWritable($curFile))
+				$notWritable[] = $curFile;
 		}
 
-		if (count($not_writable) > 0)
-			message($lang_admin_plugin_patcher['Files not writable info'].':<br />'.implode('<br />', $not_writable));
+		if (count($notWritable) > 0)
+			message($langPatcher['Files not writable info'].':<br />'.implode('<br />', $notWritable));
 		return true;
 	}
 }

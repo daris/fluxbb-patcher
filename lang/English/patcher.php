@@ -1,6 +1,6 @@
 <?php
 
-$lang_admin_plugin_patcher = array(
+return array(
 
 'Backup created redirect'		=> 'Backup created. Redirecting …',
 'Important'						=> 'Important',

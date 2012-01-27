@@ -452,7 +452,7 @@ class Patcher_Mod
 
 	function checkRequirements()
 	{
-		global $lang_admin_plugin_patcher, $fs;
+		global $langPatcher, $fs;
 
 		$dirsToCheck = array();
 		$requirements = array('files_to_upload' => array(), 'directories' => array(), 'affected_files' => array());
@@ -462,10 +462,10 @@ class Patcher_Mod
 			foreach ($this->filesToUpload as $from => $to)
 			{
 				$dir = dirname($to);
-				if ($fs->is_writable(PUN_ROOT.$dir))
-					$requirements['directories'][$dir] = array(true, $dir, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
+				if ($fs->isWritable(PUN_ROOT.$dir))
+					$requirements['directories'][$dir] = array(true, $dir, $langPatcher['Found'].', '.$langPatcher['Writable']);
 				else
-					$requirements['directories'][$dir] = array(false, $dir, $lang_admin_plugin_patcher['Not writable']);
+					$requirements['directories'][$dir] = array(false, $dir, $langPatcher['Not writable']);
 			}
 		}
 		elseif (in_array($GLOBALS['action'], array('update', 'install')))
@@ -473,7 +473,7 @@ class Patcher_Mod
 			foreach ($this->filesToUpload as $from => $to)
 			{
 				if (!file_exists($this->readmeFileDir.'/'.$from))
-					$requirements['files_to_upload'][] = array(false, $from, $lang_admin_plugin_patcher['Not exists']);
+					$requirements['files_to_upload'][] = array(false, $from, $langPatcher['Not exists']);
 
 				$curDir = $to;
 				// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
@@ -501,13 +501,13 @@ class Patcher_Mod
 						{
 							if (@$fs->mkdir(PUN_ROOT.$curPath))
 							{
-								if ($fs->is_writable(PUN_ROOT.$curPath))
-									$requirements['directories'][] = array(true, $curPath, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Writable']);
+								if ($fs->isWritable(PUN_ROOT.$curPath))
+									$requirements['directories'][] = array(true, $curPath, $langPatcher['Created'].', '.$langPatcher['Writable']);
 								else
-									$requirements['directories'][] = array(false, $curPath, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Not writable']);
+									$requirements['directories'][] = array(false, $curPath, $langPatcher['Created'].', '.$langPatcher['Not writable']);
 							}
 							else
-								$requirements['directories'][] = array(false, $curPath, $lang_admin_plugin_patcher['Can\'t create']);
+								$requirements['directories'][] = array(false, $curPath, $langPatcher['Can\'t create']);
 						}
 					}
 				}
@@ -515,10 +515,10 @@ class Patcher_Mod
 				// Check that directory is writable
 				else
 				{
-					if ($fs->is_writable(PUN_ROOT.$curDirToCheck))
-						$requirements['directories'][] = array(true, $curDirToCheck, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
+					if ($fs->isWritable(PUN_ROOT.$curDirToCheck))
+						$requirements['directories'][] = array(true, $curDirToCheck, $langPatcher['Found'].', '.$langPatcher['Writable']);
 					else
-						$requirements['directories'][] = array(false, $curDirToCheck, $lang_admin_plugin_patcher['Not writable']);
+						$requirements['directories'][] = array(false, $curDirToCheck, $langPatcher['Not writable']);
 				}
 			}
 		}
@@ -533,12 +533,12 @@ class Patcher_Mod
 
 				$error = '';
 				if (!file_exists(PUN_ROOT.$curFile))
-					$error = $lang_admin_plugin_patcher['Not exists'];
-				elseif (!$fs->is_writable(PUN_ROOT.$curFile))
-					$error = $lang_admin_plugin_patcher['Not writable'];
+					$error = $langPatcher['Not exists'];
+				elseif (!$fs->isWritable(PUN_ROOT.$curFile))
+					$error = $langPatcher['Not writable'];
 
 				if (empty($error))
-					$requirements['affected_files'][] = array(true, $curFile, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
+					$requirements['affected_files'][] = array(true, $curFile, $langPatcher['Found'].', '.$langPatcher['Writable']);
 				else
 					$requirements['affected_files'][] = array(false, $curFile, $error);
 			}

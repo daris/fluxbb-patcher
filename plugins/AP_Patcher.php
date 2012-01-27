@@ -37,19 +37,19 @@ require PATCHER_ROOT.'filesystem.class.php';
 require PATCHER_ROOT.'zip.class.php';
 
 // Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
-if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php'))
-	require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_patcher.php';
+if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php'))
+	$langPatcher = require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php';
 else
-	require PATCHER_ROOT.'../../lang/English/admin_plugin_patcher.php';
+	$langPatcher = require PATCHER_ROOT.'../../lang/English/patcher.php';
 
-$fs = new Patcher_FileSystem(isset($ftp_data) ? $ftp_data : null);
+$fs = new Patcher_FileSystem(isset($ftpData) ? $ftpData : null);
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
 
-if (!$fs->is_writable(PUN_ROOT))
-	message($lang_admin_plugin_patcher['Root directory not writable message']);
+if (!$fs->isWritable(PUN_ROOT))
+	message($langPatcher['Root directory not writable message']);
 
 // Get the patcher directories
 if (!defined('MODS_DIR'))
@@ -70,7 +70,7 @@ if (!defined('BACKUPS_DIR'))
 if (!session_id())
 	session_start();
 
-$mod_id = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
+$modId = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
 $action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'update', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
 
@@ -80,8 +80,8 @@ if (file_exists(PUN_ROOT.'mods.php') && !file_exists(PUN_ROOT.'patcher_config.ph
 // Revert from backup
 if (isset($_POST['revert']))
 {
-	$revert_file = isset($_POST['revert_file']) ? basename($_POST['revert_file']) : null;
-	revert($revert_file);
+	$revertFile = isset($_POST['revert_file']) ? basename($_POST['revert_file']) : null;
+	revert($revertFile);
 }
 
 // Upload modification package
@@ -91,23 +91,23 @@ if (isset($_POST['upload']))
 // Download an update of mod from FluxBB repo
 if (isset($_GET['download_update']))
 {
-	if (!isset($mod_id) || empty($mod_id))
+	if (!isset($modId) || empty($modId))
 		message($lang_common['Bad request']);
 
-	downloadUpdate($mod_id, $_GET['download_update']);
+	downloadUpdate($modId, $_GET['download_update']);
 }
 
 // Download modification from FluxBB repo
 if (isset($_GET['download']))
 {
 	if (empty($_GET['download']))
-		message($lang_Common['Bad request']);
+		message($lang_common['Bad request']);
 
 	downloadMod(basename($_GET['download']));
 }
 
 // Create initial backup
-if ($fs->is_writable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
+if ($fs->isWritable(BACKUPS_DIR) && !file_exists(BACKUPS_DIR.'fluxbb-'.FORUM_VERSION.'.zip'))
 	createBackup('fluxbb-'.FORUM_VERSION);
 
 if (isset($_POST['backup']))
@@ -115,7 +115,7 @@ if (isset($_POST['backup']))
 	$backup_name = isset($_POST['backup_name']) ? basename($_POST['backup_name']) : 'fluxbb_'.time();
 	createBackup($backup_name);
 
-	redirect(PLUGIN_URL, $lang_admin_plugin_patcher['Backup created redirect']);
+	redirect(PLUGIN_URL, $langPatcher['Backup created redirect']);
 }
 $notes = array();
 
@@ -124,64 +124,62 @@ $mod_repo = getModRepo(isset($_GET['check_for_updates']));
 
 // Check for patcher updates
 if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
-	$notes[] = sprintf($lang_admin_plugin_patcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$lang_admin_plugin_patcher['Resources page'].'</a>');
+	$notes[] = sprintf($langPatcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$langPatcher['Resources page'].'</a>');
 
 // Check needed directories to be writable
-$dirs_not_writable = array();
-$check_dirs = array(
-	'root' => PUN_ROOT,
-	'include' => PUN_ROOT.'include/',
-	'lang' => PUN_ROOT.'lang/',
-	'lang/English' => PUN_ROOT.'lang/English/',
-	'backups' => BACKUPS_DIR,
-	'mods' => MODS_DIR
+$dirsNotWritable = array();
+$checkDirs = array(
+	'root' 			=> PUN_ROOT,
+	'include' 		=> PUN_ROOT.'include/',
+	'lang' 			=> PUN_ROOT.'lang/',
+	'lang/English' 	=> PUN_ROOT.'lang/English/',
+	'backups' 		=> BACKUPS_DIR,
+	'mods' 			=> MODS_DIR
 );
-foreach ($check_dirs as $name => $curDir)
+foreach ($checkDirs as $name => $curDir)
 {
-	if (!$fs->is_writable($curDir))
-		$dirs_not_writable[] = pun_htmlspecialchars($name);
+	if (!$fs->isWritable($curDir))
+		$dirsNotWritable[] = pun_htmlspecialchars($name);
 }
 
 // Show a warning info if there are some directories not writable
-if (count($dirs_not_writable) > 0)
-	$notes[] = '<strong>'.$lang_admin_plugin_patcher['Directories not writable info'].'</strong>: '.implode(', ', $dirs_not_writable).'<br />'.$lang_admin_plugin_patcher['Disabled features info'];
+if (count($dirsNotWritable) > 0)
+	$notes[] = '<strong>'.$langPatcher['Directories not writable info'].'</strong>: '.implode(', ', $dirsNotWritable).'<br />'.$langPatcher['Disabled features info'];
 
 $warning = '';
 if (count($notes) > 0)
 {
 	$warning .= '<div class="blockform">'."\n\t".'<h2></h2>'."\n\t".'<div class="box">'."\n\t\t".'<div class="fakeform">'."\n\t\t".'<div class="inform">'."\n\t\t\t".'<div class="forminfo">'."\n\t\t\t\t";
-	foreach ($notes as $cur_note)
-		$warning .= '<p>'.$cur_note.'</p>';
+	foreach ($notes as $curNote)
+		$warning .= '<p>'.$curNote.'</p>';
 	$warning .= "\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
 }
 
 // User wants to do some action?
-if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
+if (isset($modId) && file_exists(MODS_DIR.$modId))
 {
 	// Load patcher config from file
-	$patcher_config = array('installed_mods' => array(), 'steps' => array());
-	if (file_exists(PUN_ROOT.'patcher_config.php'))
-		require PUN_ROOT.'patcher_config.php';
+	$patcherConfig = loadPatcherConfig();
 
 	// Mod is installed and we want to install again
-	if ($action == 'install' && isset($patcher_config['installed_mods'][$mod_id]))
-		message($lang_admin_plugin_patcher['Mod already installed']);
+	if ($action == 'install' && isset($patcherConfig['installed_mods'][$modId]))
+		message($langPatcher['Mod already installed']);
 
 	// Do not allow to uninstall mod if it is not installed
-	elseif ($action == 'uninstall' && !isset($patcher_config['installed_mods'][$mod_id]))
-		message($lang_admin_plugin_patcher['Mod already uninstalled']);
+	elseif ($action == 'uninstall' && !isset($patcherConfig['installed_mods'][$modId]))
+		message($langPatcher['Mod already uninstalled']);
 
 	// Mod is already enabled
-	elseif ($action == 'enable' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
-		message($lang_admin_plugin_patcher['Mod already enabled']);
+	elseif ($action == 'enable' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
+		message($langPatcher['Mod already enabled']);
 
 	// Mod is disabled and we want to disable again
-	elseif ($action == 'disable' && isset($patcher_config['installed_mods'][$mod_id]['disabled']))
-		message($lang_admin_plugin_patcher['Mod already disabled']);
+	elseif ($action == 'disable' && isset($patcherConfig['installed_mods'][$modId]['disabled']))
+		message($langPatcher['Mod already disabled']);
 
-	$mod = new Patcher_Mod($mod_id);
-	if (!$mod->is_valid)
-		message($lang_admin_plugin_patcher['Invalid mod dir']);
+	$mod = new Patcher_Mod($modId);
+	if (!$mod->isValid)
+		message($langPatcher['Invalid mod dir']);
 
 	// Get the requirenment list
 	$requirements = $mod->checkRequirements();
@@ -190,23 +188,23 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	$logs = array();
 
 	$patcher = new Patcher($mod);
-	$is_valid = true;
+	$isValid = true;
 
 	// If user wants to update mod, first remove its code from files (disable mod) and then update it
-	if ($action == 'update' && !isset($patcher_config['installed_mods'][$mod_id]['disabled']))
+	if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
 	{
-		$is_valid = $patcher->executeAction('disable', true);
+		$isValid = $patcher->executeAction('disable', true);
 	}
 
-	$is_valid &= $patcher->executeAction($action, true);
+	$isValid &= $patcher->executeAction($action, true);
 
 	// Do the patching
 	$logs = $patcher->log;
-	$done = $is_valid; // TODO: remove
+	$done = $isValid; // TODO: remove
 
 	unset($_SESSION['patcher_steps']);
 
-	if (!$is_valid)
+	if (!$isValid)
 	{
 		$requirements['failed'] = true;
 		$requirements = array_merge($requirements, $patcher->unmetRequirements());
@@ -218,7 +216,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 	// Do patching! :)
 	if (!isset($requirements['failed']) // there are no unment requirements
-		&& $is_valid
+		&& $isValid
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
 		$patcher->makeChanges();
@@ -230,45 +228,45 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 ?>
 	<div class="blockform">
-		<h2><span><?php echo $lang_admin_plugin_patcher['Mod installation'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Mod installation'] ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 				<div class="inform">
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Mod installation status'] ?></legend>
+						<legend><?php echo $langPatcher['Mod installation status'] ?></legend>
 						<div class="infldset">
 <?php
 
 		$notes = array();
 
-		$done_info = array(
-			'install'	=> $lang_admin_plugin_patcher['Mod installed'],
-			'uninstall'	=> $lang_admin_plugin_patcher['Mod uninstalled'],
-			'enable'	=> $lang_admin_plugin_patcher['Mod enabled'],
-			'disable'	=> $lang_admin_plugin_patcher['Mod disabled'],
-			'update'	=> $lang_admin_plugin_patcher['Mod updated'],
+		$doneInfo = array(
+			'install'	=> $langPatcher['Mod installed'],
+			'uninstall'	=> $langPatcher['Mod uninstalled'],
+			'enable'	=> $langPatcher['Mod enabled'],
+			'disable'	=> $langPatcher['Mod disabled'],
+			'update'	=> $langPatcher['Mod updated'],
 		);
 
-		$failed_info = array(
-			'install'	=> $lang_admin_plugin_patcher['Install failed'],
-			'uninstall'	=> $lang_admin_plugin_patcher['Uninstall failed'],
-			'enable'	=> $lang_admin_plugin_patcher['Enable failed'],
-			'disable'	=> $lang_admin_plugin_patcher['Disable failed'],
-			'update'	=> $lang_admin_plugin_patcher['Update failed']
+		$failedInfo = array(
+			'install'	=> $langPatcher['Install failed'],
+			'uninstall'	=> $langPatcher['Uninstall failed'],
+			'enable'	=> $langPatcher['Enable failed'],
+			'disable'	=> $langPatcher['Disable failed'],
+			'update'	=> $langPatcher['Update failed']
 		);
 
-		$action_info = array(
-			'install'	=> $lang_admin_plugin_patcher['Installing'],
-			'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
-			'enable'	=> $lang_admin_plugin_patcher['Enabling'],
-			'disable'	=> $lang_admin_plugin_patcher['Disabling'],
-			'update'	=> $lang_admin_plugin_patcher['Updating']
+		$actionInfo = array(
+			'install'	=> $langPatcher['Installing'],
+			'uninstall'	=> $langPatcher['Uninstalling'],
+			'enable'	=> $langPatcher['Enabling'],
+			'disable'	=> $langPatcher['Disabling'],
+			'update'	=> $langPatcher['Updating']
 		);
 
 		// Loop through each action
 		foreach ($logs as $curAction => $log)
 		{
-			echo "\n\t\t\t\t\t\t".'<p>'.$action_info[$curAction].'...<br />';
+			echo "\n\t\t\t\t\t\t".'<p>'.$actionInfo[$curAction].'...<br />';
 
 			// The array containing list of actions that were done
 			$actions = array();
@@ -285,18 +283,18 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 					// Uploading... or Deleting...
 					if ($curStep['command'] == 'UPLOAD')
 					{
-						$num_files = count(explode("\n", $curStep['substeps'][0]['code']));
+						$numFiles = count(explode("\n", $curStep['substeps'][0]['code']));
 						if ($curAction == 'uninstall')
-							$actions[] = array($lang_admin_plugin_patcher['Deleting files'], $curStep['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files deleted'], $num_files).')');
+							$actions[] = array($langPatcher['Deleting files'], $curStep['status'] != STATUS_NOT_DONE, '('.sprintf($langPatcher['Num files deleted'], $numFiles).')');
 						elseif (in_array($curAction, array('install', 'update')))
-							$actions[] = array($lang_admin_plugin_patcher['Uploading files'], $curStep['status'] != STATUS_NOT_DONE, '('.sprintf($lang_admin_plugin_patcher['Num files uploaded'], $num_files).')');
+							$actions[] = array($langPatcher['Uploading files'], $curStep['status'] != STATUS_NOT_DONE, '('.sprintf($langPatcher['Num files uploaded'], $numFiles).')');
 					}
 
 					// Opening...
 					elseif ($curStep['command'] == 'OPEN')
 					{
-						$steps_failed = array();
-						$num_changes = $num_failed = 0;
+						$stepsFailed = array();
+						$numChanges = $numFailed = 0;
 
 						if (isset($curStep['substeps']))
 						{
@@ -304,56 +302,56 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 							foreach ($curStep['substeps'] as $key => $curSubStep)
 							{
 								if ($curSubStep['status'] == STATUS_DONE || $curSubStep['status'] == STATUS_REVERTED)
-									$num_changes++;
+									$numChanges++;
 								elseif ($curSubStep['status'] == STATUS_NOT_DONE)
 								{
 									if (isset($curStep['substeps'][$key-1]['command']) && $curStep['substeps'][$key-1]['command'] == 'FIND')
-										$steps_failed[$key] = $key-1;
+										$stepsFailed[$key] = $key-1;
 									else
-										$steps_failed[$key] = $key;
+										$stepsFailed[$key] = $key;
 								}
 							}
 						}
 						if ($curStep['status'] == STATUS_NOT_DONE)
-							$steps_failed[$id] = $id;
+							$stepsFailed[$id] = $id;
 
-						$color = (count($steps_failed) > 0) ? 'red' : 'green';
+						$color = (count($stepsFailed) > 0) ? 'red' : 'green';
 
-						$sub_msg = array();
-						if ($num_changes > 0)
-							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num changes'.(in_array($curAction, array('uninstall', 'disable')) ? ' reverted' : '')], $num_changes);
-						if (count($steps_failed) > 0)
+						$subMsg = array();
+						if ($numChanges > 0)
+							$subMsg[] = sprintf($langPatcher['Num changes'.(in_array($curAction, array('uninstall', 'disable')) ? ' reverted' : '')], $numChanges);
+						if (count($stepsFailed) > 0)
 						{
-							$steps_failed_info = array();
-							foreach ($steps_failed as $key => $s)
-								$steps_failed_info[] = '<a href="'.PLUGIN_URL.'&show_log#a'.$s.'">#'.$key.'</a>';
-							$sub_msg[] = sprintf($lang_admin_plugin_patcher['Num failed'], count($steps_failed)).': '.implode(', ', $steps_failed_info);
+							$stepsFailedInfo = array();
+							foreach ($stepsFailed as $key => $s)
+								$stepsFailedInfo[] = '<a href="'.PLUGIN_URL.'&show_log#a'.$s.'">#'.$key.'</a>';
+							$subMsg[] = sprintf($langPatcher['Num failed'], count($stepsFailed)).': '.implode(', ', $stepsFailedInfo);
 						}
 
-						$actions[] = array(sprintf($lang_admin_plugin_patcher['Patching file'], pun_htmlspecialchars($curStep['code'])), count($steps_failed) == 0, (count($sub_msg) > 0 ? '('.implode(', ', $sub_msg).')' : ''));
+						$actions[] = array(sprintf($langPatcher['Patching file'], pun_htmlspecialchars($curStep['code'])), count($stepsFailed) == 0, (count($subMsg) > 0 ? '('.implode(', ', $subMsg).')' : ''));
 					}
 
 					// Running...
 					elseif ($curStep['command'] == 'RUN' && !in_array($curAction, array('enable', 'disable')))
 					{
-						$new_action =  array(sprintf($lang_admin_plugin_patcher['Running'], pun_htmlspecialchars($curStep['code'])), $curStep['status'] != STATUS_NOT_DONE);
+						$newAction =  array(sprintf($langPatcher['Running'], pun_htmlspecialchars($curStep['code'])), $curStep['status'] != STATUS_NOT_DONE);
 						if (isset($curStep['result']))
 						{
 							$result = $curStep['result'];
 							if (strpos($result, "\n") !== false)
 								$result = substr($result, 0, strpos($result, "\n"));
-							$new_action[] = $result;
+							$newAction[] = $result;
 						}
-						$actions[] = $new_action;
+						$actions[] = $newAction;
 					}
 
 					// Deleting...
 					elseif ($curStep['command'] == 'DELETE' && !in_array($curAction, array('enable', 'disable')))
-						$actions[] = array(sprintf($lang_admin_plugin_patcher['Deleting'], pun_htmlspecialchars($curStep['code'])), $curStep['status'] != STATUS_NOT_DONE);
+						$actions[] = array(sprintf($langPatcher['Deleting'], pun_htmlspecialchars($curStep['code'])), $curStep['status'] != STATUS_NOT_DONE);
 
 					// Running code...
 					elseif ($curStep['command'] == 'RUN CODE' && !in_array($curAction, array('enable', 'disable')))
-						$actions[] = array($lang_admin_plugin_patcher['Running code'], $curStep['status'] != STATUS_NOT_DONE);
+						$actions[] = array($langPatcher['Running code'], $curStep['status'] != STATUS_NOT_DONE);
 
 					// Add current note to the $notes array
 					elseif ($curStep['command'] == 'NOTE' && isset($curStep['result']))
@@ -370,23 +368,23 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 ?>
 <?php if ($done) : ?>
-							<p><strong><?php echo $lang_admin_plugin_patcher['Congratulations'] ?></strong><br /><?php echo $done_info[$action] ?></p>
+							<p><strong><?php echo $langPatcher['Congratulations'] ?></strong><br /><?php echo $doneInfo[$action] ?></p>
 <?php else: ?>
-							<p><strong><?php echo $failed_info[$action] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed'] ?></p>
-							<p><strong><?php echo $lang_admin_plugin_patcher['What to do now'] ?></strong><br /><?php echo $lang_admin_plugin_patcher['Mod patching failed info 1'] ?></p>
+							<p><strong><?php echo $failedInfo[$action] ?></strong><br /><?php echo $langPatcher['Mod patching failed'] ?></p>
+							<p><strong><?php echo $langPatcher['What to do now'] ?></strong><br /><?php echo $langPatcher['Mod patching failed info 1'] ?></p>
 <?php endif; ?>
 	<?php 	if (count($notes) > 0)
 			{
-				echo "\n\t\t\t\t\t\t".'<p><strong>'.$lang_admin_plugin_patcher['Final instructions'].'</strong>';
-				foreach ($notes as $cur_note)
-					echo "\n\t\t\t\t\t\t\t".'<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($cur_note).'</pre></code>';
+				echo "\n\t\t\t\t\t\t".'<p><strong>'.$langPatcher['Final instructions'].'</strong>';
+				foreach ($notes as $curNote)
+					echo "\n\t\t\t\t\t\t\t".'<code><pre style="white-space: pre-wrap">'.pun_htmlspecialchars($curNote).'</pre></code>';
 				echo "\n\t\t\t\t\t\t".'</p>';
 			} ?>
 							<p>
-								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $lang_admin_plugin_patcher['Show log'] ?></a> |
-<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=update"><?php echo $lang_admin_plugin_patcher['Update'] ?></a> | <?php endif; ?>
-<?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id) ?>&action=uninstall"><?php echo $lang_admin_plugin_patcher['Uninstall'] ?></a> |  <?php endif; ?>
-								<a href="<?php echo PLUGIN_URL ?>"><?php echo $lang_admin_plugin_patcher['Return to mod list'] ?></a>
+								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $langPatcher['Show log'] ?></a> |
+<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&action=update"><?php echo $langPatcher['Update'] ?></a> | <?php endif; ?>
+<?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&action=uninstall"><?php echo $langPatcher['Uninstall'] ?></a> |  <?php endif; ?>
+								<a href="<?php echo PLUGIN_URL ?>"><?php echo $langPatcher['Return to mod list'] ?></a>
 							</p>
 						</div>
 					</fieldset>
@@ -402,73 +400,73 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	{
 		require PUN_ROOT.'include/parser.php'; // need for handle_url_tag()
 
-		$detailed_info = array();
+		$detailedInfo = array();
 		// Generate mod info
 		$info = '<strong>'.pun_htmlspecialchars($mod->title).' v'.pun_htmlspecialchars($mod->version).'</strong>';
 
-		if (isset($mod->repository_url))
-			$info = '<a href="'.$mod->repository_url.'">'.$info.'</a>';;
+		if (isset($mod->repositoryUrl))
+			$info = '<a href="'.$mod->repositoryUrl.'">'.$info.'</a>';;
 
-		if (isset($mod->author_email))
-			$info .= ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($mod->author_email).'">'.pun_htmlspecialchars($mod->author).'</a>';
+		if (isset($mod->authorEmail))
+			$info .= ' '.$langPatcher['by'].' <a href="mailto:'.pun_htmlspecialchars($mod->authorEmail).'">'.pun_htmlspecialchars($mod->author).'</a>';
 		elseif (isset($mod->author))
-			$info .= ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($mod->author);
+			$info .= ' '.$langPatcher['by'].' '.pun_htmlspecialchars($mod->author);
 
 		if (isset($mod->description))
 			$info .= '<br />'.pun_htmlspecialchars($mod->description);
 
-		$detailed_info[$lang_admin_plugin_patcher['Description']] = $info;
+		$detailedInfo[$langPatcher['Description']] = $info;
 
-		if (isset($mod->works_on))
-			$detailed_info[$lang_admin_plugin_patcher['Works on FluxBB']] = pun_htmlspecialchars(implode(', ', $mod->works_on));
+		if (isset($mod->worksOn))
+			$detailedInfo[$langPatcher['Works on FluxBB']] = pun_htmlspecialchars(implode(', ', $mod->worksOn));
 
-		if (isset($mod->release_date))
-			$detailed_info[$lang_admin_plugin_patcher['Release date']] = pun_htmlspecialchars($mod->release_date);
+		if (isset($mod->releaseDate))
+			$detailedInfo[$langPatcher['Release date']] = pun_htmlspecialchars($mod->releaseDate);
 
-		if (isset($mod->affects_db))
-			$detailed_info[$lang_admin_plugin_patcher['Affects DB']] = pun_htmlspecialchars($mod->affects_db);
+		if (isset($mod->affectsDb))
+			$detailedInfo[$langPatcher['Affects DB']] = pun_htmlspecialchars($mod->affectsDb);
 
 		generate_admin_menu($plugin);
 
 		echo $warning;
 ?>
 	<div class="blockform">
-		<h2><span><?php echo $lang_admin_plugin_patcher['Modification overview'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Modification overview'] ?></span></h2>
 		<div id="adstats" class="box">
 			<div class="inbox">
 				<dl>
-					<?php foreach ($detailed_info as $name => $curInfo) echo "\n\t\t\t".'<dt>'.$name.'</dt><dd>'.$curInfo.'</dd>'; ?>
+					<?php foreach ($detailedInfo as $name => $curInfo) echo "\n\t\t\t".'<dt>'.$name.'</dt><dd>'.$curInfo.'</dd>'; ?>
 				</dl>
 <?php if (!$mod->isCompatible()): ?>
-				<p style="color: #a00"><strong><?php echo $lang_admin_plugin_patcher['Warning'] ?>:</strong> <?php printf($lang_admin_plugin_patcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->works_on))) ?></p>
+				<p style="color: #a00"><strong><?php echo $langPatcher['Warning'] ?>:</strong> <?php printf($langPatcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->worksOn))) ?></p>
 <?php endif; if (isset($mod_updates[$mod->id]['release']) && version_compare($mod_updates[$mod->id]['release'], $mod->version, '>')) : ?>
-				<p style="color: #a00"><?php echo $lang_admin_plugin_patcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($mod->id).'&version='.$mod_updates[$mod->id]['release'].'">'.sprintf($lang_admin_plugin_patcher['Download update'], pun_htmlspecialchars($mod_updates[$mod->id]['release'])) ?></a>.</p>
+				<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($mod->id).'&version='.$mod_updates[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_updates[$mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 			</div>
 
 <?php if (isset($requirements['failed'])) : ?>
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Unmet requirements'] ?></legend>
+						<legend><?php echo $langPatcher['Unmet requirements'] ?></legend>
 						<div class="infldset">
-							<p><?php echo $lang_admin_plugin_patcher['Unmet requirements info'] ?></p>
+							<p><?php echo $langPatcher['Unmet requirements info'] ?></p>
 						</div>
 					</fieldset>
 <?php endif; ?>
 <?php if ($action == 'uninstall') : ?>
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Warning'] ?></legend>
+						<legend><?php echo $langPatcher['Warning'] ?></legend>
 						<div class="infldset">
-							<p style="color: #a00"><strong><?php echo $lang_admin_plugin_patcher['Uninstall warning'] ?></strong></p>
+							<p style="color: #a00"><strong><?php echo $langPatcher['Uninstall warning'] ?></strong></p>
 						</div>
 					</fieldset>
 <?php endif; ?>
 
-			<form method="post" action="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod_id).'&action='.$action.(isset($_GET['skip_install']) ? '&skip_install' : '') ?>">
+			<form method="post" action="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId).'&action='.$action.(isset($_GET['skip_install']) ? '&skip_install' : '') ?>">
 				<div class="inform">
 					<p class="buttons">
-<?php if (isset($requirements['failed'])) : ?>						<input type="submit" name="check_again" value="<?php echo $lang_admin_plugin_patcher['Check again'] ?>" /><?php endif; ?>
-						<input type="submit" name="install" value="<?php echo $lang_admin_plugin_patcher[ucfirst($action)] ?>"<?php echo isset($requirements['failed']) ? ' disabled="disabled"' : '' ?> />
-						<a href="<?php echo PLUGIN_URL ?>"><?php echo $lang_admin_plugin_patcher['Return to mod list'] ?></a>
+<?php if (isset($requirements['failed'])) : ?>						<input type="submit" name="check_again" value="<?php echo $langPatcher['Check again'] ?>" /><?php endif; ?>
+						<input type="submit" name="install" value="<?php echo $langPatcher[ucfirst($action)] ?>"<?php echo isset($requirements['failed']) ? ' disabled="disabled"' : '' ?> />
+						<a href="<?php echo PLUGIN_URL ?>"><?php echo $langPatcher['Return to mod list'] ?></a>
 					</p>
 				</div>
 			</form>
@@ -479,17 +477,17 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 		if (count($requirements['files_to_upload']) > 0 || count($requirements['directories']) > 0 || count($requirements['affected_files']) > 0)
 		{
 ?>
-		<h2><span><?php echo $lang_admin_plugin_patcher['Mod requirements'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Mod requirements'] ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 				<div class="inform">
 
 <?php
-			$req_type = array(
-				'files_to_upload' 	=> array($lang_admin_plugin_patcher['Files to upload'], $lang_admin_plugin_patcher['Files to upload info']),
-				'directories' 		=> array($lang_admin_plugin_patcher['Directories'], $lang_admin_plugin_patcher['Directories info']),
-				'affected_files' 	=> array($lang_admin_plugin_patcher['Affected files'], $lang_admin_plugin_patcher['Affected files info']),
-				'missing_strings' 	=> array($lang_admin_plugin_patcher['Missing strings'], $lang_admin_plugin_patcher['Missing strings info'])
+			$reqType = array(
+				'files_to_upload' 	=> array($langPatcher['Files to upload'], $langPatcher['Files to upload info']),
+				'directories' 		=> array($langPatcher['Directories'], $langPatcher['Directories info']),
+				'affected_files' 	=> array($langPatcher['Affected files'], $langPatcher['Affected files info']),
+				'missing_strings' 	=> array($langPatcher['Missing strings'], $langPatcher['Missing strings info'])
 			);
 			foreach ($requirements as $type => $curRequirements)
 			{
@@ -498,9 +496,9 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 
 ?>
 					<fieldset>
-						<legend><?php echo isset($req_type[$type][0]) ? $req_type[$type][0] : $type ?></legend>
+						<legend><?php echo isset($reqType[$type][0]) ? $reqType[$type][0] : $type ?></legend>
 						<div class="infldset">
-							<p><?php echo isset($req_type[$type][1]) ? $req_type[$type][1] : $type ?></p>
+							<p><?php echo isset($reqType[$type][1]) ? $reqType[$type][1] : $type ?></p>
 							<table>
 <?php
 				foreach ($curRequirements as $curRequirement)
@@ -538,19 +536,19 @@ elseif (isset($_GET['show_log']))
 		message($lang_common['Bad request']);
 	$logs = unserialize($_SESSION['patcher_logs']);
 
-	$action_info = array(
-		'install'	=> $lang_admin_plugin_patcher['Installing'],
-		'uninstall'	=> $lang_admin_plugin_patcher['Uninstalling'],
-		'enable'	=> $lang_admin_plugin_patcher['Enabling'],
-		'disable'	=> $lang_admin_plugin_patcher['Disabling'],
-		'update'	=> $lang_admin_plugin_patcher['Updating']
+	$actionInfo = array(
+		'install'	=> $langPatcher['Installing'],
+		'uninstall'	=> $langPatcher['Uninstalling'],
+		'enable'	=> $langPatcher['Enabling'],
+		'disable'	=> $langPatcher['Disabling'],
+		'update'	=> $langPatcher['Updating']
 	);
 
 	foreach ($logs as $curAction => $log)
 	{
 ?>
 	<div class="block blocktable">
-		<h2><span><?php echo $action_info[$curAction] ?></span></h2>
+		<h2><span><?php echo $actionInfo[$curAction] ?></span></h2>
 	</div>
 <?php
 
@@ -564,8 +562,8 @@ elseif (isset($_GET['show_log']))
 <?php
 			foreach ($actions as $key => $curStep)
 			{
-				if (isset($curStep['command']) && isset($lang_admin_plugin_patcher[$curStep['command']]))
-					$curStep['command'] = $lang_admin_plugin_patcher[$curStep['command']];
+				if (isset($curStep['command']) && isset($langPatcher[$curStep['command']]))
+					$curStep['command'] = $langPatcher[$curStep['command']];
 
 ?>
 		<div class="box">
@@ -578,7 +576,7 @@ elseif (isset($_GET['show_log']))
 <?php elseif (isset($curStep['command'])) : ?>
 							<th><?php echo pun_htmlspecialchars($curStep['command']) ?></th>
 <?php else : ?>
-							<th><?php echo $lang_admin_plugin_patcher['Actions'] ?></th>
+							<th><?php echo $langPatcher['Actions'] ?></th>
 <?php endif; ?>
 						</tr>
 					</thead>
@@ -594,8 +592,8 @@ elseif (isset($_GET['show_log']))
 <?php
 					foreach ($curStep['substeps'] as $id => $curSubStep)
 					{
-						if (isset($curSubStep['command']) && isset($lang_admin_plugin_patcher[$curSubStep['command']]))
-							$curSubStep['command'] = $lang_admin_plugin_patcher[$curSubStep['command']];
+						if (isset($curSubStep['command']) && isset($langPatcher[$curSubStep['command']]))
+							$curSubStep['command'] = $langPatcher[$curSubStep['command']];
 
 						$style = '';
 						$comments = array();
@@ -605,9 +603,9 @@ elseif (isset($_GET['show_log']))
 
 						switch ($curSubStep['status'])
 						{
-							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00';/* $comments[] = $lang_admin_plugin_patcher['NOT DONE']*/; break;
-							case STATUS_DONE:			$style = 'color: #0a0'; 		/*$comments[] = $lang_admin_plugin_patcher['DONE']*/; break;
-							case STATUS_REVERTED:		$style = 'color: #00a'; 		/*$comments[] = $lang_admin_plugin_patcher['REVERTED']*/; break;
+							case STATUS_NOT_DONE:		$style = 'font-weight: bold; color: #a00';/* $comments[] = $langPatcher['NOT DONE']*/; break;
+							case STATUS_DONE:			$style = 'color: #0a0'; 		/*$comments[] = $langPatcher['DONE']*/; break;
+							case STATUS_REVERTED:		$style = 'color: #00a'; 		/*$comments[] = $langPatcher['REVERTED']*/; break;
 						}
 
 						if (isset($curSubStep['comments']))
@@ -651,22 +649,22 @@ else
 	echo $warning;
 ?>
 	<div class="plugin blockform">
-		<h2><span><?php echo sprintf($lang_admin_plugin_patcher['Patcher head'], PATCHER_VERSION) ?></span></h2>
+		<h2><span><?php echo sprintf($langPatcher['Patcher head'], PATCHER_VERSION) ?></span></h2>
 		<div class="box">
 			<form action="<?php echo PLUGIN_URL ?>" method="post">
 				<div class="inform">
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Manage backups legend'] ?></legend>
+						<legend><?php echo $langPatcher['Manage backups legend'] ?></legend>
 						<div class="infldset">
 							<table class="aligntop" cellspacing="0">
 								<tr>
 									<th scope="row">
 										<input type="hidden" name="redirect" value="1" />
-										<?php echo $lang_admin_plugin_patcher['Backup filename'] ?><div><input type="submit"<?php echo $fs->is_writable(BACKUPS_DIR) ? '' : ' disabled="disabled"' ?> name="backup" value="<?php echo $lang_admin_plugin_patcher['Make backup'] ?>" tabindex="2" /></div>
+										<?php echo $langPatcher['Backup filename'] ?><div><input type="submit"<?php echo $fs->isWritable(BACKUPS_DIR) ? '' : ' disabled="disabled"' ?> name="backup" value="<?php echo $langPatcher['Make backup'] ?>" tabindex="2" /></div>
 									</th>
 									<td>
 										<input type="text" name="backup_name" value="<?php echo time() ?>" size="35" maxlength="80" tabindex="1" />
-										<span><?php echo $lang_admin_plugin_patcher['Backup tool info'] ?></span>
+										<span><?php echo $langPatcher['Backup tool info'] ?></span>
 									</td>
 								</tr>
 
@@ -688,14 +686,14 @@ else
 								<tr>
 <?php if (count($backups) > 0) : ?>
 									<th scope="row">
-										<?php echo $lang_admin_plugin_patcher['Revert from backup'] ?> <div><input type="submit" name="revert" value="<?php echo $lang_admin_plugin_patcher['Revert'] ?>" tabindex="4" /></div>
+										<?php echo $langPatcher['Revert from backup'] ?> <div><input type="submit" name="revert" value="<?php echo $langPatcher['Revert'] ?>" tabindex="4" /></div>
 									</th>
 									<td>
 										<select name="revert_file" tabindex="3"><?php echo implode("\n\t\t\t\t", $backups); ?></select>
-										<span><?php echo $lang_admin_plugin_patcher['Revert info'] ?><br /><strong><?php echo $lang_admin_plugin_patcher['Warning'] ?></strong>: <?php echo $lang_admin_plugin_patcher['Revert info 2'] ?></span>
+										<span><?php echo $langPatcher['Revert info'] ?><br /><strong><?php echo $langPatcher['Warning'] ?></strong>: <?php echo $langPatcher['Revert info 2'] ?></span>
 									</td>
 <?php else : ?>
-									<td colspan="2"><?php echo $lang_admin_plugin_patcher['No backups'] ?></td>
+									<td colspan="2"><?php echo $langPatcher['No backups'] ?></td>
 <?php endif; ?>
 								</tr>
 							</table>
@@ -707,21 +705,21 @@ else
 			<form method="post" action="<?php echo PLUGIN_URL ?>" enctype="multipart/form-data">
 				<div class="inform">
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher['Upload modification legend'] ?></legend>
+						<legend><?php echo $langPatcher['Upload modification legend'] ?></legend>
 						<div class="infldset">
 							<table class="aligntop" cellspacing="0">
 								<tr>
 									<th scope="row">
-										<?php echo $lang_admin_plugin_patcher['Upload package'] ?> <div><input type="submit"<?php echo (!$fs->is_writable(MODS_DIR)) ? ' disabled="disabled"' : '' ?> name="upload" value="<?php echo $lang_admin_plugin_patcher['Upload'] ?>" tabindex="6" /></div>
+										<?php echo $langPatcher['Upload package'] ?> <div><input type="submit"<?php echo (!$fs->isWritable(MODS_DIR)) ? ' disabled="disabled"' : '' ?> name="upload" value="<?php echo $langPatcher['Upload'] ?>" tabindex="6" /></div>
 									</th>
 									<td>
 										<input type="file" name="upload_mod" tabindex="5" />
-										<span><?php echo $lang_admin_plugin_patcher['Upload package info'] ?></span>
+										<span><?php echo $langPatcher['Upload package info'] ?></span>
 									</td>
 								</tr>
-<?php if (!$fs->is_writable(MODS_DIR)) : ?>
+<?php if (!$fs->isWritable(MODS_DIR)) : ?>
 								<tr>
-									<td colspan="2"><?php echo $lang_admin_plugin_patcher['Mods directory not writable'] ?></td>
+									<td colspan="2"><?php echo $langPatcher['Mods directory not writable'] ?></td>
 								</tr>
 <?php endif; ?>
 							</table>
@@ -734,103 +732,101 @@ else
 
 
 	<div class="plugin blockform">
-		<h2><span><?php echo $lang_admin_plugin_patcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&check_for_updates"><?php echo $lang_admin_plugin_patcher['Check for updates'] ?></a> <?php echo $lang_admin_plugin_patcher['Check for updates info'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 
 <?php
 
-	$patcher_config = array('installed_mods' => array(), 'steps' => array());
-	if (file_exists(PUN_ROOT.'patcher_config.php'))
-		require PUN_ROOT.'patcher_config.php';
+	$patcherConfig = loadPatcherConfig();
 
-	$mod_list = array('Mods failed to uninstall' => array(), 'Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
+	$modList = array('Mods failed to uninstall' => array(), 'Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
 
 	// Get the mod list from mods directory
 	$dir = dir(MODS_DIR);
-	while ($mod_id = $dir->read())
+	while ($modId = $dir->read())
 	{
-		if (substr($mod_id, 0, 1) == '.' || !is_dir(MODS_DIR.$mod_id) || $fs->is_empty_directory(MODS_DIR.$mod_id))
+		if (substr($modId, 0, 1) == '.' || !is_dir(MODS_DIR.$modId) || $fs->isEmptyDir(MODS_DIR.$modId))
 			continue;
 
-		$mod = new Patcher_Mod($mod_id);
-		if (!$mod->is_valid)
+		$mod = new Patcher_Mod($modId);
+		if (!$mod->isValid)
 			continue;
 
-		$mod->is_installed = isset($patcher_config['installed_mods'][$mod->id]['version']);
-		$mod->is_enabled = isset($patcher_config['installed_mods'][$mod->id]) && !isset($patcher_config['installed_mods'][$mod->id]['disabled']);
-		$section = $mod->is_installed ? 'Installed mods' : 'Mods not installed';
+		$mod->isInstalled = isset($patcherConfig['installed_mods'][$mod->id]['version']);
+		$mod->isEnabled = isset($patcherConfig['installed_mods'][$mod->id]) && !isset($patcherConfig['installed_mods'][$mod->id]['disabled']);
+		$section = $mod->isInstalled ? 'Installed mods' : 'Mods not installed';
 
-		if (isset($patcher_config['installed_mods'][$mod->id]['uninstall_failed']))
+		if (isset($patcherConfig['installed_mods'][$mod->id]['uninstall_failed']))
 			$section = 'Mods failed to uninstall';
 
 		// Look for updates
-		if ($mod->is_installed)
+		if ($mod->isInstalled)
 		{
-			$has_update = array();
+			$hasUpdate = array();
 			// new update in local copy
-			if (isset($patcher_config['installed_mods'][$mod_id]['version']) && version_compare($mod->version, $patcher_config['installed_mods'][$mod_id]['version'], '>'))
-				$has_update['local'] = $mod->version;
+			if (isset($patcherConfig['installed_mods'][$modId]['version']) && version_compare($mod->version, $patcherConfig['installed_mods'][$modId]['version'], '>'))
+				$hasUpdate['local'] = $mod->version;
 
 			// new update available to download from fluxbb.org repo
-			if (isset($mod_repo['mods'][$mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$mod->id]['last_release']['version'], $patcher_config['installed_mods'][$mod_id]['version'], '>'))
-				$has_update['repo'] = $mod_repo['mods'][$mod->id]['last_release']['version'];
+			if (isset($mod_repo['mods'][$mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$mod->id]['last_release']['version'], $patcherConfig['installed_mods'][$modId]['version'], '>'))
+				$hasUpdate['repo'] = $mod_repo['mods'][$mod->id]['last_release']['version'];
 
 			// get newest update
-			$update_version = '';
-			if (isset($has_update['local']) && isset($has_update['repo']))
+			$updateVersion = '';
+			if (isset($hasUpdate['local']) && isset($hasUpdate['repo']))
 			{
-				if (version_compare($has_update['local'], $has_update['repo'], '>='))
+				if (version_compare($hasUpdate['local'], $hasUpdate['repo'], '>='))
 				{
-					$update_version = $has_update['local'];
-					unset($has_update['repo']);
+					$updateVersion = $hasUpdate['local'];
+					unset($hasUpdate['repo']);
 				}
 				else
 				{
-					$update_version = $has_update['repo'];
-					unset($has_update['local']);
+					$updateVersion = $hasUpdate['repo'];
+					unset($hasUpdate['local']);
 				}
 			}
-			elseif (isset($has_update['local']))
-				$update_version = $has_update['local'];
-			elseif (isset($has_update['repo']))
-				$update_version = $has_update['repo'];
+			elseif (isset($hasUpdate['local']))
+				$updateVersion = $hasUpdate['local'];
+			elseif (isset($hasUpdate['repo']))
+				$updateVersion = $hasUpdate['repo'];
 
-			if ($update_version != '')
+			if ($updateVersion != '')
 			{
-				$updated_mod = new Patcher_Mod($mod_id);
-				$updated_mod->is_installed = $mod->is_installed;
-				$updated_mod->is_enabled = $mod->is_enabled;
-				if (isset($has_update['local']))
-					$updated_mod->has_local_update = true;
+				$updatedMod = new Patcher_Mod($modId);
+				$updatedMod->isInstalled = $mod->isInstalled;
+				$updatedMod->isEnabled = $mod->isEnabled;
+				if (isset($hasUpdate['local']))
+					$updatedMod->hasLocalUpdate = true;
 				else
-					$updated_mod->has_repo_update = true;
+					$updatedMod->hasRepoUpdate = true;
 
-				$updated_mod->version = $update_version;
-				$mod_list['Mods to update'][$mod_id] = $updated_mod;
+				$updatedMod->version = $updateVersion;
+				$modList['Mods to update'][$modId] = $updatedMod;
 
-				if (isset($has_update['local']))
-					$mod->version = $patcher_config['installed_mods'][$mod_id]['version'];
+				if (isset($hasUpdate['local']))
+					$mod->version = $patcherConfig['installed_mods'][$modId]['version'];
 			}
 		}
 		else
 		{
 			// new update available to download from fluxbb.org repo
 			if (isset($mod_repo['mods'][$mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$mod->id]['last_release']['version'], $mod->version, '>'))
-				$mod->has_repo_update = $mod_repo['mods'][$mod->id]['last_release']['version'];
+				$mod->hasRepoUpdate = $mod_repo['mods'][$mod->id]['last_release']['version'];
 		}
 
-		$mod_list[$section][$mod_id] = $mod;
+		$modList[$section][$modId] = $mod;
 	}
 
 	// Get the mod list from the FluxBB repo
 	if (isset($mod_repo['mods']))
 		foreach ($mod_repo['mods'] as $curModId => $curMod)
-			if ($curModId != 'patcher' && !isset($mod_list['Installed mods'][$curModId]) && !isset($mod_list['Mods not installed'][$curModId]))
-				$mod_list['Mods to download'][$curModId] = new Patcher_RepoMod($curModId, $curMod);
+			if ($curModId != 'patcher' && !isset($modList['Installed mods'][$curModId]) && !isset($modList['Mods not installed'][$curModId]))
+				$modList['Mods to download'][$curModId] = new Patcher_RepoMod($curModId, $curMod);
 
 
-	foreach ($mod_list as $section => $mods)
+	foreach ($modList as $section => $mods)
 	{
 		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && count($mods) == 0)
 			continue;
@@ -842,13 +838,13 @@ else
 ?>
 				<div class="inform">
 					<fieldset>
-						<legend><?php echo $lang_admin_plugin_patcher[$section] ?></legend>
+						<legend><?php echo $langPatcher[$section] ?></legend>
 						<div class="infldset">
 <?php
 		if (count($mods) == 0)
 		{
 ?>
-							<p><?php echo $lang_admin_plugin_patcher['No '.strtolower($section)] ?></p>
+							<p><?php echo $langPatcher['No '.strtolower($section)] ?></p>
 <?php
 		}
 		else
@@ -857,109 +853,109 @@ else
 							<table>
 								<thead>
 									<tr>
-										<th class="tcl"><?php echo $lang_admin_plugin_patcher['Mod title'] ?></th>
-										<th class="tcr" style="width: 30%"><?php echo $lang_admin_plugin_patcher['Action'] ?></th>
+										<th class="tcl"><?php echo $langPatcher['Mod title'] ?></th>
+										<th class="tcr" style="width: 30%"><?php echo $langPatcher['Action'] ?></th>
 									</tr>
 								</thead>
 								<tbody>
 <?php
 
-			foreach ($mods as $mod)
+			foreach ($mods as $curMod)
 			{
-				if (!$mod->is_valid)
+				if (!$curMod->isValid)
 					continue;
 
-				$info = array('<strong>'.pun_htmlspecialchars($mod->title).'</strong>');
+				$info = array('<strong>'.pun_htmlspecialchars($curMod->title).'</strong>');
 
-				if (isset($mod->repository_url))
-					$info[0] = '<a href="'.$mod->repository_url.'">'.$info[0].'</a>';
+				if (isset($curMod->repositoryUrl))
+					$info[0] = '<a href="'.$curMod->repositoryUrl.'">'.$info[0].'</a>';
 
-				if (isset($mod->version))
-					$info[] = ' <strong>v'.pun_htmlspecialchars($mod->version).'</strong>';
+				if (isset($curMod->version))
+					$info[] = ' <strong>v'.pun_htmlspecialchars($curMod->version).'</strong>';
 
-				if (isset($mod->author_email) && isset($mod->author))
-					$info[] = ' '.$lang_admin_plugin_patcher['by'].' <a href="mailto:'.pun_htmlspecialchars($mod->author_email).'">'.pun_htmlspecialchars($mod->author).'</a>';
-				elseif (isset($mod->author))
-					$info[] = ' '.$lang_admin_plugin_patcher['by'].' '.pun_htmlspecialchars($mod->author);
+				if (isset($curMod->authorEmail) && isset($curMod->author))
+					$info[] = ' '.$langPatcher['by'].' <a href="mailto:'.pun_htmlspecialchars($curMod->authorEmail).'">'.pun_htmlspecialchars($curMod->author).'</a>';
+				elseif (isset($curMod->author))
+					$info[] = ' '.$langPatcher['by'].' '.pun_htmlspecialchars($curMod->author);
 
-				if (isset($mod->description))
+				if (isset($curMod->description))
 				{
-					if (strlen($mod->description) > 400)
-						$info[] = '<br />'.pun_htmlspecialchars(substr($mod->description, 0, 400)).'...';
+					if (strlen($curMod->description) > 400)
+						$info[] = '<br />'.pun_htmlspecialchars(substr($curMod->description, 0, 400)).'...';
 					else
-						$info[] = '<br />'.pun_htmlspecialchars($mod->description);
+						$info[] = '<br />'.pun_htmlspecialchars($curMod->description);
 				}
 
 				// Is the mod compatible with FluxBB version
-				if (get_class($mod) == 'Patcher_Mod' && !$mod->isCompatible())
-					$info[] = '<br /><span style="color: #a00; display: inline">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
+				if (get_class($curMod) == 'Patcher_Mod' && !$curMod->isCompatible())
+					$info[] = '<br /><span style="color: #a00; display: inline">'.$langPatcher['Unsupported version info'].'</span>';
 
-				if (isset($mod->important))
-					$info[] = '<br /><span style="color: #a00"><strong>'.$lang_admin_plugin_patcher['Important'].'</strong>: '.pun_htmlspecialchars($mod->important).'</span>';
+				if (isset($curMod->important))
+					$info[] = '<br /><span style="color: #a00"><strong>'.$langPatcher['Important'].'</strong>: '.pun_htmlspecialchars($curMod->important).'</span>';
 
 				$works_on = '';
-				if (get_class($mod) == 'Patcher_Mod' && isset($mod->works_on))
-					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $mod->works_on));
+				if (get_class($curMod) == 'Patcher_Mod' && isset($curMod->worksOn))
+					$info[] = '<br /><strong>'.$langPatcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $curMod->worksOn));
 
 				$status = '';
 				$actions = array(array(), array());
-				if (get_class($mod) == 'Patcher_Mod')
+				if (get_class($curMod) == 'Patcher_Mod')
 				{
 					if ($section == 'Mods failed to uninstall')
 					{
-						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Uninstall failed'].'</strong>';
-						$actions[1]['uninstall'] = $lang_admin_plugin_patcher['Try again to uninstall'];
+						$status = '<strong style="color: red">'.$langPatcher['Uninstall failed'].'</strong>';
+						$actions[1]['uninstall'] = $langPatcher['Try again to uninstall'];
 					}
-					elseif ($mod->is_installed)
+					elseif ($curMod->isInstalled)
 					{
 						if ($section == 'Mods to update')
 						{
-							if (isset($mod->has_repo_update))
-								$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod->id).'&download_update='.pun_htmlspecialchars($mod->version).'&update">'.$lang_admin_plugin_patcher['Download and install update'].'</a>';
+							if (isset($curMod->hasRepoUpdate))
+								$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&download_update='.pun_htmlspecialchars($curMod->version).'&update">'.$langPatcher['Download and install update'].'</a>';
 
-							if (isset($mod->has_local_update))
-								$actions[0]['update'] = $lang_admin_plugin_patcher['Update'];
+							if (isset($curMod->hasLocalUpdate))
+								$actions[0]['update'] = $langPatcher['Update'];
 						}
 						else
 						{
-							if ($mod->is_enabled)
+							if ($curMod->isEnabled)
 							{
-								$status = '<strong style="color: green">'.$lang_admin_plugin_patcher['Enabled'].'</strong>';
-								$actions[1]['disable'] = $lang_admin_plugin_patcher['Disable'];
+								$status = '<strong style="color: green">'.$langPatcher['Enabled'].'</strong>';
+								$actions[1]['disable'] = $langPatcher['Disable'];
 							}
 							else
 							{
-								$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Disabled'].'</strong>';
-								$actions[1]['enable'] = $lang_admin_plugin_patcher['Enable'];
+								$status = '<strong style="color: red">'.$langPatcher['Disabled'].'</strong>';
+								$actions[1]['enable'] = $langPatcher['Enable'];
 							}
-							$actions[1]['uninstall'] = $lang_admin_plugin_patcher['Uninstall'];
+							$actions[1]['uninstall'] = $langPatcher['Uninstall'];
 						}
 					}
 					else
 					{
-						if (isset($mod->has_repo_update))
-							$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod->id).'&download_update='.pun_htmlspecialchars($mod->has_repo_update).'">'.sprintf($lang_admin_plugin_patcher['Download update'], $mod->has_repo_update).'</a>';
+						if (isset($curMod->hasRepoUpdate))
+							$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&download_update='.pun_htmlspecialchars($curMod->hasRepoUpdate).'">'.sprintf($langPatcher['Download update'], $curMod->hasRepoUpdate).'</a>';
 
-						$status = '<strong style="color: red">'.$lang_admin_plugin_patcher['Not installed'].'</strong>';
-						$actions[1]['install'] = isset($mod->has_repo_update) ? $lang_admin_plugin_patcher['Install old version'] : $lang_admin_plugin_patcher['Install'];
+						$status = '<strong style="color: red">'.$langPatcher['Not installed'].'</strong>';
+						$actions[1]['install'] = isset($curMod->hasRepoUpdate) ? $langPatcher['Install old version'] : $langPatcher['Install'];
 					}
 
 				}
 				else
-					$actions[1][] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($mod->id).'">'.$lang_admin_plugin_patcher['Download and install'].'</a>';
+					$actions[1][] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($curMod->id).'">'.$langPatcher['Download and install'].'</a>';
 
-				$actions_info = array();
-				foreach ($actions as $type => $action_list)
+				$actionsInfo = array();
+				foreach ($actions as $type => $actionList)
 				{
-					if (count($action_list) == 0)
+					if (count($actionList) == 0)
 						continue;
 
-					foreach ($action_list as $action => &$title)
+					foreach ($actionList as $action => &$title)
 					{
 						if (!is_numeric($action))
-							$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($mod->id).'&action='.$action.'">'.$title.'</a>';
+							$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&action='.$action.'">'.$title.'</a>';
 					}
-					$actions_info[] = implode(' | ', $action_list);
+					$actionsInfo[] = implode(' | ', $actionList);
 				}
 
 
@@ -968,7 +964,7 @@ else
 										<td><?php echo implode("\n", $info) ?></td>
 										<td class="tcr">
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
-											<?php echo implode('<br />'."\n", $actions_info) ?>
+											<?php echo implode('<br />'."\n", $actionsInfo) ?>
 										</td>
 									</tr>
 <?php
