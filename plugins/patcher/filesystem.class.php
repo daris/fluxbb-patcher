@@ -1,7 +1,7 @@
 <?php
 
 
-class FILESYSTEM
+class Patcher_FileSystem
 {
 	var $ftp;
 	var $root = PUN_ROOT;

@@ -5,7 +5,7 @@
  */
 
 
-class REPO_MOD
+class Patcher_RepoMod
 {
 	var $id;
 	var $title;
@@ -27,7 +27,7 @@ class REPO_MOD
 }
 
 
-class FLUX_MOD
+class Patcher_Mod
 {
 	var $id = null; // mod directory
 	var $readme_file_dir = null; // main readme file name

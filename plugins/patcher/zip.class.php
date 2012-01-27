@@ -7,7 +7,7 @@ if (!ZIP_NATIVE)
 	require PATCHER_ROOT.'pclzip.lib.php';
 
 
-class ZIP_ARCHIVE
+class Patcher_ZipArchive
 {
 	var $file;
 	private $zip; // ZipArchive or PclZip object

@@ -42,7 +42,7 @@ if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/admin_plugin_
 else
 	require PATCHER_ROOT.'../../lang/English/admin_plugin_patcher.php';
 
-$fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
+$fs = new Patcher_FileSystem(isset($ftp_data) ? $ftp_data : null);
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))
@@ -179,7 +179,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	elseif ($action == 'disable' && isset($patcher_config['installed_mods'][$mod_id]['disabled']))
 		message($lang_admin_plugin_patcher['Mod already disabled']);
 
-	$flux_mod = new FLUX_MOD($mod_id);
+	$flux_mod = new Patcher_Mod($mod_id);
 	if (!$flux_mod->is_valid)
 		message($lang_admin_plugin_patcher['Invalid mod dir']);
 
@@ -189,7 +189,7 @@ if (isset($mod_id) && file_exists(MODS_DIR.$mod_id))
 	$_SESSION['patcher_log'] = '';
 	$logs = array();
 
-	$patcher = new PATCHER($flux_mod);
+	$patcher = new Patcher($flux_mod);
 	$is_valid = true;
 
 	// If user wants to update mod, first remove its code from files (disable mod) and then update it
@@ -753,7 +753,7 @@ else
 		if (substr($mod_id, 0, 1) == '.' || !is_dir(MODS_DIR.$mod_id) || $fs->is_empty_directory(MODS_DIR.$mod_id))
 			continue;
 
-		$flux_mod = new FLUX_MOD($mod_id);
+		$flux_mod = new Patcher_Mod($mod_id);
 		if (!$flux_mod->is_valid)
 			continue;
 
@@ -798,7 +798,7 @@ else
 
 			if ($update_version != '')
 			{
-				$updated_mod = new FLUX_MOD($mod_id);
+				$updated_mod = new Patcher_Mod($mod_id);
 				$updated_mod->is_installed = $flux_mod->is_installed;
 				$updated_mod->is_enabled = $flux_mod->is_enabled;
 				if (isset($has_update['local']))
@@ -827,7 +827,7 @@ else
 	if (isset($mod_repo['mods']))
 		foreach ($mod_repo['mods'] as $cur_mod_id => $cur_mod)
 			if ($cur_mod_id != 'patcher' && !isset($mod_list['Installed mods'][$cur_mod_id]) && !isset($mod_list['Mods not installed'][$cur_mod_id]))
-				$mod_list['Mods to download'][$cur_mod_id] = new REPO_MOD($cur_mod_id, $cur_mod);
+				$mod_list['Mods to download'][$cur_mod_id] = new Patcher_RepoMod($cur_mod_id, $cur_mod);
 
 
 	foreach ($mod_list as $section => $mods)
@@ -891,19 +891,19 @@ else
 				}
 
 				// Is the mod compatible with FluxBB version
-				if (get_class($flux_mod) == 'FLUX_MOD' && !$flux_mod->is_compatible())
+				if (get_class($flux_mod) == 'Patcher_Mod' && !$flux_mod->is_compatible())
 					$info[] = '<br /><span style="color: #a00; display: inline">'.$lang_admin_plugin_patcher['Unsupported version info'].'</span>';
 
 				if (isset($flux_mod->important))
 					$info[] = '<br /><span style="color: #a00"><strong>'.$lang_admin_plugin_patcher['Important'].'</strong>: '.pun_htmlspecialchars($flux_mod->important).'</span>';
 
 				$works_on = '';
-				if (get_class($flux_mod) == 'FLUX_MOD' && isset($flux_mod->works_on))
+				if (get_class($flux_mod) == 'Patcher_Mod' && isset($flux_mod->works_on))
 					$info[] = '<br /><strong>'.$lang_admin_plugin_patcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $flux_mod->works_on));
 
 				$status = '';
 				$actions = array(array(), array());
-				if (get_class($flux_mod) == 'FLUX_MOD')
+				if (get_class($flux_mod) == 'Patcher_Mod')
 				{
 					if ($section == 'Mods failed to uninstall')
 					{

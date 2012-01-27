@@ -328,7 +328,7 @@ function create_backup($backup)
 
 	$files[] = 'style/Air.css';
 
-	$zip = new ZIP_ARCHIVE($fs->tmpname(), true);
+	$zip = new Patcher_ZipArchive($fs->tmpname(), true);
 	if (!$zip->add($files))
 		message('Cannot add files to archive');
 	$zip->close();
@@ -348,7 +348,7 @@ function revert($file)
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		$fs->delete(PUN_ROOT.'patcher_config.php');
 
-	$zip = new ZIP_ARCHIVE(BACKUPS_DIR.$file);
+	$zip = new Patcher_ZipArchive(BACKUPS_DIR.$file);
 	if (!$zip->extract(PUN_ROOT))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 	$zip->close();
@@ -384,7 +384,7 @@ function upload_mod()
 	if (!is_dir(MODS_DIR.$mod_id) && !$fs->mkdir(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
-	$zip = new ZIP_ARCHIVE(MODS_DIR.$filename);
+	$zip = new Patcher_ZipArchive(MODS_DIR.$filename);
 	if (!$zip->extract(MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 	$zip->close();
@@ -415,7 +415,7 @@ function download_update($mod_id, $version)
 	if (!$fs->mkdir(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
-	$zip = new ZIP_ARCHIVE($tmpname);
+	$zip = new Patcher_ZipArchive($tmpname);
 	if (!$zip->extract(MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 	$zip->close();
@@ -452,7 +452,7 @@ function download_mod($mod_id)
 	if (!is_dir(MODS_DIR.$mod_id) && !$fs->mkdir(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
 
-	$zip = new ZIP_ARCHIVE($tmpname);
+	$zip = new Patcher_ZipArchive($tmpname);
 	if (!$zip->extract(MODS_DIR.$mod_id))
 		message($lang_admin_plugin_patcher['Failed to extract file']);
 	$zip->close();
@@ -556,7 +556,7 @@ function convert_mods_to_config()
 
 	foreach ($patcher_config['installed_mods'] as $cur_mod => &$readme_files)
 	{
-		$flux_mod = new FLUX_MOD($cur_mod);
+		$flux_mod = new Patcher_Mod($cur_mod);
 		if (!$flux_mod->is_valid)
 			continue;
 
@@ -575,7 +575,7 @@ function myerror()
 {
 	global $patcher;
 
-	if (is_object($patcher) && get_class($patcher) == 'PATCHER')
+	if (is_object($patcher) && get_class($patcher) == 'Patcher')
 		$patcher->revert_modified_files();
 
 	$args = func_get_args();

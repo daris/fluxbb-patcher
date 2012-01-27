@@ -4,7 +4,7 @@
  * http://fluxbb.org/forums/viewtopic.php?id=4431
  */
 
-class PATCHER
+class Patcher
 {
 	var $flux_mod = null;
 
@@ -172,7 +172,7 @@ class PATCHER
 
 			foreach ($this->config['installed_mods'] as $cur_mod_id => $inst_mods_readme_files)
 			{
-				$flux_mod = new FLUX_MOD($cur_mod_id);
+				$flux_mod = new Patcher_Mod($cur_mod_id);
 				foreach ($flux_mod->readme_file_list as $cur_readme_file)
 				{
 					$cur_readme_file = ltrim($cur_readme_file, '/');

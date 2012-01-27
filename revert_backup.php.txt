@@ -10,7 +10,7 @@ define('BACKUPS_DIR', PUN_ROOT.'backups/');
 require PATCHER_ROOT.'filesystem.class.php';
 require PATCHER_ROOT.'config.php';
 
-$fs = new FILESYSTEM(isset($ftp_data) ? $ftp_data : null);
+$fs = new Patcher_FileSystem(isset($ftp_data) ? $ftp_data : null);
 
 $revert = isset($_GET['revert']) ? basename($_GET['revert']) : null;
 
