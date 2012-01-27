@@ -10,19 +10,19 @@ class Patcher_RepoMod
 	var $id;
 	var $title;
 	var $version;
-	var $repository_url;
-	var $is_valid;
+	var $repositoryUrl;
+	var $isValid;
 	var $description;
 
-	function __construct($id, $cur_mod)
+	function __construct($id, $curMod)
 	{
 		$this->id = $id;
-		$this->title = $cur_mod['name'];
-		$this->repository_url = 'http://fluxbb.org/resources/mods/'.urldecode($this->id).'/';
-		$this->is_valid = true;
-		$this->version = $cur_mod['last_release']['version'];
-		if (isset($cur_mod['description']))
-			$this->description = $cur_mod['description'];
+		$this->title = $curMod['name'];
+		$this->repositoryUrl = 'http://fluxbb.org/resources/mods/'.urldecode($this->id).'/';
+		$this->isValid = true;
+		$this->version = $curMod['last_release']['version'];
+		if (isset($curMod['description']))
+			$this->description = $curMod['description'];
 	}
 }
 
@@ -30,30 +30,31 @@ class Patcher_RepoMod
 class Patcher_Mod
 {
 	var $id = null; // mod directory
-	var $readme_file_dir = null; // main readme file name
-//	var $readme_file_name = null; // main readme file dir
-	var $mod_dir = null; // main readme file dir
-	private $readme_file = null; // main readme file content
-//	var $readme_file_list = null; // list of readme files in current mod directory (including subdirectory)
+	var $readmeFileDir = null; // main readme file name
+//	var $readmeFileName = null; // main readme file dir
+	var $modDir = null; // main readme file dir
+	private $readmeFile = null; // main readme file content
+//	var $readmeFileList = null; // list of readme files in current mod directory (including subdirectory)
 
-	function __construct($mod_id)
+	function __construct($id)
 	{
-		$this->id = $mod_id;
-		$this->mod_dir = MODS_DIR.$this->id.'/';
-		if (!is_dir($this->mod_dir) || !isset($this->readme_file_name))
+		$this->id = $id;
+		$this->modDir = MODS_DIR.$this->id.'/';
+		if (!is_dir($this->modDir) || !isset($this->readmeFileName))
 		{
-			$this->is_valid = false;
+			$this->isValid = false;
 			return false;
 		}
-		$this->readme_file_dir = $this->mod_dir.dirname($this->readme_file_name);
-		$this->readme_file = file_get_contents($this->mod_dir.$this->readme_file_name);
+		$this->readmeFileDir = $this->modDir.dirname($this->readmeFileName);
+		$this->readmeFile = file_get_contents($this->modDir.$this->readmeFileName);
 	}
 
 
 	// Used for: readme_file_list, files_to_upload, upload_code
 	function __get($name)
 	{
-		$function_name = 'get_'.$name;
+
+		$function_name = 'get'.ucfirst($name);
 		if (!is_callable(array($this, $function_name)))
 			return null;
 
@@ -70,18 +71,18 @@ class Patcher_Mod
 
 
 	// Looks for readme file
-	function get_readme_file_name()
+	function getReadmeFileName()
 	{
 		if (file_exists(MODS_DIR.$this->id.'/readme.txt'))
 			return 'readme.txt';
 
-		if (count($this->readme_file_list) == 1)
-			return $this->readme_file_list[0];
+		if (count($this->readmeFileList) == 1)
+			return $this->readmeFileList[0];
 
-		foreach ($this->readme_file_list as $key => $cur_readme)
+		foreach ($this->readmeFileList as $key => $curReadme)
 		{
-			if (preg_match('#(install|read\s?me|lisezmoi).*?\.txt#i', $cur_readme))
-				return $cur_readme;
+			if (preg_match('#(install|read\s?me|lisezmoi).*?\.txt#i', $curReadme))
+				return $curReadme;
 		}
 
 		return false;
@@ -89,11 +90,11 @@ class Patcher_Mod
 
 
 	// Gets the readme file list for specified directory
-	function get_readme_file_list($dirpath = '', $subdirectory = true)
+	function getReadmeFileList($dirpath = '', $subdirectory = true)
 	{
 		// Load readme file list
 		if ($dirpath == '')
-			$dirpath = $this->mod_dir;
+			$dirpath = $this->modDir;
 
 		$result = array();
 		$dir = dir($dirpath);
@@ -104,10 +105,10 @@ class Patcher_Mod
 				if (is_dir($dirpath.'/'.$file))
 				{
 					if ($subdirectory)
-						$result = array_merge($result, $this->get_readme_file_list($dirpath.'/'.$file, false));
+						$result = array_merge($result, $this->getReadmeFileList($dirpath.'/'.$file, false));
 				}
 				else if ((strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false || strpos(strtolower($file), 'lisezmoi') !== false) && strpos(strtolower($file), '.txt') !== false)
-					$result[] = ltrim(str_replace($this->mod_dir, '', $dirpath.'/'.$file), '/');
+					$result[] = ltrim(str_replace($this->modDir, '', $dirpath.'/'.$file), '/');
 			}
 		}
 		$dir->close();
@@ -117,14 +118,14 @@ class Patcher_Mod
 
 
 	// Returns array with mod information
-	function get_mod_info()
+	function getModInfo()
 	{
-		$file = $this->readme_file;
+		$file = $this->readmeFile;
 
-		if (!isset($this->readme_file) || empty($this->readme_file))
+		if (!isset($this->readmeFile) || empty($this->readmeFile))
 			return array();
 
-		$mod_info = array();
+		$modInfo = array();
 
 		$file = substr($file, 0, strpos($file, '#--'));
 		$file = trim($file, '# '."\n\r\t");
@@ -153,29 +154,29 @@ class Patcher_Mod
 				$last_info = trim(strtolower(substr($line, 0, strpos($line, ':'))));
 				if (isset($transformations[$last_info]))
 					$last_info = $transformations[$last_info];
-				$mod_info[$last_info] = trim(substr($line, strpos($line, ':') + 1));
+				$modInfo[$last_info] = trim(substr($line, strpos($line, ':') + 1));
 			}
 			elseif ($last_info != '')
-				$mod_info[$last_info] .= "\n".trim($line);
+				$modInfo[$last_info] .= "\n".trim($line);
 		}
 
-		$this->is_valid = isset($mod_info['mod version']);
+		$this->isValid = isset($modInfo['mod version']);
 
-		return $mod_info;
+		return $modInfo;
 	}
 
 
-	function get_is_valid()
+	function getIsValid()
 	{
 		return isset($this->version);
 	}
 
-	function get_author()
+	function getAuthor()
 	{
-		if (!isset($this->mod_info['author']))
+		if (!isset($this->modInfo['author']))
 			return '';
 
-		$author = $this->mod_info['author'];
+		$author = $this->modInfo['author'];
 		if (preg_match('#^(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
 			|| preg_match('#^([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
 			$author = $m[1];
@@ -189,135 +190,135 @@ class Patcher_Mod
 		return trim($author);
 	}
 
-	function get_author_email()
+	function getAuthorEmail()
 	{
-		if (!isset($this->mod_info['author']))
+		if (!isset($this->modInfo['author']))
 			return '';
 
-		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->mod_info['author'], $m) // name (test@gmail.com)
-			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->mod_info['author'], $m)) // test@gmail.com
+		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->modInfo['author'], $m) // name (test@gmail.com)
+			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->modInfo['author'], $m)) // test@gmail.com
 			return trim($m[1]);
 	}
 
-	function get_title()
+	function getTitle()
 	{
-		if (!isset($this->mod_info['mod title']))
+		if (!isset($this->modInfo['mod title']))
 			return ucfirst(str_replace(array('-', '_'), ' ', $this->id));
 
-		return trim($this->mod_info['mod title']);
+		return trim($this->modInfo['mod title']);
 	}
 
-	function get_version()
+	function getVersion()
 	{
-		if (!isset($this->mod_info['mod version']))
+		if (!isset($this->modInfo['mod version']))
 			return '';
 
-		return $this->mod_info['mod version'];
+		return $this->modInfo['mod version'];
 	}
 
-	function get_description()
+	function getDescription()
 	{
-		if (!isset($this->mod_info['description']))
+		if (!isset($this->modInfo['description']))
 			return '';
 
-		return $this->mod_info['description'];
+		return $this->modInfo['description'];
 	}
 
-	function get_affects_db()
+	function getAffectsDb()
 	{
-		if (!isset($this->mod_info['affects db']))
+		if (!isset($this->modInfo['affects db']))
 			return '';
 
-		return $this->mod_info['affects db'];
+		return $this->modInfo['affects db'];
 	}
 
-	function get_important()
+	function getImportant()
 	{
-		if (!isset($this->mod_info['important']))
+		if (!isset($this->modInfo['important']))
 			return '';
 
-		return $this->mod_info['important'];
+		return $this->modInfo['important'];
 	}
 
-	function get_release_date()
+	function getReleaseDate()
 	{
-		if (!isset($this->mod_info['release date']))
+		if (!isset($this->modInfo['release date']))
 			return '';
 
-		return $this->mod_info['release date'];
+		return $this->modInfo['release date'];
 	}
 
-	function get_works_on()
+	function getWorksOn()
 	{
-		if (!isset($this->mod_info['works on fluxbb']))
+		if (!isset($this->modInfo['works on fluxbb']))
 			return '';
 
-		$this->mod_info['works on fluxbb'] = str_replace(' and ', ', ', $this->mod_info['works on fluxbb']);
-		return array_map('trim', explode(',', $this->mod_info['works on fluxbb']));
+		$this->modInfo['works on fluxbb'] = str_replace(' and ', ', ', $this->modInfo['works on fluxbb']);
+		return array_map('trim', explode(',', $this->modInfo['works on fluxbb']));
 	}
 
-	function get_repository_url()
+	function getRepositoryUrl()
 	{
-		if (!isset($this->mod_info['repository url']) || strpos($this->mod_info['repository url'], '(Leave unedited)') !== false)
+		if (!isset($this->modInfo['repository url']) || strpos($this->modInfo['repository url'], '(Leave unedited)') !== false)
 			return '';
 
-		return $this->mod_info['repository url'];
+		return $this->modInfo['repository url'];
 	}
 
-	function get_affected_files()
+	function getAffectedFiles()
 	{
-		if (!isset($this->mod_info['affected files']))
+		if (!isset($this->modInfo['affected files']))
 			return '';
 
 		$files = array();
-		$delimiter = (strpos($this->mod_info['affected files'], ', ') !== false) ? ',' : "\n";
-		$affected_files = explode($delimiter, $this->mod_info['affected files']);
-		foreach ($affected_files as $cur_file)
+		$delimiter = (strpos($this->modInfo['affected files'], ', ') !== false) ? ',' : "\n";
+		$affectedFiles = explode($delimiter, $this->modInfo['affected files']);
+		foreach ($affectedFiles as $curFile)
 		{
 			// Do some fix for current file :)
-			$cur_file = str_replace(array('[language]', 'your_lang'), 'English', trim($cur_file));
-			$cur_file = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $cur_file);
+			$curFile = str_replace(array('[language]', 'your_lang'), 'English', trim($curFile));
+			$curFile = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $curFile);
 
 			// Delete everything after ( and [ charachters
-			if (strpos($cur_file, ' (') !== false)
-				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ('));
-			if (strpos($cur_file, ' [') !== false)
-				$cur_file = substr($cur_file, 0, strpos($cur_file, ' ['));
+			if (strpos($curFile, ' (') !== false)
+				$curFile = substr($curFile, 0, strpos($curFile, ' ('));
+			if (strpos($curFile, ' [') !== false)
+				$curFile = substr($curFile, 0, strpos($curFile, ' ['));
 
 			// Does not look like a file?
-			if (($pos = strrpos($cur_file, '.')) === false || $pos < strlen($cur_file) - 5 || $pos >= strlen($cur_file) - 1)
+			if (($pos = strrpos($curFile, '.')) === false || $pos < strlen($curFile) - 5 || $pos >= strlen($curFile) - 1)
 				continue;
 
 			// Exclude lines that has Null, None or No word
-			if (!empty($cur_file) && !in_array(strtolower($cur_file), array('null', 'none', 'no')))
-				$files[] = trim($cur_file);
+			if (!empty($curFile) && !in_array(strtolower($curFile), array('null', 'none', 'no')))
+				$files[] = trim($curFile);
 		}
 
-		if (file_exists($this->readme_file_dir.'/patcher.affected_files.php'))
-			$files = array_merge($files, require($this->readme_file_dir.'/patcher.affected_files.php'));
+		if (file_exists($this->readmeFileDir.'/patcher.affected_files.php'))
+			$files = array_merge($files, require($this->readmeFileDir.'/patcher.affected_files.php'));
 
 		sort($files);
 		return array_unique($files);
 	}
 
 
-	function is_compatible()
+	function isCompatible()
 	{
 		global $pun_config;
 
-		if (!isset($this->works_on))
+		if (!isset($this->worksOn))
 			return false;
 
-		foreach ($this->works_on as $cur_version)
+		foreach ($this->worksOn as $curVersion)
 		{
-			if (strpos($cur_version, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version'])
-				|| strpos($cur_version, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($cur_version)).'/', $pun_config['o_cur_version'])
-				|| $cur_version == $pun_config['o_cur_version']
-				|| $cur_version == substr($pun_config['o_cur_version'], 0, strlen($cur_version))
-				|| substr($cur_version, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
+			if (strpos($curVersion, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
+				|| strpos($curVersion, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
+				|| $curVersion == $pun_config['o_cur_version']
+				|| $curVersion == substr($pun_config['o_cur_version'], 0, strlen($curVersion))
+				|| substr($curVersion, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
 					return true;
 
-			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->works_on[0], $matches))
+			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
 				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
 		}
 
@@ -325,43 +326,43 @@ class Patcher_Mod
 	}
 
 
-	function get_upload_code()
+	function getUploadCode()
 	{
-		if (strpos($this->readme_file, 'UPLOAD ]--') === false)
+		if (strpos($this->readmeFile, 'UPLOAD ]--') === false)
 			return false;
 
-		$upload_code = substr($this->readme_file, strpos($this->readme_file, 'UPLOAD ]--'));
+		$uploadCode = substr($this->readmeFile, strpos($this->readmeFile, 'UPLOAD ]--'));
 
 		// Mpok's style (first line - English, second - translation)
-		if (preg_match('/\]-+\s*\n#-+\[/si', $upload_code))
-			$upload_code = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $upload_code, 1);
+		if (preg_match('/\]-+\s*\n#-+\[/si', $uploadCode))
+			$uploadCode = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $uploadCode, 1);
 
-		$upload_code = substr($upload_code, strpos($upload_code, "\n") + 1);
-		$upload_code = substr($upload_code, 0, strpos($upload_code, '#--'));
-		return trim($upload_code, '#'."\n\r");
+		$uploadCode = substr($uploadCode, strpos($uploadCode, "\n") + 1);
+		$uploadCode = substr($uploadCode, 0, strpos($uploadCode, '#--'));
+		return trim($uploadCode, '#'."\n\r");
 	}
 
 
-	function get_files_to_upload()
+	function getFilesToUpload()
 	{
-		$files_to_upload = array();
+		$filesToUpload = array();
 
 		// Get files to upload from mod readme
-		if ($this->upload_code)
+		if ($this->uploadCode)
 		{
 			// Mod author was too lazy? :P
-			if (preg_match('/(upload.+from|all).+files.+/', strtolower($this->upload_code)) || preg_match('/(file|all).+folders?/', strtolower($this->upload_code)))
+			if (preg_match('/(upload.+from|all).+files.+/', strtolower($this->uploadCode)) || preg_match('/(file|all).+folders?/', strtolower($this->uploadCode)))
 			{
-				if (is_dir($this->readme_file_dir.'/files'))
-					$files_to_upload = list_files_to_upload($this->readme_file_dir, 'files');
+				if (is_dir($this->readmeFileDir.'/files'))
+					$filesToUpload = listFilesToUpload($this->readmeFileDir, 'files');
 				else
-					$files_to_upload = list_files_to_upload($this->readme_file_dir, '');
+					$filesToUpload = listFilesToUpload($this->readmeFileDir, '');
 			}
 
 			// We have the list of files to upload :)
 			else
 			{
-				$lines = explode("\n", $this->upload_code);
+				$lines = explode("\n", $this->uploadCode);
 				foreach ($lines as $line)
 				{
 					// Remove spaces from start or end of line
@@ -396,35 +397,35 @@ class Patcher_Mod
 						$to = '/';
 
 					// Why should I correct mod author mistakes? :P
-					if (!file_exists($this->readme_file_dir.'/'.$from))
+					if (!file_exists($this->readmeFileDir.'/'.$from))
 					{
 						 // Try to find file in files directory
-						if (file_exists($this->readme_file_dir.'/files/'.$from))
+						if (file_exists($this->readmeFileDir.'/files/'.$from))
 							$from = 'files/'.$from;
 
 						 // maybe new_files dir?
-						elseif (file_exists($this->readme_file_dir.'/new_files/'.$from))
+						elseif (file_exists($this->readmeFileDir.'/new_files/'.$from))
 							$from = 'new_files/'.$from;
 
 						// maybe new_files instead of files?
-						elseif (file_exists($this->readme_file_dir.'/'.str_replace('files/', 'new_files/', $from)))
+						elseif (file_exists($this->readmeFileDir.'/'.str_replace('files/', 'new_files/', $from)))
 							$from = str_replace('files/', 'new_files/', $from);
 					}
 
 					// If the current path is a directory, read and add its contents
-					if (is_dir($this->readme_file_dir.'/'.$from))
-						$files_to_upload = array_merge($files_to_upload, list_files_to_upload($this->readme_file_dir, rtrim($from, '/'), rtrim($to, '/')));
+					if (is_dir($this->readmeFileDir.'/'.$from))
+						$filesToUpload = array_merge($filesToUpload, listFilesToUpload($this->readmeFileDir, rtrim($from, '/'), rtrim($to, '/')));
 					else
-						$files_to_upload[$from] = $to;
+						$filesToUpload[$from] = $to;
 				}
 			}
 		}
 
 		// Look files to upload in the files directory
-		elseif (is_dir($this->readme_file_dir.'/files'))
-			$files_to_upload = list_files_to_upload($this->readme_file_dir, 'files');
+		elseif (is_dir($this->readmeFileDir.'/files'))
+			$filesToUpload = listFilesToUpload($this->readmeFileDir, 'files');
 
-		foreach ($files_to_upload as $from => &$to)
+		foreach ($filesToUpload as $from => &$to)
 		{
 			// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
 			if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false)
@@ -435,30 +436,30 @@ class Patcher_Mod
 
 			// Ignore mod installer files
 			if (preg_match('/plugins\/.*?\/(mod_config|search_insert|lang\/.*\/mod_admin).php$/', $from))
-				unset($files_to_upload[$from]);
+				unset($filesToUpload[$from]);
 
 			// Do not upload language files when language folder does not exist
 			elseif (preg_match('#lang\/(.+?)\/#i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
-				unset($files_to_upload[$from]);
+				unset($filesToUpload[$from]);
 
 		}
 
 		// Sort by the $from value
-		ksort($files_to_upload);
-		return $files_to_upload;
+		ksort($filesToUpload);
+		return $filesToUpload;
 	}
 
 
-	function check_requirements()
+	function checkRequirements()
 	{
 		global $lang_admin_plugin_patcher, $fs;
 
-		$dirs_to_check = array();
+		$dirsToCheck = array();
 		$requirements = array('files_to_upload' => array(), 'directories' => array(), 'affected_files' => array());
 
 		if ($GLOBALS['action'] == 'uninstall')
 		{
-			foreach ($this->files_to_upload as $from => $to)
+			foreach ($this->filesToUpload as $from => $to)
 			{
 				$dir = dirname($to);
 				if ($fs->is_writable(PUN_ROOT.$dir))
@@ -469,44 +470,44 @@ class Patcher_Mod
 		}
 		elseif (in_array($GLOBALS['action'], array('update', 'install')))
 		{
-			foreach ($this->files_to_upload as $from => $to)
+			foreach ($this->filesToUpload as $from => $to)
 			{
-				if (!file_exists($this->readme_file_dir.'/'.$from))
+				if (!file_exists($this->readmeFileDir.'/'.$from))
 					$requirements['files_to_upload'][] = array(false, $from, $lang_admin_plugin_patcher['Not exists']);
 
-				$cur_dir = $to;
+				$curDir = $to;
 				// Checking that dot character exists in the path is not a good idea for determining file but I don't know better method :)
 				if (strpos($to, '.') !== false)
-					$cur_dir = dirname($cur_dir);
+					$curDir = dirname($curDir);
 
 				// Add directory if it was not added ealier
-				if (!in_array($cur_dir, $dirs_to_check))
-					$dirs_to_check[] = $cur_dir;
+				if (!in_array($curDir, $dirsToCheck))
+					$dirsToCheck[] = $curDir;
 			}
 
-			sort($dirs_to_check);
-			foreach ($dirs_to_check as $cur_dir_to_check)
+			sort($dirsToCheck);
+			foreach ($dirsToCheck as $curDirToCheck)
 			{
-				if (!is_dir(PUN_ROOT.$cur_dir_to_check))
+				if (!is_dir(PUN_ROOT.$curDirToCheck))
 				{
-					$directories = explode('/', $cur_dir_to_check);
-					$cur_path = '';
-					foreach ($directories as $cur_dir)
+					$directories = explode('/', $curDirToCheck);
+					$curPath = '';
+					foreach ($directories as $curDir)
 					{
-						$cur_path .= $cur_dir.'/';
+						$curPath .= $curDir.'/';
 
 						// Attempt to create directory
-						if (!is_dir(PUN_ROOT.$cur_path))
+						if (!is_dir(PUN_ROOT.$curPath))
 						{
-							if (@$fs->mkdir(PUN_ROOT.$cur_path))
+							if (@$fs->mkdir(PUN_ROOT.$curPath))
 							{
-								if ($fs->is_writable(PUN_ROOT.$cur_path))
-									$requirements['directories'][] = array(true, $cur_path, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Writable']);
+								if ($fs->is_writable(PUN_ROOT.$curPath))
+									$requirements['directories'][] = array(true, $curPath, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Writable']);
 								else
-									$requirements['directories'][] = array(false, $cur_path, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Not writable']);
+									$requirements['directories'][] = array(false, $curPath, $lang_admin_plugin_patcher['Created'].', '.$lang_admin_plugin_patcher['Not writable']);
 							}
 							else
-								$requirements['directories'][] = array(false, $cur_path, $lang_admin_plugin_patcher['Can\'t create']);
+								$requirements['directories'][] = array(false, $curPath, $lang_admin_plugin_patcher['Can\'t create']);
 						}
 					}
 				}
@@ -514,42 +515,42 @@ class Patcher_Mod
 				// Check that directory is writable
 				else
 				{
-					if ($fs->is_writable(PUN_ROOT.$cur_dir_to_check))
-						$requirements['directories'][] = array(true, $cur_dir_to_check, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
+					if ($fs->is_writable(PUN_ROOT.$curDirToCheck))
+						$requirements['directories'][] = array(true, $curDirToCheck, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
 					else
-						$requirements['directories'][] = array(false, $cur_dir_to_check, $lang_admin_plugin_patcher['Not writable']);
+						$requirements['directories'][] = array(false, $curDirToCheck, $lang_admin_plugin_patcher['Not writable']);
 				}
 			}
 		}
 
-		if (count($this->affected_files) > 0)
+		if (count($this->affectedFiles) > 0)
 		{
-			foreach ($this->affected_files as $cur_file)
+			foreach ($this->affectedFiles as $curFile)
 			{
 				// Language file that is not English does not exist?
-				if (!file_exists(PUN_ROOT.$cur_file) && strpos(strtolower($cur_file), 'lang/') !== false && strpos(strtolower($cur_file), '/english') === false)
+				if (!file_exists(PUN_ROOT.$curFile) && strpos(strtolower($curFile), 'lang/') !== false && strpos(strtolower($curFile), '/english') === false)
 					continue;
 
 				$error = '';
-				if (!file_exists(PUN_ROOT.$cur_file))
+				if (!file_exists(PUN_ROOT.$curFile))
 					$error = $lang_admin_plugin_patcher['Not exists'];
-				elseif (!$fs->is_writable(PUN_ROOT.$cur_file))
+				elseif (!$fs->is_writable(PUN_ROOT.$curFile))
 					$error = $lang_admin_plugin_patcher['Not writable'];
 
 				if (empty($error))
-					$requirements['affected_files'][] = array(true, $cur_file, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
+					$requirements['affected_files'][] = array(true, $curFile, $lang_admin_plugin_patcher['Found'].', '.$lang_admin_plugin_patcher['Writable']);
 				else
-					$requirements['affected_files'][] = array(false, $cur_file, $error);
+					$requirements['affected_files'][] = array(false, $curFile, $error);
 			}
 		}
 
 		// Check if there exist any requirement that fails
-		foreach ($requirements as &$cur_requirements)
+		foreach ($requirements as &$curRequirements)
 		{
-			ksort($cur_requirements);
-			foreach ($cur_requirements as $cur_requirement)
+			ksort($curRequirements);
+			foreach ($curRequirements as $curRequirement)
 			{
-				if (!$cur_requirement[0])
+				if (!$curRequirement[0])
 				{
 					$requirements['failed'] = true;
 					break;
@@ -564,12 +565,12 @@ class Patcher_Mod
 	}
 
 
-	function get_steps($readme_file = null)
+	function getSteps($readmeFile = null)
 	{
-		if ($readme_file == null)
-			$readme = $this->readme_file;
+		if ($readmeFile == null)
+			$readme = $this->readmeFile;
 		else
-			$readme = file_get_contents(MODS_DIR.$this->id.'/'.$readme_file);
+			$readme = file_get_contents(MODS_DIR.$this->id.'/'.$readmeFile);
 
 		$readme = substr($readme, strpos($readme, '#--'));
 
@@ -581,7 +582,7 @@ class Patcher_Mod
 		$readme = str_replace("\r\n", "\n", $readme);
 
 		$readme .= '#--';
-		$do_inline_find = false;
+		$doInlineFind = false;
 
 		$steps = array();
 
@@ -594,33 +595,33 @@ class Patcher_Mod
 				break;
 
 			if (($pos = strpos($readme, '#--')) !== false)
-				$cur_step = substr($readme, 0, $pos);
+				$curStep = substr($readme, 0, $pos);
 
-			$cur_step = substr($cur_step, strpos($cur_step, '[') + 1);
-//			$cur_step = substr($cur_step, strpos($cur_step, '.') + 1); // +1 = dot
-			$cur_command = substr($cur_step, 0, strpos($cur_step, ']') - 1);
+			$curStep = substr($curStep, strpos($curStep, '[') + 1);
+//			$curStep = substr($curStep, strpos($curStep, '.') + 1); // +1 = dot
+			$curCommand = substr($curStep, 0, strpos($curStep, ']') - 1);
 
-			$cur_info = null;
-			if (($pos = strpos($cur_command, '(')) !== false)
+			$curInfo = null;
+			if (($pos = strpos($curCommand, '(')) !== false)
 			{
-				$cur_info = substr($cur_command, $pos + 1);
-				$cur_info = substr($cur_info, 0, strpos($cur_info, ')'));
-				$cur_command = substr($cur_command, 0, strpos($cur_command, '('));
+				$curInfo = substr($curCommand, $pos + 1);
+				$curInfo = substr($curInfo, 0, strpos($curInfo, ')'));
+				$curCommand = substr($curCommand, 0, strpos($curCommand, '('));
 			}
 
-			if (($pos = strpos($cur_command, '.')) !== false)
-				$cur_command = substr($cur_command, $pos + 1);
+			if (($pos = strpos($curCommand, '.')) !== false)
+				$curCommand = substr($curCommand, $pos + 1);
 
-			$cur_command = trim(preg_replace('#[^A-Z\s]#', '', strtoupper($cur_command)));
+			$curCommand = trim(preg_replace('#[^A-Z\s]#', '', strtoupper($curCommand)));
 
-			if (empty($cur_command))
+			if (empty($curCommand))
 				continue;
 
 			// REPLACE WITH command for example
-			if (strpos($cur_command, 'REPLACE') !== false)
-				$cur_command = 'REPLACE';
+			if (strpos($curCommand, 'REPLACE') !== false)
+				$curCommand = 'REPLACE';
 
-			$command_transformations = array(
+			$commandTransformations = array(
 				'AFTER ADD'					=> array('ADD AFTER', 'AFTER INSERT'),
 				'BEFORE ADD'				=> array('ADD BEFORE'),
 				'OPEN'						=> array('OPEN FILE'),
@@ -631,89 +632,89 @@ class Patcher_Mod
 				'UPLOAD'					=> array('UPLOAD THE CONTENT OF', 'SEND ON THE SERVER TO THE ROOT OF THE FORUM'),
 				'RUN'						=> array('LAUNCH'),
 			);
-			foreach ($command_transformations as $new_command => $commands_to_fix)
+			foreach ($commandTransformations as $newCommand => $commandsToFix)
 			{
-				if (in_array($cur_command, $commands_to_fix))
+				if (in_array($curCommand, $commandsToFix))
 				{
-					$cur_command = $new_command;
+					$curCommand = $newCommand;
 					break;
 				}
 			}
 
-			if (!$do_inline_find && $cur_command == 'IN THIS LINE FIND')
-				$do_inline_find = true;
+			if (!$doInlineFind && $curCommand == 'IN THIS LINE FIND')
+				$doInlineFind = true;
 
 			// We don't want SAVE and END commands
-			if (strpos($cur_command, 'SAVE') !== false || $cur_command == 'END')
+			if (strpos($curCommand, 'SAVE') !== false || $curCommand == 'END')
 				continue;
 
-			$cur_code = substr($cur_step, strpos($cur_step, "\n") + 1);
+			$curCode = substr($curStep, strpos($curStep, "\n") + 1);
 
 			// Gizzmo's syntax - strip out ***** at end
-			$cur_code = preg_replace('#\*{5,}$#', '', $cur_code);
+			$curCode = preg_replace('#\*{5,}$#', '', $curCode);
 
 			// Remove blank string after # at start and at end
-			$cur_code = preg_replace('#^\#[ \r\t]*#', '', $cur_code);
-			$cur_code = preg_replace('#\s*\#\s*$#s', '', $cur_code);
+			$curCode = preg_replace('#^\#[ \r\t]*#', '', $curCode);
+			$curCode = preg_replace('#\s*\#\s*$#s', '', $curCode);
 
 			// Empty lines at start and at end
-			$cur_code = preg_replace('#^\n*[ \t]*\n+#', '', $cur_code);
-			$cur_code = preg_replace('#\n+[ \t]*\n*$#', '', $cur_code);
+			$curCode = preg_replace('#^\n*[ \t]*\n+#', '', $curCode);
+			$curCode = preg_replace('#\n+[ \t]*\n*$#', '', $curCode);
 
-			if ($cur_command == 'OPEN')
+			if ($curCommand == 'OPEN')
 			{
-				$cur_code = str_replace(array('[language]', 'your_language'), 'English', $cur_code);
-				$cur_code = str_replace(array('[style]', 'Your_style'), 'Air.css', $cur_code);
-				$cur_code = ltrim(trim($cur_code), '/');
+				$curCode = str_replace(array('[language]', 'your_language'), 'English', $curCode);
+				$curCode = str_replace(array('[style]', 'Your_style'), 'Air.css', $curCode);
+				$curCode = ltrim(trim($curCode), '/');
 
-				if (!file_exists(PUN_ROOT.$cur_code) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.php#i', $cur_code, $matches) && file_exists(PUN_ROOT.$matches[0]))
-					$cur_code = $matches[0];
+				if (!file_exists(PUN_ROOT.$curCode) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.php#i', $curCode, $matches) && file_exists(PUN_ROOT.$matches[0]))
+					$curCode = $matches[0];
 			}
-			elseif ($cur_command == 'NOTE')
+			elseif ($curCommand == 'NOTE')
 			{
-				if (strpos(strtolower($cur_code), 'launch mod installer') !== false)
+				if (strpos(strtolower($curCode), 'launch mod installer') !== false)
 					continue;
 
-				if (isset($cur_info) && strpos($cur_info, 'server') !== false && isset($_SERVER['SERVER_SOFTWARE']))
+				if (isset($curInfo) && strpos($curInfo, 'server') !== false && isset($_SERVER['SERVER_SOFTWARE']))
 				{
-					$server_soft = $_SERVER['SERVER_SOFTWARE'];
-					if (strpos($server_soft, '/') !== false)
-						$server_soft = substr($server_soft, 0, strpos($server_soft, '/'));
-					if (strpos(strtolower($cur_info), 'for '.strtolower($server_soft).' server') === false)
+					$serverSoft = $_SERVER['SERVER_SOFTWARE'];
+					if (strpos($serverSoft, '/') !== false)
+						$serverSoft = substr($serverSoft, 0, strpos($serverSoft, '/'));
+					if (strpos(strtolower($curInfo), 'for '.strtolower($serverSoft).' server') === false)
 						continue;
 				}
 			}
 
-			$new_step = array('command' => $cur_command);
-			if ($cur_command == 'NOTE')
-				$new_step['result'] = $cur_code;
+			$newStep = array('command' => $curCommand);
+			if ($curCommand == 'NOTE')
+				$newStep['result'] = $curCode;
 			else
-				$new_step['code'] = $cur_code;
+				$newStep['code'] = $curCode;
 
-			if (isset($cur_info))
-				$new_step['info'] = $cur_info;
-			$steps[] = $new_step;
+			if (isset($curInfo))
+				$newStep['info'] = $curInfo;
+			$steps[] = $newStep;
 		}
 
 		// Support for mod installer
-		$plugins_dir = null;
-		if (is_dir($this->readme_file_dir.'/plugins/'))
-			$plugins_dir = $this->readme_file_dir.'/plugins/';
-		elseif (is_dir($this->readme_file_dir.'/files/plugins/'))
-			$plugins_dir = $this->readme_file_dir.'/files/plugins/';
+		$pluginsDir = null;
+		if (is_dir($this->readmeFileDir.'/plugins/'))
+			$pluginsDir = $this->readmeFileDir.'/plugins/';
+		elseif (is_dir($this->readmeFileDir.'/files/plugins/'))
+			$pluginsDir = $this->readmeFileDir.'/files/plugins/';
 
-		if (isset($plugins_dir))
+		if (isset($pluginsDir))
 		{
-			$d = dir($plugins_dir);
+			$d = dir($pluginsDir);
 			while ($f = $d->read())
 			{
 				if (substr($f, 0, 1) == '.')
 					continue;
 
 				// Mod installer
-				if (is_dir($plugins_dir.'/'.$f) && file_exists($plugins_dir.'/'.$f.'/search_insert.php'))
+				if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/search_insert.php'))
 				{
-					require $plugins_dir.'/'.$f.'/search_insert.php';
+					require $pluginsDir.'/'.$f.'/search_insert.php';
 					$list_files = array();
 					$list_base = array();
 					// Do not modify the order below, otherwise some mods cannot be installed
@@ -816,11 +817,11 @@ class Patcher_Mod
 					}
 				}
 				// Mod installer
-				if (is_dir($plugins_dir.'/'.$f) && file_exists($plugins_dir.'/'.$f.'/update_install.php'))
+				if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/update_install.php'))
 				{
-					$code = 'if ($this->install)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_install.php')."<?php\n".'}';
-					if (file_exists($plugins_dir.'/'.$f.'/update_uninstall.php'))
-						$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($plugins_dir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
+					$code = 'if ($this->install)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_install.php')."<?php\n".'}';
+					if (file_exists($pluginsDir.'/'.$f.'/update_uninstall.php'))
+						$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
 
 					$code = str_replace('?><?php', '', $code);
 					$steps[] = array('command' => 'RUN CODE', 'code' => $code);
@@ -829,40 +830,40 @@ class Patcher_Mod
 		}
 
 		// Correct action IN THIS LINE FIND
-		if ($do_inline_find)
+		if ($doInlineFind)
 		{
-			$find = $replace = $inline_find = $inline_replace = '';
-			$last_find_key = 0;
+			$find = $replace = $inlineFind = $inlineReplace = '';
+			$lastFindKey = 0;
 			$modified = false;
-			foreach ($steps as $key => $cur_step)
+			foreach ($steps as $key => $curStep)
 			{
-				if ($cur_step['command'] == 'OPEN')
-					$inline_find = '';
-				elseif ($cur_step['command'] == 'FIND')
+				if ($curStep['command'] == 'OPEN')
+					$inlineFind = '';
+				elseif ($curStep['command'] == 'FIND')
 				{
-					if ($inline_replace != '')
-						$steps[$last_find_key + 1] = array('command' => 'REPLACE', 'code' => $inline_replace);
+					if ($inlineReplace != '')
+						$steps[$lastFindKey + 1] = array('command' => 'REPLACE', 'code' => $inlineReplace);
 
-					$find = $cur_step['code'];
-					$inline_find = $inline_replace = '';
-					$last_find_key = $key;
+					$find = $curStep['code'];
+					$inlineFind = $inlineReplace = '';
+					$lastFindKey = $key;
 				}
-				elseif ($cur_step['command'] == 'IN THIS LINE FIND')
+				elseif ($curStep['command'] == 'IN THIS LINE FIND')
 				{
-					if ($inline_replace == '')
-						$inline_replace = $find;
+					if ($inlineReplace == '')
+						$inlineReplace = $find;
 					else
 						unset($steps[$key]);
 
-					$inline_find = trim($cur_step['code'], "\t");
+					$inlineFind = trim($curStep['code'], "\t");
 				}
-				elseif ($cur_step['command'] == 'AFTER ADD' && $inline_find != '')
+				elseif ($curStep['command'] == 'AFTER ADD' && $inlineFind != '')
 				{
-					$inline_replace = str_replace($inline_find, $inline_find.trim($cur_step['code'], "\t"), $inline_replace);
+					$inlineReplace = str_replace($inlineFind, $inlineFind.trim($curStep['code'], "\t"), $inlineReplace);
 					unset($steps[$key]);
 				}
-				elseif ($cur_step['command'] == 'REPLACE' && $inline_find != '')
-					$inline_replace = str_replace($inline_find, $inline_find.$inline_replace, $inline_replace);
+				elseif ($curStep['command'] == 'REPLACE' && $inlineFind != '')
+					$inlineReplace = str_replace($inlineFind, $inlineFind.$inlineReplace, $inlineReplace);
 			}
 
 			// Fix section numbering

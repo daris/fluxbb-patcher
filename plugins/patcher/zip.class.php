@@ -48,8 +48,8 @@ class Patcher_ZipArchive
 		if (ZIP_NATIVE)
 		{
 			$i = 0;
-			while ($cur_file = $this->zip->statIndex($i++))
-				$content[] = $cur_file['name'];
+			while ($curFile = $this->zip->statIndex($i++))
+				$content[] = $curFile['name'];
 			return $content;
 		}
 
@@ -72,9 +72,9 @@ class Patcher_ZipArchive
 			if (!$files)
 				return false;
 
-			foreach ($files as $cur_file)
+			foreach ($files as $curFile)
 			{
-				$fp = $this->zip->getStream($cur_file);
+				$fp = $this->zip->getStream($curFile);
 				if (!$fp)
 					message('Failed');
 				$contents = '';
@@ -82,13 +82,13 @@ class Patcher_ZipArchive
 					$contents .= fread($fp, 2);
 				fclose($fp);
 
-				if (in_array(substr($cur_file, -1), array('/', '\\')))
+				if (in_array(substr($curFile, -1), array('/', '\\')))
 				{
-					if (!is_dir($extract_to.'/'.$cur_file))
-						$fs->mkdir($extract_to.'/'.$cur_file);
+					if (!is_dir($extract_to.'/'.$curFile))
+						$fs->mkdir($extract_to.'/'.$curFile);
 				}
 				else
-					$fs->put($extract_to.'/'.$cur_file, $contents);
+					$fs->put($extract_to.'/'.$curFile, $contents);
 			}
 			return true; // TODO: error reporting
 		}
@@ -97,15 +97,15 @@ class Patcher_ZipArchive
 		if (!$files)
 			return false;
 
-		foreach ($files as $cur_file)
+		foreach ($files as $curFile)
 		{
-			if ($cur_file['folder'] == 1)
+			if ($curFile['folder'] == 1)
 			{
-				if (!is_dir($extract_to.'/'.$cur_file['stored_filename']))
-					$fs->mkdir($extract_to.'/'.$cur_file['stored_filename']);
+				if (!is_dir($extract_to.'/'.$curFile['stored_filename']))
+					$fs->mkdir($extract_to.'/'.$curFile['stored_filename']);
 			}
 			else
-				$fs->put($extract_to.'/'.$cur_file['stored_filename'], $cur_file['content']);
+				$fs->put($extract_to.'/'.$curFile['stored_filename'], $curFile['content']);
 		}
 		return true;
 	}
@@ -118,18 +118,18 @@ class Patcher_ZipArchive
 
 		// Check whether there are some files that we can't read
 		$not_readable = array();
-		foreach ($files as $cur_file)
+		foreach ($files as $curFile)
 		{
-			if (!is_readable(PUN_ROOT.$cur_file))
-				$not_readable[] = $cur_file;
+			if (!is_readable(PUN_ROOT.$curFile))
+				$not_readable[] = $curFile;
 		}
 		if (!empty($not_readable))
 			message('The following files are not readable:<br />'.implode('<br />', $not_readable));
 
 		if (ZIP_NATIVE)
 		{
-			foreach ($files as $cur_file)
-				$this->zip->addFile(PUN_ROOT.$cur_file, $cur_file);
+			foreach ($files as $curFile)
+				$this->zip->addFile(PUN_ROOT.$curFile, $curFile);
 			return true;
 		}
 

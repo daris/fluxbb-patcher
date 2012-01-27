@@ -37,7 +37,7 @@ define('STATUS_NOTHING_TO_DO', 5);
 
 
 // Get the list of files to upload if patcher does not understand UPLOAD step
-function list_files_to_upload($path, $from_dir = '', $to_dir = '')
+function listFilesToUpload($path, $from_dir = '', $to_dir = '')
 {
 	$files = array();
 
@@ -47,7 +47,7 @@ function list_files_to_upload($path, $from_dir = '', $to_dir = '')
 		if (!in_array($f, array('.', '..', '.svn', 'Thumbs.db', 'LICENSE', 'README')) && !preg_match('/^(readme|update).*?\.txt$/', $f))
 		{
 			if (is_dir($path.'/'.$from_dir.'/'.$f))
-				$files = array_merge($files, list_files_to_upload($path, $from_dir.'/'.$f, $to_dir.'/'.$f));
+				$files = array_merge($files, listFilesToUpload($path, $from_dir.'/'.$f, $to_dir.'/'.$f));
 			else
 				$files[ltrim($from_dir.'/'.$f, '/')] = $to_dir.'/';
 		}
@@ -58,13 +58,13 @@ function list_files_to_upload($path, $from_dir = '', $to_dir = '')
 
 
 // Sort $mods array by Mod title
-function mod_title_compare($a, $b)
+function modTitleCompare($a, $b)
 {
 	return strnatcasecmp($a->title, $b->title);
 }
 
 
-function make_regexp($string)
+function makeRegExp($string)
 {
 	// Escape special regular expressions
 	$string = preg_quote($string, '#');
@@ -75,7 +75,8 @@ function make_regexp($string)
 
 
 // Looks for the first occurence of $needle in $haystack and replaces it with $replace.
-function str_replace_once($needle, $replace, $haystack)
+// TODO: used somewhere?
+function strReplaceOnce($needle, $replace, $haystack)
 {
 	$pos = strpos($haystack, $needle);
 	// Nothing found
@@ -117,7 +118,7 @@ function diff($old, $new)
 }
 
 
-function replace_query($first, $second, $org = null)
+function replaceQuery($first, $second, $org = null)
 {
 	$res = '';
 	$unbuffered = null;
@@ -133,11 +134,11 @@ function replace_query($first, $second, $org = null)
 		$unbuffered = $m[1];
 	}
 
-	$first_prep = preparse_query($first); // move select and joins to variable
-	$second_prep = preparse_query($second);
+	$first_prep = preparseQuery($first); // move select and joins to variable
+	$second_prep = preparseQuery($second);
 
-	$first = split_query($first);
-	$second = split_query($second);
+	$first = splitQuery($first);
+	$second = splitQuery($second);
 
 	$diff = diff($first, $second);
 //	print_r($diff);
@@ -192,16 +193,16 @@ function replace_query($first, $second, $org = null)
 }
 
 
-function revert_query($first, $second, $third)
+function revertQuery($first, $second, $third)
 {
 	$res = '';
-	$first_prep = preparse_query($first);
-	$second_prep = preparse_query($second);
-	$third_prep = preparse_query($third);
+	$first_prep = preparseQuery($first);
+	$second_prep = preparseQuery($second);
+	$third_prep = preparseQuery($third);
 
-	$first = split_query($first);
-	$second = split_query($second);
-	$third = split_query($third);
+	$first = splitQuery($first);
+	$second = splitQuery($second);
+	$third = splitQuery($third);
 
 	$diff = diff($first, $second);
 /* 	echo '<br />diff = ';print_r($diff);
@@ -255,13 +256,13 @@ function revert_query($first, $second, $third)
 }
 
 
-function split_query($string)
+function splitQuery($string)
 {
 	return preg_split('/([\s\(\)])/', $string, 0, PREG_SPLIT_DELIM_CAPTURE);
 }
 
 
-function preparse_query(&$string)
+function preparseQuery(&$string)
 {
 	$exp = preg_split('/(SELECT|FROM|WHERE|LEFT JOIN|INNER JOIN|OUTER JOIN|ORDER BY|LIMIT)/i', $string, 0, PREG_SPLIT_DELIM_CAPTURE);
 	$joins = array();
@@ -289,7 +290,7 @@ function preparse_query(&$string)
 	Backup / Upload
 */
 
-function create_backup($backup)
+function createBackup($backup)
 {
 	global $lang_admin_plugin_patcher, $fs;
 
@@ -357,7 +358,7 @@ function revert($file)
 }
 
 
-function upload_mod()
+function uploadMod()
 {
 	global $pun_config, $lang_admin_plugin_patcher, $fs;
 
@@ -393,7 +394,7 @@ function upload_mod()
 }
 
 
-function download_update($mod_id, $version)
+function downloadUpdate($mod_id, $version)
 {
 	global $lang_admin_plugin_patcher, $fs;
 
@@ -406,11 +407,11 @@ function download_update($mod_id, $version)
 //	$mod_id = preg_replace('/-+v[\d\.]+$/', '', str_replace('_', '-', $mod_id)); // strip version number
 	$filename = basename($mod_id.'_v'.$version.'.zip');
 	$tmpname = $fs->tmpname();
-	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $tmpname);
+	downloadFile('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($version).'/'.urldecode($filename), $tmpname);
 
 	// Clean modification directory
 	if (is_dir(MODS_DIR.$mod_id))
-		$fs->remove_directory(MODS_DIR.$mod_id);
+		$fs->rmDir(MODS_DIR.$mod_id);
 
 	if (!$fs->mkdir(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
@@ -425,7 +426,7 @@ function download_update($mod_id, $version)
 	redirect(PLUGIN_URL.$redirect_url, $lang_admin_plugin_patcher['Modification updated redirect']);
 }
 
-function download_mod($mod_id)
+function downloadMod($mod_id)
 {
 	global $lang_admin_plugin_patcher, $fs;
 
@@ -447,7 +448,7 @@ function download_mod($mod_id)
 
 	$filename = basename($mod_id.'_v'.$last_release.'.zip');
 	$tmpname = $fs->tmpname();
-	download_file('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), $tmpname);
+	downloadFile('http://fluxbb.org/resources/mods/'.urldecode($mod_id).'/releases/'.urldecode($last_release).'/'.urldecode($filename), $tmpname);
 
 	if (!is_dir(MODS_DIR.$mod_id) && !$fs->mkdir(MODS_DIR.$mod_id))
 		message(sprintf($lang_admin_plugin_patcher['Can\'t create mod directory'], pun_htmlspecialchars($mod_id)));
@@ -461,7 +462,7 @@ function download_mod($mod_id)
 }
 
 
-function get_mod_repo($refresh = false)
+function getModRepo($refresh = false)
 {
 	global $mod_repo;
 
@@ -515,7 +516,7 @@ function get_mod_repo($refresh = false)
 }
 
 
-function download_file($url, $save_to_file)
+function downloadFile($url, $save_to_file)
 {
 	global $lang_admin_plugin_patcher;
 
@@ -535,8 +536,8 @@ function download_file($url, $save_to_file)
 	fclose($file);
 }
 
-
-function do_clickable_html($text)
+// TODO: used somewhere?
+function doClickableHtml($text)
 {
 	$text = ' '.$text;
 
@@ -547,7 +548,7 @@ function do_clickable_html($text)
 }
 
 
-function convert_mods_to_config()
+function convertModsToConfig()
 {
 	$inst_mods = $patcher_config = array();
 	require PUN_ROOT.'mods.php';
@@ -571,7 +572,7 @@ function convert_mods_to_config()
 }
 
 
-function myerror()
+function patcherError()
 {
 	global $patcher;
 
