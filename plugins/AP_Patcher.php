@@ -4,6 +4,8 @@
  * http://fluxbb.org/forums/viewtopic.php?id=4431
  */
 
+// uncoment if you want to dsiable download feature
+// define('PATCHER_NO_DOWNLOAD', 1);
 
 // Make sure no one attempts to run this script "directly"
 if (!defined('PUN'))
@@ -16,25 +18,30 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
-//define('PATCHER_NO_DOWNLOAD', 1); // uncoment if you want to dsiable download feature
 define('PATCHER_VERSION', '2.0-dev');
 define('PATCHER_CONFIG_REV', '1');
+
+// Enable debug mode for now (remove when releasing stable version)
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
 
-error_reporting(E_ALL);
+// Enable error reporting when we're in the debug mode
+if (defined('PUN_DEBUG'))
+	error_reporting(E_ALL);
+
 require PATCHER_ROOT.'functions.php';
 
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
 
+// Load configuration file
 if (file_exists(PATCHER_ROOT.'config.php'))
 	require PATCHER_ROOT.'config.php';
 
-require PATCHER_ROOT.'flux_mod.class.php';
-require PATCHER_ROOT.'patcher.class.php';
-require PATCHER_ROOT.'filesystem.class.php';
-require PATCHER_ROOT.'zip.class.php';
+require PATCHER_ROOT.'Mod.php';
+require PATCHER_ROOT.'Patcher.php';
+require PATCHER_ROOT.'FileSystem.php';
+require PATCHER_ROOT.'ZipArchive.php';
 
 // Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
 if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php'))

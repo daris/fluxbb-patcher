@@ -4,7 +4,7 @@ if (!defined('ZIP_NATIVE'))
 	define('ZIP_NATIVE', class_exists('ZipArchive') ? true : false);
 
 if (!ZIP_NATIVE)
-	require PATCHER_ROOT.'pclzip.lib.php';
+	require PATCHER_ROOT.'PclZip.php';
 
 
 class Patcher_ZipArchive

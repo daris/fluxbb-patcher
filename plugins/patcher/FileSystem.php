@@ -30,7 +30,7 @@ class Patcher_FileSystem
 		if (!$this->isFtp || $this->isConnected)
 			return false;
 
-		require_once PATCHER_ROOT.'ftp.class.php';
+		require_once PATCHER_ROOT.'Ftp.php';
 
 		$this->ftp = new JFTP();
 		if (!$this->ftp->connect($this->ftpData['host'], $this->ftpData['port']))
