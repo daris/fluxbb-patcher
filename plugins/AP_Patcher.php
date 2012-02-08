@@ -114,9 +114,6 @@ $modId = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
 $action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'update', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
 
-if (file_exists(PUN_ROOT.'mods.php') && !file_exists(PUN_ROOT.'patcher_config.php'))
-	convertModsToConfig();
-
 // Revert from backup
 if (isset($_POST['revert']))
 {

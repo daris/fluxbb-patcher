@@ -45,7 +45,7 @@ class Patcher_ZipArchive
 		return $this->is_open;
 	}
 
-	function list_content()
+	function listContent()
 	{
 		if (!$this->is_open)
 			return false;
@@ -74,7 +74,7 @@ class Patcher_ZipArchive
 
 		if (ZIP_NATIVE)
 		{
-			$files = $this->list_content();
+			$files = $this->listContent();
 			if (!$files)
 				return false;
 
