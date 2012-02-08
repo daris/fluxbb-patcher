@@ -15,9 +15,9 @@ if (!ZIP_NATIVE)
 
 class Patcher_ZipArchive
 {
-	var $file;
+	public $file;
 	private $zip; // ZipArchive or PclZip object
-	var $is_open = false;
+	public $is_open = false;
 
 	function __construct($file, $create = false)
 	{

@@ -9,11 +9,11 @@
 
 class Patcher_FileSystem
 {
-	var $ftp;
-	var $root = PUN_ROOT;
-	var $isFtp = false;
-	var $ftpData = array();
-	var $isConnected = false;
+	public $ftp;
+	public $root = PUN_ROOT;
+	public $isFtp = false;
+	public $ftpData = array();
+	public $isConnected = false;
 
 	function __construct($ftpData = null)
 	{

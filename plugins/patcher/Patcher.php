@@ -9,38 +9,38 @@
 
 class Patcher
 {
-	var $mod = null;
+	public $mod = null;
 
-	var $config = array();
-	var $configOrg = array();
+	public $config = array();
+	public $configOrg = array();
 
-	var $curFile = null; // Currently patched file
-	var $curFilePath = null; // Path to currently patched file
-	var $curFileModified = false;
-	var $find = null;
-	var $startPos = 0;
-	var $globalStep = 1;
+	public $curFile = null; // Currently patched file
+	public $curFilePath = null; // Path to currently patched file
+	public $curFileModified = false;
+	public $find = null;
+	public $startPos = 0;
+	public $globalStep = 1;
 
-	var $action = null;
+	public $action = null;
 
-	var $steps = array();
-	var $log = array();
+	public $steps = array();
+	public $log = array();
 
 	// Determine current action
-	var $install = false;
-	var $uninstall = false;
-	var $update = false;
-	var $disable = false;
-	var $enable = false;
+	public $install = false;
+	public $uninstall = false;
+	public $update = false;
+	public $disable = false;
+	public $enable = false;
 
-	var $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
-	var $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
+	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
+	public $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
 
 	// Validate only
-	var $validate = false;
+	public $validate = false;
 
-	var $orginalFiles = array();
-	var $modifedFiles = array();
+	public $orginalFiles = array();
+	public $modifedFiles = array();
 
 	function __construct($mod)
 	{

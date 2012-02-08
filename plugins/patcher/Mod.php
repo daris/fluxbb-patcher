@@ -9,12 +9,12 @@
 
 class Patcher_RepoMod
 {
-	var $id;
-	var $title;
-	var $version;
-	var $repositoryUrl;
-	var $isValid;
-	var $description;
+	public $id;
+	public $title;
+	public $version;
+	public $repositoryUrl;
+	public $isValid;
+	public $description;
 
 	function __construct($id, $curMod)
 	{
@@ -31,12 +31,12 @@ class Patcher_RepoMod
 
 class Patcher_Mod
 {
-	var $id = null; // mod directory
-	var $readmeFileDir = null; // main readme file name
-//	var $readmeFileName = null; // main readme file dir
-	var $modDir = null; // main readme file dir
+	public $id = null; // mod directory
+	public $readmeFileDir = null; // main readme file name
+//	public $readmeFileName = null; // main readme file dir
+	public $modDir = null; // main readme file dir
 	private $readmeFile = null; // main readme file content
-//	var $readmeFileList = null; // list of readme files in current mod directory (including subdirectory)
+//	public $readmeFileList = null; // list of readme files in current mod directory (including subdirectory)
 
 	function __construct($id)
 	{
