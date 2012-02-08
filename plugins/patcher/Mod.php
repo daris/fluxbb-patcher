@@ -9,18 +9,51 @@
 
 class Patcher_RepoMod
 {
+	/**
+	 * @var string Modification id (directory)
+	 */
 	public $id;
+
+	/**
+	 * @var string Modification title
+	 */
 	public $title;
+
+	/**
+	 * @var string Modification version
+	 */
 	public $version;
+
+	/**
+	 * @var string URL of the modification repository
+	 */
 	public $repositoryUrl;
+
+	/**
+	 * @var bool Whether or not modification is valid
+	 */
 	public $isValid;
+
+	/**
+	 * @var string Modification description
+	 */
 	public $description;
 
+	/**
+	 * Constructor
+	 *
+	 * @param type $id
+	 * 		Modification ID
+	 *
+	 * @param type $curMod
+	 *
+	 * @return type
+	 */
 	function __construct($id, $curMod)
 	{
 		$this->id = $id;
 		$this->title = $curMod['name'];
-		$this->repositoryUrl = 'http://fluxbb.org/resources/mods/'.urldecode($this->id).'/';
+		$this->repositoryUrl = sprintf(PATCHER_REPO_MOD_URL, urldecode($this->id));
 		$this->isValid = true;
 		$this->version = $curMod['last_release']['version'];
 		if (isset($curMod['description']))
@@ -31,13 +64,44 @@ class Patcher_RepoMod
 
 class Patcher_Mod
 {
-	public $id = null; // mod directory
-	public $readmeFileDir = null; // main readme file name
-//	public $readmeFileName = null; // main readme file dir
-	public $modDir = null; // main readme file dir
-	private $readmeFile = null; // main readme file content
-//	public $readmeFileList = null; // list of readme files in current mod directory (including subdirectory)
+	/**
+	 * @var string Modification id (directory)
+	 */
+	public $id = null;
 
+	/**
+	 * @var string Main readme file directory
+	 */
+	public $readmeFileDir = null;
+
+	/**
+	 * @var string Main readme file path (variable accessible via __get method)
+	 */
+//	public $readmeFileName = null;
+
+	/**
+	 * @var string Full path to the modification directory
+	 */
+	public $modDir = null;
+
+	/**
+	 * @var string Main readme file content
+	 */
+	private $readmeFile = null;
+
+	/**
+	 * @var string List of readme files in current mod directory (including subdirectories)
+	 */
+//	public $readmeFileList = null;
+
+	/**
+	 * Constructor
+	 *
+	 * @param string $id
+	 * 		Modification ID
+	 *
+	 * @return type
+	 */
 	function __construct($id)
 	{
 		$this->id = $id;
@@ -51,8 +115,12 @@ class Patcher_Mod
 		$this->readmeFile = file_get_contents($this->modDir.$this->readmeFileName);
 	}
 
-
-	// Used for: readme_file_list, files_to_upload, upload_code
+	/**
+	 * Used for: readme_file_list, files_to_upload, upload_code
+	 *
+	 * @param type $name
+	 * @return type
+	 */
 	function __get($name)
 	{
 
@@ -72,7 +140,11 @@ class Patcher_Mod
 	}
 
 
-	// Looks for readme file
+	/**
+	 * Look for readme file name
+	 *
+	 * @return string
+	 */
 	function getReadmeFileName()
 	{
 		if (file_exists(MODS_DIR.$this->id.'/readme.txt'))
@@ -83,15 +155,20 @@ class Patcher_Mod
 
 		foreach ($this->readmeFileList as $key => $curReadme)
 		{
-			if (preg_match('#(install|read\s?me|lisezmoi).*?\.txt#i', $curReadme))
+			if (preg_match('/(install|read\s?me|lisezmoi).*?\.txt/i', $curReadme))
 				return $curReadme;
 		}
 
 		return false;
 	}
 
-
-	// Gets the readme file list for specified directory
+	/**
+	 * Get the readme file list for specified directory
+	 *
+	 * @param type $dirpath
+	 * @param type $subdirectory
+	 * @return type
+	 */
 	function getReadmeFileList($dirpath = '', $subdirectory = true)
 	{
 		// Load readme file list
@@ -118,8 +195,11 @@ class Patcher_Mod
 		return $result;
 	}
 
-
-	// Returns array with mod information
+	/**
+	 * Return array containing modification information
+	 *
+	 * @return array
+	 */
 	function getModInfo()
 	{
 		$file = $this->readmeFile;
@@ -167,12 +247,21 @@ class Patcher_Mod
 		return $modInfo;
 	}
 
-
+	/**
+	 * Check whether current modification is valid
+	 *
+	 * @return bool
+	 */
 	function getIsValid()
 	{
 		return isset($this->version);
 	}
 
+	/**
+	 * Get modification author
+	 *
+	 * @return string
+	 */
 	function getAuthor()
 	{
 		if (!isset($this->modInfo['author']))
@@ -192,6 +281,11 @@ class Patcher_Mod
 		return trim($author);
 	}
 
+	/**
+	 * Get modification author email
+	 *
+	 * @return string
+	 */
 	function getAuthorEmail()
 	{
 		if (!isset($this->modInfo['author']))
@@ -202,6 +296,11 @@ class Patcher_Mod
 			return trim($m[1]);
 	}
 
+	/**
+	 * Get modification title
+	 *
+	 * @return string
+	 */
 	function getTitle()
 	{
 		if (!isset($this->modInfo['mod title']))
@@ -210,6 +309,11 @@ class Patcher_Mod
 		return trim($this->modInfo['mod title']);
 	}
 
+	/**
+	 * Get modification version
+	 *
+	 * @return string
+	 */
 	function getVersion()
 	{
 		if (!isset($this->modInfo['mod version']))
@@ -218,6 +322,11 @@ class Patcher_Mod
 		return $this->modInfo['mod version'];
 	}
 
+	/**
+	 * Get modification description
+	 *
+	 * @return string
+	 */
 	function getDescription()
 	{
 		if (!isset($this->modInfo['description']))
@@ -226,6 +335,11 @@ class Patcher_Mod
 		return $this->modInfo['description'];
 	}
 
+	/**
+	 * Get Affects DB property from the readme file
+	 *
+	 * @return string
+	 */
 	function getAffectsDb()
 	{
 		if (!isset($this->modInfo['affects db']))
@@ -234,6 +348,11 @@ class Patcher_Mod
 		return $this->modInfo['affects db'];
 	}
 
+	/**
+	 * Get Important property from the readme file
+	 *
+	 * @return string
+	 */
 	function getImportant()
 	{
 		if (!isset($this->modInfo['important']))
@@ -242,6 +361,11 @@ class Patcher_Mod
 		return $this->modInfo['important'];
 	}
 
+	/**
+	 * Get modification release date
+	 *
+	 * @return string
+	 */
 	function getReleaseDate()
 	{
 		if (!isset($this->modInfo['release date']))
@@ -250,6 +374,11 @@ class Patcher_Mod
 		return $this->modInfo['release date'];
 	}
 
+	/**
+	 * Get array of the FluxBB versions that modification is compatible with
+	 *
+	 * @return array
+	 */
 	function getWorksOn()
 	{
 		if (!isset($this->modInfo['works on fluxbb']))
@@ -259,6 +388,11 @@ class Patcher_Mod
 		return array_map('trim', explode(',', $this->modInfo['works on fluxbb']));
 	}
 
+	/**
+	 * Get repository URL of the modification
+	 *
+	 * @return string
+	 */
 	function getRepositoryUrl()
 	{
 		if (!isset($this->modInfo['repository url']) || strpos($this->modInfo['repository url'], '(Leave unedited)') !== false)
@@ -267,6 +401,11 @@ class Patcher_Mod
 		return $this->modInfo['repository url'];
 	}
 
+	/**
+	 * Get list of the affected files by this modification
+	 *
+	 * @return array
+	 */
 	function getAffectedFiles()
 	{
 		if (!isset($this->modInfo['affected files']))
@@ -303,7 +442,11 @@ class Patcher_Mod
 		return array_unique($files);
 	}
 
-
+	/**
+	 * Check whether modification is compatible with installed FluxBB release
+	 *
+	 * @return bool
+	 */
 	function isCompatible()
 	{
 		global $pun_config;
@@ -327,7 +470,11 @@ class Patcher_Mod
 		return false;
 	}
 
-
+	/**
+	 * Get source code of the Upload step from modification readme file
+	 *
+	 * @return type
+	 */
 	function getUploadCode()
 	{
 		if (strpos($this->readmeFile, 'UPLOAD ]--') === false)
@@ -344,7 +491,11 @@ class Patcher_Mod
 		return trim($uploadCode, '#'."\n\r");
 	}
 
-
+	/**
+	 * Get list of the files to upload
+	 *
+	 * @return array
+	 */
 	function getFilesToUpload()
 	{
 		$filesToUpload = array();
@@ -387,7 +538,7 @@ class Patcher_Mod
 					elseif (preg_match('/^([a-zA-Z0-9_\-\(\)\/\.]+).*/', $line, $parts))
 						$from = $to = $parts[1];
 
-					// Evertying else :)
+					// Everything else :)
 					else
 						$from = $to = $line;
 
@@ -405,7 +556,7 @@ class Patcher_Mod
 						if (file_exists($this->readmeFileDir.'/files/'.$from))
 							$from = 'files/'.$from;
 
-						 // maybe new_files dir?
+						 // maybe new_files directory?
 						elseif (file_exists($this->readmeFileDir.'/new_files/'.$from))
 							$from = 'new_files/'.$from;
 
@@ -441,7 +592,7 @@ class Patcher_Mod
 				unset($filesToUpload[$from]);
 
 			// Do not upload language files when language folder does not exist
-			elseif (preg_match('#lang\/(.+?)\/#i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
+			elseif (preg_match('/lang\/(.+?)\//i', $to, $matches) && strtolower($matches[1]) != 'english' && !is_dir(PUN_ROOT.'lang/'.$matches[1]))
 				unset($filesToUpload[$from]);
 
 		}
@@ -451,7 +602,11 @@ class Patcher_Mod
 		return $filesToUpload;
 	}
 
-
+	/**
+	 * Check modification requirements (and return them as an array)
+	 *
+	 * @return array
+	 */
 	function checkRequirements()
 	{
 		global $langPatcher, $fs;
@@ -482,7 +637,7 @@ class Patcher_Mod
 				if (strpos($to, '.') !== false)
 					$curDir = dirname($curDir);
 
-				// Add directory if it was not added ealier
+				// Add directory if it was not added earlier
 				if (!in_array($curDir, $dirsToCheck))
 					$dirsToCheck[] = $curDir;
 			}
@@ -514,7 +669,7 @@ class Patcher_Mod
 					}
 				}
 
-				// Check that directory is writable
+				// Check whether directory is writable
 				else
 				{
 					if ($fs->isWritable(PUN_ROOT.$curDirToCheck))
@@ -546,7 +701,7 @@ class Patcher_Mod
 			}
 		}
 
-		// Check if there exist any requirement that fails
+		// Check whether there are no any unmet requirements
 		foreach ($requirements as &$curRequirements)
 		{
 			ksort($curRequirements);
@@ -566,7 +721,14 @@ class Patcher_Mod
 		return $requirements;
 	}
 
-
+	/**
+	 * Get all steps from specified readme file
+	 *
+	 * @param type $readmeFile
+	 * 		Path to the readme file
+	 *
+	 * @return array
+	 */
 	function getSteps($readmeFile = null)
 	{
 		if ($readmeFile == null)
@@ -614,7 +776,7 @@ class Patcher_Mod
 			if (($pos = strpos($curCommand, '.')) !== false)
 				$curCommand = substr($curCommand, $pos + 1);
 
-			$curCommand = trim(preg_replace('#[^A-Z\s]#', '', strtoupper($curCommand)));
+			$curCommand = trim(preg_replace('/[^A-Z\s]/', '', strtoupper($curCommand)));
 
 			if (empty($curCommand))
 				continue;
@@ -874,6 +1036,4 @@ class Patcher_Mod
 
 		return $steps;
 	}
-
-
 }

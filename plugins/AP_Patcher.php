@@ -58,11 +58,18 @@ if (!function_exists('json_encode'))
 	}
 }
 
+// Status constants
 define('STATUS_UNKNOWN', -1);
 define('STATUS_NOT_DONE', 0);
 define('STATUS_DONE', 1);
 define('STATUS_REVERTED', 3);
 define('STATUS_NOTHING_TO_DO', 5);
+
+// Repository constants
+define('PATCHER_REPO_MOD_URL', 'http://fluxbb.org/resources/mods/%s/');
+define('PATCHER_REPO_RELEASE_URL', 'http://fluxbb.org/resources/mods/%s/releases/%s/%s');
+define('PATCHER_MOD_API_URL', 'http://fluxbb.org/api/json/resources/mods/%s/');
+define('PATCHER_MODS_API_URL', 'http://fluxbb.org/api/json/resources/mods/');
 
 if (file_exists(PATCHER_ROOT.'debug.php'))
 	require PATCHER_ROOT.'debug.php';
