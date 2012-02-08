@@ -29,7 +29,7 @@ More details about permission problems: [File-Ownership-Problems](http://www.joo
 There is a PCLZIP library included, but I feel it is slower than ZIP extension for PHP. If you want to speedup extracting process install and enable ZIP extension.
 
 ## Known issues
-- ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of topictags should delete <div class="postmsg"> from its readme)
+- ajax post edit mod is not compatible with topictags (fails on viewtopic.php file, author of topictags should delete &lt;div class="postmsg"&gt; from its readme)
 
 ## Tips
 - If you have some modification installed and you have changed something in its readme file, you can just click uninstall link (Do not click Uninstall button), change in the address bar "action=uninstall" to "action=update", press Enter and click Update button.
