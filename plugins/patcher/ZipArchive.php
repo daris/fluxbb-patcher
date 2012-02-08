@@ -1,11 +1,17 @@
 <?php
+/**
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
+ */
 
 if (!defined('ZIP_NATIVE'))
 	define('ZIP_NATIVE', class_exists('ZipArchive') ? true : false);
 
 if (!ZIP_NATIVE)
 	require PATCHER_ROOT.'PclZip.php';
-
 
 class Patcher_ZipArchive
 {

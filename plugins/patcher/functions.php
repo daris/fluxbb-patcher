@@ -1,39 +1,11 @@
 <?php
 /**
- * FluxBB Patcher 2.0
- * http://fluxbb.org/forums/viewtopic.php?id=4431
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
  */
-
-
-if (!function_exists('json_decode'))
-{
-	function json_decode($content, $assoc = false)
-	{
-		require_once PATCHER_ROOT.'JSON.php';
-		if ($assoc)
-			$json = new Services_JSON(SERVICES_JSON_LOOSE_TYPE);
-		else
-			$json = new Services_JSON;
-
-		return $json->decode($content);
-	}
-}
-
-if (!function_exists('json_encode'))
-{
-	function json_encode($content)
-	{
-		require_once PATCHER_ROOT.'JSON.php';
-		$json = new Services_JSON;
-		return $json->encode($content);
-	}
-}
-
-define('STATUS_UNKNOWN', -1);
-define('STATUS_NOT_DONE', 0);
-define('STATUS_DONE', 1);
-define('STATUS_REVERTED', 3);
-define('STATUS_NOTHING_TO_DO', 5);
 
 function loadPatcherConfig()
 {

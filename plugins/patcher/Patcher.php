@@ -1,7 +1,10 @@
 <?php
 /**
- * FluxBB Patcher 2.0
- * http://fluxbb.org/forums/viewtopic.php?id=4431
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
  */
 
 class Patcher
