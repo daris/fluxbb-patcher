@@ -1,6 +1,6 @@
 <?php
 /**
- * FluxBB Patcher 2.0-dev
+ * FluxBB Patcher 2.0-alpha
  *
  * @copyright (C) 2012
  * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
@@ -673,12 +673,9 @@ function patcherErrorHandler()
 	debug_print_backtrace();
 	$contents = ob_get_clean();
 
-	if (!isset($fh))
-	{
-		$fh = @fopen(PUN_ROOT.'cache/patcher.log', 'a');
-		if ($fh === false)
-			return false;
-	}
+	$fh = @fopen(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log', 'a');
+	if ($fh === false)
+		return false;
 
 	fwrite($fh, $contents."\n----\n\n");
 	fclose($fh);

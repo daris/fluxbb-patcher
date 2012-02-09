@@ -1,6 +1,6 @@
 <?php
 /**
- * FluxBB Patcher 2.0-dev
+ * FluxBB Patcher 2.0-alpha
  *
  * @copyright (C) 2012
  * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
@@ -21,7 +21,7 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
-define('PATCHER_VERSION', '2.0-dev');
+define('PATCHER_VERSION', '2.0-alpha');
 define('PATCHER_CONFIG_REV', '1');
 
 // Enable debug mode for now (remove when releasing stable version)
@@ -467,7 +467,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 <?php endif; if (isset($mod_repo[$mod->id]['release']) && version_compare($mod_repo[$mod->id]['release'], $mod->version, '>')) : ?>
 					<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$mod_repo[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_repo[$mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
-<?php if ($action == 'install') : ?>					<label><input type="checkbox" name="skip_install" value="1" /> <?php echo $langPatcher['Skip install'] ?></label>
+<?php if ($action == 'install') : ?>					<p><label><input type="checkbox" name="skip_install" value="1" /> <?php echo $langPatcher['Skip install'] ?></label></p>
 <?php endif; ?>
 				</div>
 

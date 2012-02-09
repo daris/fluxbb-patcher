@@ -1,6 +1,6 @@
 <?php
 /**
- * FluxBB Patcher 2.0-dev
+ * FluxBB Patcher 2.0-alpha
  *
  * @copyright (C) 2012
  * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)

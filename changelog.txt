@@ -1,0 +1,23 @@
+Changelog for Patcher
+
+2.0-alpha:
+- Automatic readme.txt dependency handling - user shouldn't know what readme.txt file is for
+- Added Joomla FTP layer to allow modifying files via FTP protocol when we do not have permissions
+- Changed a bit modification list
+- Automatic modification download from the FluxBB.org repository. Modifications that are available to download are displayed at the bottom of the modification list.
+- Ability to manage installed modifications - uninstall, enable, disable and update (updating modification to the new version)
+- Integration with the Friendly URL modification (requires Friendly URL 1.0.9 or newer) - however it is not fully stable yet
+- Automatic or manual checking for modification updates
+- Automatic check for Patcher updates
+- Only allow to patching modification when there are no any conflicts
+- Automatic initial backup creation
+- Logging errors and warning to the file (cache/patcher-{date}.log)
+- Rewrite to the OOP
+- Lots of bug fixes
+
+1.2:
+- check for mod update feature (thanks to fluxbb devs for api :)
+- translation support (Polish included)
+- fixed unescaped special regex characters (\1, $1, $2, etc.) noticed by Defaz
+- friendly url mod update to 1.0.4
+- using PCLZIP library if ZIP extension for PHP is not installed
