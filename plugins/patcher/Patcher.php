@@ -1,44 +1,115 @@
 <?php
 /**
- * FluxBB Patcher 2.0
- * http://fluxbb.org/forums/viewtopic.php?id=4431
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
  */
 
 class Patcher
 {
-	var $mod = null;
+	/**
+	 * @var Patcher_Mod Instance of the Patcher_Mod class
+	 */
+	public $mod = null;
 
-	var $config = array();
-	var $configOrg = array();
+	/**
+	 * @var array Patcher configuration options (loaded from the patcher_config.php file)
+	 */
+	public $config = array();
 
-	var $curFile = null; // Currently patched file
-	var $curFilePath = null; // Path to currently patched file
-	var $curFileModified = false;
-	var $find = null;
-	var $startPos = 0;
-	var $globalStep = 1;
+	/**
+	 * @var array Orginal Patcher configuration (needed for checking whether something changed in configuration)
+	 */
+	public $configOrg = array();
 
-	var $action = null;
+	/**
+	 * @var string Current file content
+	 */
+	public $curFile = null;
 
-	var $steps = array();
-	var $log = array();
+	/**
+	 * @var string Relative path to the currently patched file
+	 */
+	public $curFilePath = null;
+
+	/**
+	 * @var bool Whether or not the current file was modified
+	 */
+	public $curFileModified = false;
+
+	/**
+	 * @var string The text that we want to replace with another in $curFile
+	 */
+	public $find = null;
+
+	/**
+	 * @var integer String position for the $curFile where we start to search specified string
+	 */
+	public $startPos = 0;
+
+	/**
+	 * @var integer Number of the current global step
+	 */
+	public $globalStep = 1;
+
+	/**
+	 * @var string Action we want to execute
+	 * 		Possibilities are: install, uninstall, enable, disable, update
+	 */
+	public $action = null;
+
+	/**
+	 * @var array List of steps for each readme file
+	 */
+	public $steps = array();
+
+	/**
+	 * @var array Results of the patching process
+	 */
+	public $log = array();
 
 	// Determine current action
-	var $install = false;
-	var $uninstall = false;
-	var $update = false;
-	var $disable = false;
-	var $enable = false;
+	public $install = false;
+	public $uninstall = false;
+	public $update = false;
+	public $disable = false;
+	public $enable = false;
 
-	var $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
-	var $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
+	/**
+	 * @var array Commands that are modifying current file
+	 */
+	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
 
-	// Validate only
-	var $validate = false;
+	/**
+	 * @var array Commands that are not touching current file
+	 */
+	public $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
 
-	var $orginalFiles = array();
-	var $modifedFiles = array();
+	/**
+	 * @var bool Only validate modification (without writing changes to the files)
+	 */
+	public $validate = false;
 
+	/**
+	 * @var array Content of all modified files before modification
+	 */
+	public $orginalFiles = array();
+
+	/**
+	 * @var array Content of all modified files after modification
+	 */
+	public $modifedFiles = array();
+
+	/**
+	 * Constructor
+	 *
+	 * @param type $mod
+	 * 		Instance of the Patcher_Mod class
+	 *
+	 * @return type
+	 */
 	function __construct($mod)
 	{
 		$this->mod = $mod;
@@ -54,7 +125,13 @@ class Patcher
 		return $this->$name = $this->$function_name();
 	}
 
-
+	/**
+	 * Execute specified action
+	 *
+	 * @param string $action
+	 * @param bool $validateOnly
+	 * @return bool
+	 */
 	function executeAction($action, $validateOnly = false)
 	{
 		$this->install = $this->uninstall = $this->update = $this->disable = $this->enable = false;
@@ -66,7 +143,11 @@ class Patcher
 		return $this->patch();
 	}
 
-
+	/**
+	 * Write changes to the files
+	 *
+	 * @return type
+	 */
 	function makeChanges()
 	{
 		global $fs;
@@ -90,10 +171,14 @@ class Patcher
 		}
 
 		$this->validate = false;
-		$this->patch();
+		return $this->patch();
 	}
 
-
+	/**
+	 * Return unmet requirements for all modifications affected by this patch
+	 *
+	 * @return type
+	 */
 	function unmetRequirements()
 	{
 		global $langPatcher;
@@ -131,7 +216,11 @@ class Patcher
 		return $requirements;
 	}
 
-
+	/**
+	 * Restore previous content of the modified files
+	 *
+	 * @return type
+	 */
 	function revertModifiedFiles()
 	{
 		global $fs;
@@ -141,39 +230,49 @@ class Patcher
 			$fs->put(PUN_ROOT.$curFile, $contents);
 	}
 
-
+	/**
+	 * Return all steps for each readme file affected by this patch
+	 *
+	 * @return array
+	 */
 	function getSteps()
 	{
 		$steps = array();
 
 		if ($this->install || $this->update)
 		{
-			// Load steps for current mod
-			$steps[$this->mod->id.'/'.$this->mod->readmeFileName] = $this->mod->getSteps();
-
-			// Load steps for related mods (readme_mod_name.txt)
-			foreach ($this->mod->readmeFileList as $curReadmeFile)
+			if ($this->mod->isValid)
 			{
-				$curReadmeFile = ltrim($curReadmeFile, '/');
-				if (strpos($curReadmeFile, '_') === false)
-					continue;
+				// Load steps for current mod
+				$steps[$this->mod->id.'/'.$this->mod->readmeFileName] = $this->mod->getSteps();
 
-				$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
-				$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
-				$modKey = str_replace('_', '-', $modKey);
+				// Load steps for related mods (readme_mod_name.txt)
+				foreach ($this->mod->readmeFileList as $curReadmeFile)
+				{
+					$curReadmeFile = ltrim($curReadmeFile, '/');
+					if (strpos($curReadmeFile, '_') === false)
+						continue;
 
-				if (isset($this->config['installed_mods'][$modKey]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
-					$steps[$this->mod->id.'/'.$curReadmeFile] = $this->mod->getSteps($curReadmeFile);
+					$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
+					$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
+					$modKey = str_replace('_', '-', $modKey);
+
+					if (isset($this->config['installed_mods'][$modKey]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
+						$steps[$this->mod->id.'/'.$curReadmeFile] = $this->mod->getSteps($curReadmeFile);
+				}
 			}
 
 			foreach ($this->config['installed_mods'] as $curModId => $instModsReadmeFiles)
 			{
 				$mod = new Patcher_Mod($curModId);
+				if (!$mod->isValid)
+					continue;
+
 				foreach ($mod->readmeFileList as $curReadmeFile)
 				{
 					$curReadmeFile = ltrim($curReadmeFile, '/');
 
-					// skip if readme was already installed
+					// skip when readme was already installed
 					if (in_array($curReadmeFile, $instModsReadmeFiles))
 						continue;
 
@@ -269,13 +368,16 @@ class Patcher
 		return $steps;
 	}
 
-
+	/**
+	 * General patching method
+	 * TODO: cleanup this method
+	 *
+	 * @return bool
+	 */
 	function patch()
 	{
 		global $fs;
 		$failed = false;
-
-//		print_r($this->log);
 
 		if ($this->uninstall || $this->disable)
 		{
@@ -297,9 +399,10 @@ class Patcher
 				$i += count($curActionLog);
 		$this->log[$this->action] = array();
 
-		$steps = $this->steps; // TODO: there is something wrong with variables visiblity
-//		foreach ($this->steps as $curReadmeFile => &$stepList)
-		while (list($curReadmeFile, $stepList) = each($this->steps)) // Allow to add steps inside loop
+		$steps = $this->steps; // TODO: there is something wrong with variables visibility
+
+		 // Allow to add steps inside loop
+		while (list($curReadmeFile, $stepList) = each($this->steps))
 		{
 			$logReadme = array();
 
@@ -413,7 +516,7 @@ class Patcher
 				$stepList = array_values($stepList);
 			}
 
-			// Update patcher config
+			// Update patcher configuration
 			$curMod = substr($curReadmeFile, 0, strpos($curReadmeFile, '/'));
 			$curReadme = substr($curReadmeFile, strpos($curReadmeFile, '/') + 1);
 
@@ -439,7 +542,7 @@ class Patcher
 			}
 		}
 
-		// Update patcher config
+		// Update patcher configuration
 		if ($this->uninstall)
 		{
 			if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
@@ -470,7 +573,7 @@ class Patcher
 		elseif ($this->disable && $GLOBALS['action'] != 'update')
 			$this->config['installed_mods'][$this->mod->id]['disabled'] = 1;
 
-		// if some file was opened, save it
+		// when some file was opened, save it
 		$this->stepSave();
 
 		$_SESSION['patcher_files'] = serialize($this->modifedFiles);
@@ -486,7 +589,12 @@ class Patcher
 		return !$failed;
 	}
 
-
+	/**
+	 * Check whether specified code exists in current file content (and try to correct code, for example ignoring space changes)
+	 *
+	 * @param type &$code
+	 * @return type
+	 */
 	function checkCode(&$code)
 	{
 		$reg = preg_quote($code, '#');
@@ -542,7 +650,13 @@ class Patcher
 		return false;
 	}
 
-
+	/**
+	 * Replace specified code
+	 *
+	 * @param type $find
+	 * @param type $replace
+	 * @return type
+	 */
 	function replaceCode($find, $replace)
 	{
 		// Mod was already disabled before
@@ -601,7 +715,11 @@ class Patcher
 		return STATUS_DONE;
 	}
 
-
+	/**
+	 * Execute upload step from readme
+	 *
+	 * @return type
+	 */
 	function stepUpload()
 	{
 		global $langPatcher, $fs;
@@ -660,7 +778,11 @@ class Patcher
 		return STATUS_DONE;
 	}
 
-
+	/**
+	 * Open file
+	 *
+	 * @return type
+	 */
 	function stepOpen()
 	{
 		global $langPatcher, $fs;
@@ -713,7 +835,11 @@ class Patcher
 		return STATUS_DONE;
 	}
 
-
+	/**
+	 * Save current file
+	 *
+	 * @return type
+	 */
 	function stepSave()
 	{
 		global $fs;
@@ -736,7 +862,11 @@ class Patcher
 		$this->curFileModified = false;
 	}
 
-
+	/**
+	 * Look for the string in current file
+	 *
+	 * @return type
+	 */
 	function stepFind()
 	{
 		$this->find = $this->code;
@@ -757,14 +887,18 @@ class Patcher
 		return STATUS_UNKNOWN;
 	}
 
-
+	/**
+	 * Replace code with another in current file
+	 *
+	 * @return type
+	 */
 	function stepReplace()
 	{
 		// Mod was already disabled before
 		if ($this->uninstall && isset($this->config['installed_mods'][$this->mod->id]['disabled']) || $this->curFilePath == '')
 			return STATUS_NOTHING_TO_DO;
 
-		if ((!$this->uninstall && !$this->disable && empty($this->find)))
+		if (!$this->uninstall && !$this->disable && empty($this->find))
 			return STATUS_UNKNOWN;
 
 		if (empty($this->find) || empty($this->curFile))
@@ -848,7 +982,11 @@ class Patcher
 		return $status;
 	}
 
-
+	/**
+	 * Add code after found text
+	 *
+	 * @return type
+	 */
 	function stepAfterAdd()
 	{
 		// Mod was already disabled before
@@ -861,7 +999,11 @@ class Patcher
 		return $this->replaceCode($this->find, $this->find."\n".$this->code);
 	}
 
-
+	/**
+	 * Add code before found text
+	 *
+	 * @return type
+	 */
 	function stepBeforeAdd()
 	{
 		// Mod was already disabled before
@@ -874,7 +1016,11 @@ class Patcher
 		return $this->replaceCode($this->find, $this->code."\n".$this->find);
 	}
 
-
+	/**
+	 * Add code at the end of current file
+	 *
+	 * @return type
+	 */
 	function stepAtTheEndOfFileAdd()
 	{
 		// Mod was already disabled before
@@ -896,7 +1042,11 @@ class Patcher
 		return STATUS_DONE;
 	}
 
-
+	/**
+	 * Add new elements to array
+	 *
+	 * @return type
+	 */
 	function stepAddNewElementsOfArray()
 	{
 		// Mod was already disabled before
@@ -906,7 +1056,7 @@ class Patcher
 		$count = 0;
 		if ($this->uninstall || $this->disable)
 		{
-			$this->curFile = preg_replace('#'.makeRegExp($this->code).'#si', '', $this->curFile, 1, $count); // TODO: fix to str_replace_once
+			$this->curFile = preg_replace('#'.preg_quote($this->code, '#').'#si', '', $this->curFile, 1, $count); // TODO: fix to str_replace_once
 			if ($count == 1)
 				return STATUS_REVERTED;
 
@@ -920,7 +1070,11 @@ class Patcher
 		return STATUS_NOT_DONE;
 	}
 
-
+	/**
+	 * Execute Run step from readme (only used for Mod installer)
+	 *
+	 * @return type
+	 */
 	function stepRunCode()
 	{
 		if (defined('PATCHER_NO_SAVE') || $this->validate)
@@ -931,6 +1085,11 @@ class Patcher
 		return STATUS_DONE; // done
 	}
 
+	/**
+	 * Install or uninstall current modification
+	 *
+	 * @return type
+	 */
 	function stepRun()
 	{
 		global $langPatcher;
@@ -1000,7 +1159,11 @@ class Patcher
 		return STATUS_DONE;
 	}
 
-
+	/**
+	 * Delete specified files
+	 *
+	 * @return type
+	 */
 	function stepDelete()
 	{
 		global $fs;
@@ -1027,7 +1190,11 @@ class Patcher
 		return STATUS_NOT_DONE;
 	}
 
-
+	/**
+	 * Rename files
+	 *
+	 * @return type
+	 */
 	function stepRename()
 	{
 		global $fs;
@@ -1050,8 +1217,11 @@ class Patcher
 		return $status;
 	}
 
-
-	// If friendly url mod is installed revert its changes from current file (apply again while saving this file)
+	/**
+	 * When friendly url mod is installed revert its changes from current file (apply again while saving this file)
+	 *
+	 * @return type
+	 */
 	function friendlyUrlOpen()
 	{
 		if ($this->mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !isset($this->config['steps']['friendly-url/files/gen.php']))
@@ -1096,8 +1266,11 @@ class Patcher
 		}
 	}
 
-
-	// If friendly url mod is installed apply its changes again (as patcher reverted them in open step)
+	/**
+	 * When friendly url mod is installed apply its changes again (as patcher reverted them in open step)
+	 *
+	 * @return type
+	 */
 	function friendlyUrlSave()
 	{
 		if ($this->mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']))
@@ -1116,8 +1289,12 @@ class Patcher
 		}
 	}
 
-
-	// If friendly url mod is installed apply its changes
+	/**
+	 * When friendly url mod is installed apply its changes
+	 *
+	 * @param type $curFileName
+	 * @return type
+	 */
 	function friendlyUrlUpload($curFileName)
 	{
 		global $fs;
@@ -1143,7 +1320,11 @@ class Patcher
 		}
 	}
 
-
+	/**
+	 * Remove steps from the Patcher configuration when we are uninstalling affected mod
+	 *
+	 * @return type
+	 */
 	function friendlyUrlUninstallUpload()
 	{
 		$genFile = 'friendly-url/files/gen.php';

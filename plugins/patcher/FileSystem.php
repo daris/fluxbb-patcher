@@ -1,13 +1,26 @@
 <?php
-
+/**
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
+ */
 
 class Patcher_FileSystem
 {
-	var $ftp;
-	var $root = PUN_ROOT;
-	var $isFtp = false;
-	var $ftpData = array();
-	var $isConnected = false;
+	/**
+	 * JFTP object
+	 */
+	public $ftp;
+
+	public $root = PUN_ROOT;
+
+	public $isFtp = false;
+
+	public $ftpData = array();
+
+	public $isConnected = false;
 
 	function __construct($ftpData = null)
 	{
@@ -18,19 +31,27 @@ class Patcher_FileSystem
 		}
 	}
 
-	// Returns path of temporary file in cache directory
+	/**
+	 * Return path to the temporary file in cache directory
+	 *
+	 * @return string
+	 */
 	function tmpname()
 	{
 		return FORUM_CACHE_DIR.md5(time().rand());
 	}
 
-
+	/**
+	 * Connect to the FTP server (only when in FTP mode)
+	 *
+	 * @return type
+	 */
 	function checkConnection()
 	{
 		if (!$this->isFtp || $this->isConnected)
 			return false;
 
-		require_once PATCHER_ROOT.'ftp.class.php';
+		require_once PATCHER_ROOT.'Ftp.php';
 
 		$this->ftp = new JFTP();
 		if (!$this->ftp->connect($this->ftpData['host'], $this->ftpData['port']))
@@ -48,6 +69,12 @@ class Patcher_FileSystem
 		$this->isConnected = true;
 	}
 
+	/**
+	 * Return path relative to the PUN_ROOT directory
+	 *
+	 * @param string $path
+	 * @return string
+	 */
 	function fixPath($path)
 	{
 		$len = strlen(PUN_ROOT);
@@ -59,13 +86,25 @@ class Patcher_FileSystem
 		return $path;
 	}
 
-
+	/**
+	 * Create directory
+	 *
+	 * @param type $pathname
+	 * @return type
+	 */
 	function mkdir($pathname)
 	{
 		$this->checkConnection();
 		return $this->isFtp ? $this->ftp->mkdir($this->fixPath($pathname)) : mkdir($pathname);
 	}
 
+	/**
+	 * Move directory or file
+	 *
+	 * @param type $src
+	 * @param type $dest
+	 * @return type
+	 */
 	function move($src, $dest)
 	{
 		$this->checkConnection();
@@ -81,9 +120,17 @@ class Patcher_FileSystem
 			else
 				return $this->ftp->store($src, $this->fixPath($dest)) && unlink($src);
 		}
+
 		return rename($src, $dest);
 	}
 
+	/**
+	 * Copy file to another location
+	 *
+	 * @param type $src
+	 * @param type $dest
+	 * @return type
+	 */
 	function copy($src, $dest)
 	{
 		$this->checkConnection();
@@ -93,12 +140,25 @@ class Patcher_FileSystem
 		return copy($src, $dest);
 	}
 
+	/**
+	 * Save specified file
+	 *
+	 * @param type $file
+	 * @param type $data
+	 * @return type
+	 */
 	function put($file, $data)
 	{
 		$this->checkConnection();
 		return $this->isFtp ? $this->ftp->write($this->fixPath($file), $data) : file_put_contents($file, $data);
 	}
 
+	/**
+	 * Delete file
+	 *
+	 * @param type $file
+	 * @return type
+	 */
 	function delete($file)
 	{
 		$this->checkConnection();
@@ -108,7 +168,12 @@ class Patcher_FileSystem
 		return unlink($file);
 	}
 
-	// Recursive directory remove
+	/**
+	 * Remove directory recursively
+	 *
+	 * @param type $path
+	 * @return type
+	 */
 	function rmDir($path)
 	{
 		if (!is_dir($path))
@@ -136,6 +201,12 @@ class Patcher_FileSystem
 		return true;
 	}
 
+	/**
+	 * Get the list of files from specified directory that we want to remove
+	 *
+	 * @param type $path
+	 * @return type
+	 */
 	function listToRemove($path)
 	{
 		$files = array();
@@ -158,7 +229,13 @@ class Patcher_FileSystem
 		return $files;
 	}
 
-
+	/**
+	 * Copy specified directory
+	 *
+	 * @param type $source
+	 * @param type $dest
+	 * @return type
+	 */
 	function copyDir($source, $dest)
 	{
 		if (!is_dir($dest))
@@ -179,6 +256,14 @@ class Patcher_FileSystem
 		return true;
 	}
 
+	/**
+	 * Check whether given directory is empty
+	 *
+	 * @param type $dir
+	 * 		Path to the directory
+	 *
+	 * @return bool
+	 */
 	function isEmptyDir($dir)
 	{
 		$d = dir($dir);
@@ -194,7 +279,12 @@ class Patcher_FileSystem
 		return true;
 	}
 
-
+	/**
+	 * Check whether given file or directory is writable
+	 *
+	 * @param type $path
+	 * @return type
+	 */
 	function isWritable($path)
 	{
 		if ($path == PUN_ROOT.'.')
@@ -255,7 +345,12 @@ class Patcher_FileSystem
 		return is_writable($path);
 	}
 
-
+	/**
+	 * Check whether specified files are writable
+	 *
+	 * @param type $files
+	 * @return type
+	 */
 	function areFilesWritable($files)
 	{
 		global $langPatcher;

@@ -1,24 +1,62 @@
 <?php
+/**
+ * FluxBB Patcher 2.0-dev
+ *
+ * @copyright (C) 2012
+ * @license GPL - GNU General Public License (http://www.gnu.org/licenses/gpl.html)
+ * @package Patcher
+ */
 
 if (!defined('ZIP_NATIVE'))
 	define('ZIP_NATIVE', class_exists('ZipArchive') ? true : false);
 
 if (!ZIP_NATIVE)
-	require PATCHER_ROOT.'pclzip.lib.php';
+	require PATCHER_ROOT.'PclZip.php';
 
-
+/**
+ * Wrapper for ZipArchive or PclZip object
+ */
 class Patcher_ZipArchive
 {
-	var $file;
-	private $zip; // ZipArchive or PclZip object
-	var $is_open = false;
+	/**
+	 * @var string Path to the file
+	 */
+	public $file;
 
+	/**
+	 * @var ZipArchive Instance of ZipArchive or PclZip object
+	 */
+	private $zip;
+
+	/**
+	 * @var bool Whether or not current file was opened for reading
+	 */
+	public $is_open = false;
+
+	/**
+	 * Constructor
+	 *
+	 * @param type $file
+	 * 		Path to the file
+	 *
+	 * @param type $create
+	 * 		Whether or not we want to create new archive at the specified location
+	 *
+	 * @return type
+	 */
 	function __construct($file, $create = false)
 	{
 		$this->file = $file;
-		$this->open(null, $create);
+		$this->open($file, $create);
 	}
 
+	/**
+	 * Open specified ZIP file
+	 *
+	 * @param type $file
+	 * @param type $create
+	 * @return type
+	 */
 	function open($file = null, $create = false)
 	{
 		if (isset($file))
@@ -39,7 +77,12 @@ class Patcher_ZipArchive
 		return $this->is_open;
 	}
 
-	function list_content()
+	/**
+	 * Return list of the files from ZIP file
+	 *
+	 * @return array
+	 */
+	function listContent()
 	{
 		if (!$this->is_open)
 			return false;
@@ -56,6 +99,12 @@ class Patcher_ZipArchive
 		return $archive->listContent();
 	}
 
+	/**
+	 * Extract ZIP file to the specified directory
+	 *
+	 * @param type $extract_to
+	 * @return type
+	 */
 	function extract($extract_to)
 	{
 		global $fs;
@@ -64,11 +113,11 @@ class Patcher_ZipArchive
 			return false;
 
 		if (!is_dir($extract_to))
-			message('Can\'t extract files. Directory '.pun_htmlspecialchars($extract_to).' does not exist');
+			message('Cannot extract files. Directory '.pun_htmlspecialchars($extract_to).' does not exist');
 
 		if (ZIP_NATIVE)
 		{
-			$files = $this->list_content();
+			$files = $this->listContent();
 			if (!$files)
 				return false;
 
@@ -110,7 +159,12 @@ class Patcher_ZipArchive
 		return true;
 	}
 
-
+	/**
+	 * Add files to the ZIP archive
+	 *
+	 * @param array $files
+	 * @return bool
+	 */
 	function add($files)
 	{
 		if (!$this->is_open)
@@ -139,9 +193,16 @@ class Patcher_ZipArchive
 		return true;
 	}
 
+	/**
+	 * Close current ZIP file
+	 *
+	 * @return bool
+	 */
 	function close()
 	{
 		if (ZIP_NATIVE)
 			$this->zip->close();
+
+		return true;
 	}
 }
