@@ -28,11 +28,15 @@ define('PATCHER_CONFIG_REV', '1');
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
 
+require PATCHER_ROOT.'functions.php';
+
 // Enable error reporting when we're in the debug mode
 if (defined('PUN_DEBUG'))
+{
 	error_reporting(E_ALL);
+	set_error_handler('patcherErrorHandler');
+}
 
-require PATCHER_ROOT.'functions.php';
 
 if (!function_exists('json_decode'))
 {
@@ -113,7 +117,7 @@ if (!defined('BACKUPS_DIR'))
 	define('BACKUPS_DIR', PUN_ROOT.'backups/');
 }
 
-// Need sesion for storing/retrieving patching log
+// Need session for storing and retrieving patching log
 if (!session_id())
 	session_start();
 
@@ -132,7 +136,7 @@ if (isset($_POST['revert']))
 if (isset($_POST['upload']))
 	uploadMod();
 
-// Download an update of mod from FluxBB repo
+// Download an update of mod from FluxBB repository
 if (isset($_GET['download_update']))
 {
 	if (!isset($modId) || empty($modId))
@@ -141,7 +145,7 @@ if (isset($_GET['download_update']))
 	downloadUpdate($modId, $_GET['download_update']);
 }
 
-// Download modification from FluxBB repo
+// Download modification from FluxBB repository
 if (isset($_GET['download']))
 {
 	if (empty($_GET['download']))
@@ -163,12 +167,12 @@ if (isset($_POST['backup']))
 }
 $notes = array();
 
-// Get modification repository at http://fluxbb.org/resources/
+// Get modification repository
 $mod_repo = getModRepo(isset($_GET['check_for_updates']));
 
 // Check for patcher updates
 if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
-	$notes[] = sprintf($langPatcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="http://fluxbb.org/resources/mods/patcher/">'.$langPatcher['Resources page'].'</a>');
+	$notes[] = sprintf($langPatcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
 
 // Check needed directories to be writable
 $dirsNotWritable = array();
@@ -202,7 +206,7 @@ if (count($notes) > 0)
 // User wants to do some action?
 if (isset($modId) && file_exists(MODS_DIR.$modId))
 {
-	// Load patcher config from file
+	// Load patcher configuration from file
 	$patcherConfig = loadPatcherConfig();
 
 	// Mod is installed and we want to install again
@@ -225,7 +229,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	if (!$mod->isValid)
 		message($langPatcher['Invalid mod dir']);
 
-	// Get the requirenment list
+	// Get the requirement list
 	$requirements = $mod->checkRequirements();
 
 	unset($_SESSION['patcher_logs']);
@@ -258,7 +262,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	$_SESSION['patcher_logs'] = serialize($logs);
 
 	// Do patching! :)
-	if (!isset($requirements['failed']) // there are no unment requirements
+	if (!isset($requirements['failed']) // there are no unmet requirements
 		&& $isValid
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
@@ -424,9 +428,9 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 				echo "\n\t\t\t\t\t\t".'</p>';
 			} ?>
 							<p>
-								<a href="<?php echo PLUGIN_URL ?>&show_log"><?php echo $langPatcher['Show log'] ?></a> |
-<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&action=update"><?php echo $langPatcher['Update'] ?></a> | <?php endif; ?>
-<?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&action=uninstall"><?php echo $langPatcher['Uninstall'] ?></a> |  <?php endif; ?>
+								<a href="<?php echo PLUGIN_URL ?>&amp;show_log"><?php echo $langPatcher['Show log'] ?></a> |
+<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=update"><?php echo $langPatcher['Update'] ?></a> | <?php endif; ?>
+<?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=uninstall"><?php echo $langPatcher['Uninstall'] ?></a> |  <?php endif; ?>
 								<a href="<?php echo PLUGIN_URL ?>"><?php echo $langPatcher['Return to mod list'] ?></a>
 							</p>
 						</div>
@@ -483,7 +487,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 <?php if (!$mod->isCompatible()): ?>
 				<p style="color: #a00"><strong><?php echo $langPatcher['Warning'] ?>:</strong> <?php printf($langPatcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->worksOn))) ?></p>
 <?php endif; if (isset($mod_updates[$mod->id]['release']) && version_compare($mod_updates[$mod->id]['release'], $mod->version, '>')) : ?>
-				<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&update&mod_id='.urldecode($mod->id).'&version='.$mod_updates[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_updates[$mod->id]['release'])) ?></a>.</p>
+				<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$mod_updates[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_updates[$mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 			</div>
 
@@ -504,7 +508,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 					</fieldset>
 <?php endif; ?>
 
-			<form method="post" action="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId).'&action='.$action.(isset($_GET['skip_install']) ? '&skip_install' : '') ?>">
+			<form method="post" action="<?php echo PLUGIN_URL.'&amp;mod_id='.pun_htmlspecialchars($modId).'&amp;action='.$action.(isset($_GET['skip_install']) ? '&amp;skip_install' : '') ?>">
 				<div class="inform">
 					<p class="buttons">
 <?php if (isset($requirements['failed'])) : ?>						<input type="submit" name="check_again" value="<?php echo $langPatcher['Check again'] ?>" /><?php endif; ?>
@@ -775,7 +779,7 @@ else
 
 
 	<div class="plugin blockform">
-		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&amp;check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 
@@ -985,7 +989,7 @@ else
 
 				}
 				else
-					$actions[1][] = '<a href="'.PLUGIN_URL.'&download='.pun_htmlspecialchars($curMod->id).'">'.$langPatcher['Download and install'].'</a>';
+					$actions[1][] = '<a href="'.PLUGIN_URL.'&amp;download='.pun_htmlspecialchars($curMod->id).'">'.$langPatcher['Download and install'].'</a>';
 
 				$actionsInfo = array();
 				foreach ($actions as $type => $actionList)
@@ -996,7 +1000,7 @@ else
 					foreach ($actionList as $action => &$title)
 					{
 						if (!is_numeric($action))
-							$title = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&action='.$action.'">'.$title.'</a>';
+							$title = '<a href="'.PLUGIN_URL.'&amp;mod_id='.pun_htmlspecialchars($curMod->id).'&amp;action='.$action.'">'.$title.'</a>';
 					}
 					$actionsInfo[] = implode(' | ', $actionList);
 				}

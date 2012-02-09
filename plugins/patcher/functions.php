@@ -640,3 +640,10 @@ function patcherError()
 	$args = func_get_args();
 	call_user_func_array('error', $args);
 }
+
+function patcherErrorHandler()
+{
+	echo '<br />'."\n\n";
+	debug_print_backtrace();
+	echo '<br />'."\n\n";
+}

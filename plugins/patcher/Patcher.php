@@ -241,27 +241,33 @@ class Patcher
 
 		if ($this->install || $this->update)
 		{
-			// Load steps for current mod
-			$steps[$this->mod->id.'/'.$this->mod->readmeFileName] = $this->mod->getSteps();
-
-			// Load steps for related mods (readme_mod_name.txt)
-			foreach ($this->mod->readmeFileList as $curReadmeFile)
+			if ($this->mod->isValid)
 			{
-				$curReadmeFile = ltrim($curReadmeFile, '/');
-				if (strpos($curReadmeFile, '_') === false)
-					continue;
+				// Load steps for current mod
+				$steps[$this->mod->id.'/'.$this->mod->readmeFileName] = $this->mod->getSteps();
 
-				$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
-				$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
-				$modKey = str_replace('_', '-', $modKey);
+				// Load steps for related mods (readme_mod_name.txt)
+				foreach ($this->mod->readmeFileList as $curReadmeFile)
+				{
+					$curReadmeFile = ltrim($curReadmeFile, '/');
+					if (strpos($curReadmeFile, '_') === false)
+						continue;
 
-				if (isset($this->config['installed_mods'][$modKey]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
-					$steps[$this->mod->id.'/'.$curReadmeFile] = $this->mod->getSteps($curReadmeFile);
+					$modKey = substr($curReadmeFile, strpos($curReadmeFile, '_') + 1);
+					$modKey = substr($modKey, 0, strpos($modKey, '.txt'));
+					$modKey = str_replace('_', '-', $modKey);
+
+					if (isset($this->config['installed_mods'][$modKey]) && (!isset($this->config['installed_mods'][$this->mod->id]) || !in_array($curReadmeFile, $this->config['installed_mods'][$this->mod->id])))
+						$steps[$this->mod->id.'/'.$curReadmeFile] = $this->mod->getSteps($curReadmeFile);
+				}
 			}
 
 			foreach ($this->config['installed_mods'] as $curModId => $instModsReadmeFiles)
 			{
 				$mod = new Patcher_Mod($curModId);
+				if (!$mod->isValid)
+					continue;
+
 				foreach ($mod->readmeFileList as $curReadmeFile)
 				{
 					$curReadmeFile = ltrim($curReadmeFile, '/');
