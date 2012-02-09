@@ -101,7 +101,7 @@ return array(
 'Update info'					=> 'You are going to install an outdated version of this modification.',
 'Download update'				=> 'Download update (%s)',
 'New version available'			=> 'New version available.',
-'New Patcher version available'	=> 'You are using an outdated version of Patcher. A new version (%s) is available at %s.',
+'New Patcher version available'	=> 'You are using an outdated version of Patcher. A newer version (%s) is available at %s.',
 'Resources page'				=> 'FluxBB resources page',
 'Download and install'			=> 'Download and install',
 'Download and install update'	=> 'Download and install update',

@@ -171,8 +171,10 @@ $notes = array();
 $mod_repo = getModRepo(isset($_GET['check_for_updates']));
 
 // Check for patcher updates
-if (isset($mod_updates['patcher']['release']) && version_compare($mod_updates['patcher']['release'], PATCHER_VERSION, '>'))
-	$notes[] = sprintf($langPatcher['New Patcher version available'], $mod_updates['patcher']['release'], '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
+$patcher_version = isset($mod_repo['mods']['patcher']['last_release']['version']) ? $mod_repo['mods']['patcher']['last_release']['version'] : null;
+
+if (version_compare($patcher_version, PATCHER_VERSION, '>'))
+	$notes[] = sprintf($langPatcher['New Patcher version available'], $patcher_version, '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
 
 // Check needed directories to be writable
 $dirsNotWritable = array();
@@ -486,8 +488,8 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 				</dl>
 <?php if (!$mod->isCompatible()): ?>
 				<p style="color: #a00"><strong><?php echo $langPatcher['Warning'] ?>:</strong> <?php printf($langPatcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->worksOn))) ?></p>
-<?php endif; if (isset($mod_updates[$mod->id]['release']) && version_compare($mod_updates[$mod->id]['release'], $mod->version, '>')) : ?>
-				<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$mod_updates[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_updates[$mod->id]['release'])) ?></a>.</p>
+<?php endif; if (isset($mod_repo[$mod->id]['release']) && version_compare($mod_repo[$mod->id]['release'], $mod->version, '>')) : ?>
+				<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$mod_repo[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_repo[$mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 			</div>
 
