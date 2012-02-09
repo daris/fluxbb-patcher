@@ -1108,7 +1108,7 @@ class Patcher
 				return STATUS_NOT_DONE;
 			}
 
-			if (!isset($_GET['skip_install']))
+			if (!isset($_REQUEST['skip_install']))
 			{
 				$installCode = file_get_contents(PUN_ROOT.'install_mod.php');
 				$installCode = substr($installCode, strpos($installCode, '<?php') + 5);

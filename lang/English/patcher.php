@@ -106,6 +106,7 @@ return array(
 'Download and install'			=> 'Download and install',
 'Download and install update'	=> 'Download and install update',
 'Install old version'			=> 'Install old version',
+'Skip install'					=> 'Skip install (check when you already installed this modification)',
 
 'Manage backups legend'			=> 'Manage backups',
 'Backup files'					=> 'Backup files',
