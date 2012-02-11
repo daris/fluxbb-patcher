@@ -915,15 +915,15 @@ else
 				}
 
 				// Is the mod compatible with FluxBB version
-				if (get_class($curMod) == 'Patcher_Mod' && !$curMod->isCompatible())
+				if (!$curMod->isCompatible())
 					$info[] = '<br /><span style="color: #a00; display: inline">'.$langPatcher['Unsupported version info'].'</span>';
 
 				if (isset($curMod->important))
 					$info[] = '<br /><span style="color: #a00"><strong>'.$langPatcher['Important'].'</strong>: '.pun_htmlspecialchars($curMod->important).'</span>';
 
 				$works_on = '';
-				if (get_class($curMod) == 'Patcher_Mod' && isset($curMod->worksOn))
-					$info[] = '<br /><strong>'.$langPatcher['Supports FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $curMod->worksOn));
+				if (isset($curMod->worksOn))
+					$info[] = '<br /><strong>'.$langPatcher['Supports FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', array_reverse($curMod->worksOn)));
 
 				$status = '';
 				$actions = array(array(), array());

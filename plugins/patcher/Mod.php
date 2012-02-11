@@ -12,32 +12,37 @@ class Patcher_RepoMod
 	/**
 	 * @var string Modification id (directory)
 	 */
-	public $id;
+	// public $id;
 
 	/**
 	 * @var string Modification title
 	 */
-	public $title;
+	// public $title;
 
 	/**
 	 * @var string Modification version
 	 */
-	public $version;
+	// public $version;
+
+	/**
+	 * @var string FluxBB versions that this mod is compatible with
+	 */
+	// public $worksOn;
 
 	/**
 	 * @var string URL of the modification repository
 	 */
-	public $repositoryUrl;
+	// public $repositoryUrl;
 
 	/**
 	 * @var bool Whether or not modification is valid
 	 */
-	public $isValid;
+	// public $isValid;
 
 	/**
 	 * @var string Modification description
 	 */
-	public $description;
+	// public $description;
 
 	/**
 	 * Constructor
@@ -56,13 +61,42 @@ class Patcher_RepoMod
 		$this->repositoryUrl = sprintf(PATCHER_REPO_MOD_URL, urldecode($this->id));
 		$this->isValid = true;
 		$this->version = $curMod['last_release']['version'];
+		$this->worksOn = $curMod['last_release']['forum_versions'];
 		if (isset($curMod['description']))
 			$this->description = $curMod['description'];
+	}
+
+	/**
+	 * Check whether modification is compatible with installed FluxBB release
+	 *
+	 * @return bool
+	 */
+	function isCompatible()
+	{
+		global $pun_config;
+
+		if (!isset($this->worksOn))
+			return false;
+
+		foreach ($this->worksOn as $curVersion)
+		{
+			if (strpos($curVersion, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
+				|| strpos($curVersion, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
+				|| $curVersion == $pun_config['o_cur_version']
+				|| $curVersion == substr($pun_config['o_cur_version'], 0, strlen($curVersion))
+				|| substr($curVersion, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
+					return true;
+
+			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
+				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
+		}
+
+		return false;
 	}
 }
 
 
-class Patcher_Mod
+class Patcher_Mod extends Patcher_RepoMod
 {
 	/**
 	 * @var string Modification id (directory)
@@ -440,34 +474,6 @@ class Patcher_Mod
 
 		sort($files);
 		return array_unique($files);
-	}
-
-	/**
-	 * Check whether modification is compatible with installed FluxBB release
-	 *
-	 * @return bool
-	 */
-	function isCompatible()
-	{
-		global $pun_config;
-
-		if (!isset($this->worksOn))
-			return false;
-
-		foreach ($this->worksOn as $curVersion)
-		{
-			if (strpos($curVersion, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
-				|| strpos($curVersion, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
-				|| $curVersion == $pun_config['o_cur_version']
-				|| $curVersion == substr($pun_config['o_cur_version'], 0, strlen($curVersion))
-				|| substr($curVersion, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
-					return true;
-
-			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
-				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
-		}
-
-		return false;
 	}
 
 	/**

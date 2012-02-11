@@ -576,11 +576,16 @@ function getModRepo($refresh = false)
 	if (defined('PATCHER_NO_DOWNLOAD'))
 		return array();
 
-	$mod_repo = array();
-	if (!defined('PUN_MOD_REPO_LOADED') && file_exists(FORUM_CACHE_DIR.'cache_mod_repo.php'))
-		require FORUM_CACHE_DIR.'cache_mod_repo.php';
+	if (!is_array($mod_repo) && file_exists(FORUM_CACHE_DIR.'cache_mod_repo.php'))
+	{
+		$repo = require FORUM_CACHE_DIR.'cache_mod_repo.php';
 
-	// We have old $mod_repo structure, need to update it
+		// Convert older file structure
+		if (is_array($repo))
+			$mod_repo = $repo;
+	}
+
+	// We have old $mod_repo structure (1.x), need to update it
 	if (!isset($mod_repo['mods']))
 	{
 		$mods = $mod_repo;
@@ -615,7 +620,7 @@ function getModRepo($refresh = false)
 		$fh = @fopen(FORUM_CACHE_DIR.'cache_mod_repo.php', 'wb');
 		if (!$fh)
 			error('Unable to write configuration cache file to cache directory. Please make sure PHP has write access to the directory \''.pun_htmlspecialchars(FORUM_CACHE_DIR).'\'', __FILE__, __LINE__);
-		fwrite($fh, '<?php'."\n\n".'define(\'PUN_MOD_REPO_LOADED\', 1);'."\n\n".'$mod_repo = '.var_export($mod_repo, true).';'."\n\n".'?>');
+		fwrite($fh, '<?php'."\n\n".'return '.var_export($mod_repo, true).';'."\n");
 		fclose($fh);
 	}
 
