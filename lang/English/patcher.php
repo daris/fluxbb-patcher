@@ -143,7 +143,7 @@ return array(
 'Mod title'						=> 'Mod title',
 'by'							=> 'by',
 'Version'						=> 'Version',
-'Works on FluxBB'				=> 'Works on FluxBB',
+'Supports FluxBB'				=> 'Supports FluxBB',
 'Status'						=> 'Status',
 'Action'						=> 'Action',
 

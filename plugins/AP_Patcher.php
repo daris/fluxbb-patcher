@@ -442,7 +442,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 		$detailedInfo[$langPatcher['Description']] = $info;
 
 		if (isset($mod->worksOn))
-			$detailedInfo[$langPatcher['Works on FluxBB']] = pun_htmlspecialchars(implode(', ', $mod->worksOn));
+			$detailedInfo[$langPatcher['Supports FluxBB']] = pun_htmlspecialchars(implode(', ', $mod->worksOn));
 
 		if (isset($mod->releaseDate))
 			$detailedInfo[$langPatcher['Release date']] = pun_htmlspecialchars($mod->releaseDate);
@@ -460,7 +460,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 			<form method="post" action="<?php echo PLUGIN_URL.'&amp;mod_id='.pun_htmlspecialchars($modId).'&amp;action='.$action ?>">
 				<div class="inbox">
 					<dl>
-						<?php foreach ($detailedInfo as $name => $curInfo) echo "\n\t\t\t".'<dt>'.$name.'</dt><dd>'.$curInfo.'</dd>'; ?>
+						<?php foreach ($detailedInfo as $name => $curInfo) echo "\n\t\t\t".'<dt>'.$name.':</dt><dd>'.$curInfo.'</dd>'; ?>
 					</dl>
 <?php if (!$mod->isCompatible()): ?>
 					<p style="color: #a00"><strong><?php echo $langPatcher['Warning'] ?>:</strong> <?php printf($langPatcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->worksOn))) ?></p>
@@ -923,7 +923,7 @@ else
 
 				$works_on = '';
 				if (get_class($curMod) == 'Patcher_Mod' && isset($curMod->worksOn))
-					$info[] = '<br /><strong>'.$langPatcher['Works on FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $curMod->worksOn));
+					$info[] = '<br /><strong>'.$langPatcher['Supports FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $curMod->worksOn));
 
 				$status = '';
 				$actions = array(array(), array());
