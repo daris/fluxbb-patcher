@@ -670,12 +670,13 @@ function patcherError()
 	call_user_func_array('error', $args);
 }
 
-function patcherErrorHandler()
+function patcherErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
 {
 	static $fh;
 
 	ob_start();
-	debug_print_backtrace();
+	echo $errno.' '.$errstr.' in '.$errfile.', '.$errline."\n";
+	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 	$contents = ob_get_clean();
 
 	$fh = @fopen(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log', 'a');
