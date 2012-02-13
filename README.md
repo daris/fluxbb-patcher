@@ -1,4 +1,4 @@
-# FluxBB Patcher 2.0-alpha
+# FluxBB Patcher 2.0-alpha [![Donate via PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZEAHSYTUXTTFJ)
 
 This script allows you to easily install and uninstall FluxBB modifications.
 
