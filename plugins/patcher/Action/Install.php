@@ -512,9 +512,6 @@ class Patcher_Action_Install
 	{
 		global $langPatcher;
 
-		if (($this->enable || $this->disable)/* && $this->code == 'install_mod.php'*/)
-			return STATUS_NOTHING_TO_DO;
-
 		if (defined('PATCHER_NO_SAVE') || $this->validate)
 			return STATUS_UNKNOWN;
 
@@ -551,21 +548,9 @@ class Patcher_Action_Install
 						eval('global '.$matches[0].';');
 
 				eval($installCode);
-				if ($this->uninstall)
-				{
-					if (!function_exists('restore'))
-					{
-						$this->result = $langPatcher['Database not restored'];
-						return STATUS_UNKNOWN;
-					}
-					restore();
-					$this->result = $langPatcher['Database restored'];
-				}
-				elseif ($this->install || $this->update)
-				{
-					install();
-					$this->result = sprintf($langPatcher['Database prepared for'], $mod_title);
-				}
+
+				install();
+				$this->result = sprintf($langPatcher['Database prepared for'], $mod_title);
 			}
 			return STATUS_DONE;
 		}

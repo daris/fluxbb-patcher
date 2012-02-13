@@ -61,7 +61,7 @@ class Patcher_RepoMod
 		$this->repositoryUrl = sprintf(PATCHER_REPO_MOD_URL, urldecode($this->id));
 		$this->isValid = true;
 		$this->version = $curMod['last_release']['version'];
-		$this->worksOn = $curMod['last_release']['forum_versions'];
+		$this->worksOn = array_reverse($curMod['last_release']['forum_versions']);
 		if (isset($curMod['description']))
 			$this->description = $curMod['description'];
 	}
@@ -416,10 +416,13 @@ class Patcher_Mod extends Patcher_RepoMod
 	function getWorksOn()
 	{
 		if (!isset($this->modInfo['works on fluxbb']))
-			return '';
+			return array();
 
-		$this->modInfo['works on fluxbb'] = str_replace(' and ', ', ', $this->modInfo['works on fluxbb']);
-		return array_map('trim', explode(',', $this->modInfo['works on fluxbb']));
+		$worksOn = str_replace(array(' and ', '.x', '.*'), array(',', ''), $this->modInfo['works on fluxbb']);
+		$worksOn = preg_replace('/[^a-zA-Z0-9-\.\*]+/', ',', $worksOn);
+		$versions = array_filter(array_map('trim', explode(',', $worksOn)));
+		usort($versions, 'version_compare');
+		return array_reverse($versions);
 	}
 
 	/**

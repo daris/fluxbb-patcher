@@ -166,8 +166,11 @@ class Patcher
 		if (isset($_SESSION['patcher_files']))
 		{
 			$files = unserialize($_SESSION['patcher_files']);
-			foreach ($files as $curFile => $contents)
-				$fs->put(PUN_ROOT.$curFile, $contents);
+			if (!defined('PATCHER_NO_SAVE'))
+			{
+				foreach ($files as $curFile => $contents)
+					$fs->put(PUN_ROOT.$curFile, $contents);
+			}
 		}
 
 		$this->validate = false;
@@ -363,6 +366,7 @@ class Patcher
 				}
 			}
 		}
+		//	patcherLog(__FUNCTION__.': <? $steps ='.var_export($steps, true));
 //print_r($steps);
 		return $steps;
 	}
@@ -418,11 +422,12 @@ class Patcher
 				$action->executeStep($curStep, $this->steps[$curReadmeFile][$key]);
 
 				if (!(($this->uninstall || $this->disable) && $curStep['command'] == 'NOTE') // Don't display Note message when uninstalling mod
-					&& $curStep['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
+					/*&& $curStep['status'] != STATUS_NOTHING_TO_DO*/) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
+					// TODO: isset($this->config['installed_mods'][$this->mod->id]['disabled']) ????
 				{
 					if (in_array($curStep['command'], $this->globalCommands))
 					{
-						$this->globalStep = $i; // it is a global action
+						$this->globalStep = $action->globalStep = $i; // it is a global action
 
 						if ($curStep['command'] == 'UPLOAD')
 						{
@@ -552,7 +557,6 @@ class Patcher
 
 		// when some file was opened, save it
 		$action->stepSave();
-		patcherLog(__FUNCTION__.': <?'.var_export($this->log, true));
 
 		$_SESSION['patcher_files'] = serialize($action->modifedFiles);
 

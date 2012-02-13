@@ -50,9 +50,6 @@ define('PATCHER_REPO_RELEASE_URL', 'http://fluxbb.org/resources/mods/%s/releases
 define('PATCHER_MOD_API_URL', 'http://fluxbb.org/api/json/resources/mods/%s/');
 define('PATCHER_MODS_API_URL', 'http://fluxbb.org/api/json/resources/mods/');
 
-if (file_exists(PATCHER_ROOT.'debug.php'))
-	require PATCHER_ROOT.'debug.php';
-
 // Load configuration file
 if (file_exists(PATCHER_ROOT.'config.php'))
 	require PATCHER_ROOT.'config.php';
@@ -245,8 +242,11 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 		&& $isValid
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
+		// patcherLog('ap_patcher.php: '.var_export($logs, true));
 		$patcher->makeChanges();
 		$logs = $patcher->log;
+				// patcherLog('ap_patcher.php: '.var_export($logs, true));
+
 		// Store logs in session as we may want to view logs in another page
 		$_SESSION['patcher_logs'] = serialize($logs);
 
@@ -288,7 +288,6 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 			'disable'	=> $langPatcher['Disabling'],
 			'update'	=> $langPatcher['Updating']
 		);
-
 		// Loop through each action
 		foreach ($logs as $curAction => $log)
 		{
@@ -911,8 +910,8 @@ else
 
 				if (isset($curMod->description))
 				{
-					if (strlen($curMod->description) > 400)
-						$info[] = '<br />'.pun_htmlspecialchars(substr($curMod->description, 0, 400)).'...';
+					if (utf8_strlen($curMod->description) > 400)
+						$info[] = '<br />'.pun_htmlspecialchars(utf8_substr($curMod->description, 0, 400)).'...';
 					else
 						$info[] = '<br />'.pun_htmlspecialchars($curMod->description);
 				}
@@ -926,7 +925,7 @@ else
 
 				$works_on = '';
 				if (isset($curMod->worksOn))
-					$info[] = '<br /><strong>'.$langPatcher['Supports FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', array_reverse($curMod->worksOn)));
+					$info[] = '<br /><strong>'.$langPatcher['Supports FluxBB'].'</strong>: '.pun_htmlspecialchars(implode(', ', $curMod->worksOn));
 
 				$status = '';
 				$actions = array(array(), array());
