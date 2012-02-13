@@ -31,7 +31,7 @@ class Patcher_Action_Disable extends Patcher_Action_Uninstall
 		$this->find = $this->code;
 
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']) || $this->curFilePath == '')
+		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		return STATUS_UNKNOWN;
@@ -47,7 +47,7 @@ class Patcher_Action_Disable extends Patcher_Action_Uninstall
 		if (empty($this->find))
 			return STATUS_UNKNOWN;
 
-		parent::stepReplace();
+		return parent::stepReplace();
 	}
 
 	/**

@@ -98,10 +98,6 @@ class Patcher_Action_Install
 			if ($this->validate || (!$this->validate && !isset($curStep['validated'])))
 				$curStep['status'] = $this->$function();
 
-			// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
-			// if (($this->uninstall || $this->disable) && $curStep['status'] == STATUS_DONE)
-			// 	$curStep['status'] = STATUS_REVERTED;
-
 			if ($this->result != '')
 				$curStep['result'] = $this->result;
 
@@ -200,6 +196,8 @@ class Patcher_Action_Install
 
 		$this->curFile = substr_replace($this->curFile, $replace, $pos, strlen($find));
 
+		patcherLog('replaceCode in '.$this->curFilePath.': '.var_export(strpos($this->curFile, $replace), true));
+
 		return STATUS_DONE;
 	}
 
@@ -295,8 +293,9 @@ class Patcher_Action_Install
 	function stepSave()
 	{
 		global $fs;
+
 		if (empty($this->curFilePath) || !$this->curFileModified || empty($this->curFile))
-			return;
+			return STATUS_UNKNOWN;
 
 		$this->friendlyUrlSave();
 
@@ -304,7 +303,10 @@ class Patcher_Action_Install
 			$this->modifedFiles[$this->curFilePath] = $this->curFile;
 
 		elseif (!defined('PATCHER_NO_SAVE'))
+		{
 			$fs->put(PUN_ROOT.$this->curFilePath, $this->curFile);
+			patcherLog('Saved file: '.$this->curFilePath);
+		}
 
 		elseif (isset($GLOBALS['patcherDebug']['save']) && in_array($this->curFilePath, $GLOBALS['patcherDebug']['save']))
 			$fs->put(PATCHER_ROOT.'debug/'.basename($this->curFilePath), $this->curFile);
@@ -323,13 +325,7 @@ class Patcher_Action_Install
 	{
 		$this->find = $this->code;
 
-		// Mod was already disabled before
-		if ($this->uninstall && isset($this->config['installed_mods'][$this->mod->id]['disabled']) || $this->curFilePath == '')
-			return STATUS_NOTHING_TO_DO;
-
-		if ($this->uninstall || $this->disable)
-			return STATUS_UNKNOWN;
-		elseif (!$this->checkCode($this->find))
+		if (!$this->checkCode($this->find))
 		{
 			$this->find = '';
 			return STATUS_NOT_DONE;
@@ -423,6 +419,7 @@ class Patcher_Action_Install
 				$this->comments[] = 'Query ID';
 			}
 		}
+
 		$this->find = $this->code;
 		return $status;
 	}

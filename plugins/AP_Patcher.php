@@ -180,6 +180,8 @@ if (count($notes) > 0)
 	$warning .= "\n\t\t\t".'</div>'."\n\t\t".'</div>'."\n\t\t".'</div>'."\n\t".'</div>'."\n".'</div>';
 }
 
+$donate_button = '<form style="float: right" action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_s-xclick"><input type="hidden" name="hosted_button_id" value="ZEAHSYTUXTTFJ"><input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"><img alt="" border="0" src="https://www.paypalobjects.com/pl_PL/i/scr/pixel.gif" width="1" height="1"></form>';
+
 // User wants to do some action?
 if (isset($modId) && file_exists(MODS_DIR.$modId))
 {
@@ -252,7 +254,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 
 ?>
 	<div class="blockform">
-		<h2><span><?php echo $langPatcher['Mod installation'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Mod installation'].$donate_button ?></span></h2>
 		<div class="box">
 			<div class="fakeform">
 				<div class="inform">
@@ -455,7 +457,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 		echo $warning;
 ?>
 	<div class="blockform">
-		<h2><span><?php echo $langPatcher['Modification overview'] ?></span></h2>
+		<h2><span><?php echo $langPatcher['Modification overview'].$donate_button ?></span></h2>
 		<div id="adstats" class="box">
 			<form method="post" action="<?php echo PLUGIN_URL.'&amp;mod_id='.pun_htmlspecialchars($modId).'&amp;action='.$action ?>">
 				<div class="inbox">
@@ -576,7 +578,7 @@ elseif (isset($_GET['show_log']))
 	{
 ?>
 	<div class="block blocktable">
-		<h2><span><?php echo $actionInfo[$curAction] ?></span></h2>
+		<h2><span><?php echo $actionInfo[$curAction].$donate_button ?></span></h2>
 	</div>
 <?php
 
@@ -677,7 +679,8 @@ else
 	echo $warning;
 ?>
 	<div class="plugin blockform">
-		<h2><span><?php echo sprintf($langPatcher['Patcher head'], PATCHER_VERSION) ?></span></h2>
+		<h2><span><?php echo sprintf($langPatcher['Patcher head'], PATCHER_VERSION).$donate_button ?></span></h2>
+
 		<div class="box">
 			<form action="<?php echo PLUGIN_URL ?>" method="post">
 				<div class="inform">

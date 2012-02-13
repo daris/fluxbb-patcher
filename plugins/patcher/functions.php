@@ -672,17 +672,26 @@ function patcherError()
 
 function patcherErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
 {
-	static $fh;
-
 	ob_start();
 	echo $errno.' '.$errstr.' in '.$errfile.', '.$errline."\n";
 	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 	$contents = ob_get_clean();
 
-	$fh = @fopen(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log', 'a');
-	if ($fh === false)
-		return false;
+	patcherLog($contents."\n----\n");
+}
 
-	fwrite($fh, $contents."\n----\n\n");
-	fclose($fh);
+function patcherLog($msg)
+{
+	static $fh;
+
+	if (!isset($fh))
+	{
+		@unlink(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log');
+		$fh = @fopen(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log', 'a+');
+		if ($fh === false)
+			return false;
+	}
+
+	fwrite($fh, $msg."\n");
+//	fclose($fh);
 }

@@ -11,6 +11,15 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Uninstall extends Patcher_Action_Install
 {
+	function executeStep(&$curStep, &$elem)
+	{
+		parent::executeStep($curStep, $elem);
+
+		// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
+		if ($curStep['status'] == STATUS_DONE)
+			$elem['status'] = $curStep['status'] = STATUS_REVERTED;
+	}
+
 	/**
 	 * Replace specified code
 	 *
@@ -126,17 +135,8 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		$this->find = $this->code;
 
 		// Mod was already disabled before
-		if ($this->uninstall && isset($this->config['installed_mods'][$this->mod->id]['disabled']) || $this->curFilePath == '')
+		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
-
-		if ($this->uninstall || $this->disable)
-			return STATUS_UNKNOWN;
-		elseif (!$this->checkCode($this->find))
-		{
-			$this->find = '';
-			return STATUS_NOT_DONE;
-		}
-		$this->code = $this->find;
 
 		return STATUS_UNKNOWN;
 	}
@@ -155,7 +155,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		if (empty($this->find))
 			return STATUS_UNKNOWN;
 
-		parent::stepReplace();
+		return parent::stepReplace();
 	}
 
 	/**
@@ -169,7 +169,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
-		parent::stepAfterAdd();
+		return parent::stepAfterAdd();
 	}
 
 	/**
@@ -183,7 +183,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
-		parent::stepBeforeAdd();
+		return parent::stepBeforeAdd();
 	}
 
 	/**
@@ -298,5 +298,37 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	{
 		// Delete step is usually for install_mod.php so when uninstalling that file does not exist
 		return STATUS_UNKNOWN;
+	}
+
+	/**
+	 * Remove steps from the Patcher configuration when we are uninstalling affected mod
+	 *
+	 * @return type
+	 */
+	function friendlyUrlUninstallUpload()
+	{
+		$genFile = 'friendly-url/files/gen.php';
+		if (!isset($this->config['steps'][$genFile]))
+			return;
+
+		foreach ($this->mod->filesToUpload as $from => $to)
+		{
+			$removeSteps = false;
+			foreach ($this->config['steps'][$genFile] as $key => $curStep)
+			{
+				if ($removeSteps)
+				{
+					if (in_array($curStep['command'], $this->modifyFileCommands))
+						unset($this->config['steps'][$genFile][$key]);
+					else
+						$removeSteps = false;
+				}
+				elseif ($curStep['command'] == 'OPEN' && $curStep['code'] == $to)
+				{
+					unset($this->config['steps'][$genFile][$key]);
+					$removeSteps = true;
+				}
+			}
+		}
 	}
 }

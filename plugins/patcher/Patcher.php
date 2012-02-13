@@ -305,7 +305,6 @@ class Patcher
 				foreach ($steps as $curReadmeFile => &$stepList)
 				{
 					$runStepsStart = $runStepsEnd = $uploadStepsEnd = $curStepList = array();
-					$cur_open_steps = array();
 					foreach ($stepList as $key => $curStep)
 					{
 						// Move RUN and DELETE steps at the end
@@ -343,28 +342,28 @@ class Patcher
 							$curStepList[] = $curStep;
 					}
 
-					$newStep_list = array();
+					$newStepList = array();
 					foreach ($curStepList as $key => $cStepList)
 					{
 						if (!isset($cStepList['substeps']))
 						{
-							$newStep_list[] = $cStepList;
+							$newStepList[] = $cStepList;
 							continue;
 						}
 
 						$substeps = array_reverse($cStepList['substeps']);
 						unset($cStepList['substeps']);
-						$newStep_list[] = $cStepList;
+						$newStepList[] = $cStepList;
 						foreach ($substeps as $curStep)
 							foreach ($curStep as $curStep_sub)
-								$newStep_list[] = $curStep_sub;
+								$newStepList[] = $curStep_sub;
 					}
 
-					$stepList = array_merge($runStepsStart, $newStep_list, $runStepsEnd, $uploadStepsEnd);
+					$stepList = array_merge($runStepsStart, $newStepList, $runStepsEnd, $uploadStepsEnd);
 				}
 			}
 		}
-
+//print_r($steps);
 		return $steps;
 	}
 
@@ -379,6 +378,14 @@ class Patcher
 		global $fs;
 		$failed = false;
 
+		$action = $this->determineAction();
+		$action->validate = $this->validate;
+		$action->config = $this->config;
+		$action->mod = $this->mod;
+		$action->action = $this->action;
+		$cur_action = $this->action;
+		$action->$cur_action = true;
+
 		if ($this->uninstall || $this->disable)
 		{
 			foreach ($this->mod->filesToUpload as $from => $to)
@@ -391,18 +398,13 @@ class Patcher
 			}
 		}
 		if ($this->uninstall)
-			$this->friendlyUrlUninstallUpload();
+			$action->friendlyUrlUninstallUpload();
 
 		$i = 1;
 		foreach ($this->log as $log)
 			foreach ($log as $curActionLog)
 				$i += count($curActionLog);
 		$this->log[$this->action] = array();
-
-		$action = $this->determineAction();
-		$action->validate = $this->validate;
-		$action->config = $this->config;
-		$action->mod = $this->mod;
 
 		$steps = $this->steps; // TODO: there is something wrong with variables visibility
 
@@ -447,8 +449,8 @@ class Patcher
 					}
 				}
 
-				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$this->curFileModified)
-					$this->curFileModified = true;
+				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$action->curFileModified)
+					$action->curFileModified = $this->curFileModified = true;
 
 				if ($curStep['status'] == STATUS_NOT_DONE)
 				{
@@ -550,8 +552,9 @@ class Patcher
 
 		// when some file was opened, save it
 		$action->stepSave();
+		patcherLog(__FUNCTION__.': <?'.var_export($this->log, true));
 
-		$_SESSION['patcher_files'] = serialize($this->modifedFiles);
+		$_SESSION['patcher_files'] = serialize($action->modifedFiles);
 
 		if ($this->config != $this->configOrg)
 		{
