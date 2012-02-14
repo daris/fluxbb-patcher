@@ -264,7 +264,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 					$action.':'.$modId => array(
 						'skipped' => array(
 							'status' => STATUS_NOT_DONE,
-							'message' => 'Failed to install <a href="'.PLUGIN_URL.'?mod='.pun_htmlspecialchars($modId).'&action=install">More details</a>',
+							'message' => 'Failed to install <a href="'.PLUGIN_URL.'&amp;mod_id='.pun_htmlspecialchars($modId).'&amp;action=install">More details</a>',
 						)
 					)
 				);
