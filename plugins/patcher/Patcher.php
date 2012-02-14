@@ -173,7 +173,7 @@ class Patcher
 			{
 				foreach ($curSteps as $key => $curStep)
 				{
-					if (isset($curStep['status']) && $curStep['status'] == STATUS_NOT_DONE)
+					if (!isset($curStep['status']) || $curStep['status'] == STATUS_NOT_DONE)
 					{
 						if (!isset($requirements['cannot_open']))
 							$requirements['cannot_open'] = array();
@@ -183,7 +183,7 @@ class Patcher
 					{
 						foreach ($curStep['substeps'] as $id => $curSubStep)
 						{
-							if (isset($curSubStep['status']) && $curSubStep['status'] == STATUS_NOT_DONE)
+							if (!isset($curSubStep['status']) || $curSubStep['status'] == STATUS_NOT_DONE)
 							{
 								if (!isset($requirements['missing_strings']))
 									$requirements['missing_strings'] = array();
@@ -353,7 +353,7 @@ class Patcher
 
 	/**
 	 * General patching method
-	 * TODO: cleanup this method
+	 * @todo cleanup this method
 	 *
 	 * @return bool
 	 */
@@ -391,6 +391,7 @@ class Patcher
 		$this->log[$this->action] = array();
 
 		$steps = $this->steps; // TODO: there is something wrong with variables visibility
+//		patcherLog(var_export($steps, true));
 
 		 // Allow to add steps inside loop
 		while (list($curReadmeFile, $stepList) = each($this->steps))
@@ -399,7 +400,8 @@ class Patcher
 
 			foreach ($stepList as $key => $curStep)
 			{
-				if ($action->executeStep($curStep, $this->steps[$curReadmeFile][$key]))
+				$stepResult = $curStep;
+				if ($action->executeStep($curStep, $stepResult))
 				{
 					if (in_array($curStep['command'], $this->globalCommands))
 					{
@@ -429,6 +431,8 @@ class Patcher
 						$logReadme[$this->globalStep]['substeps'][$i] = $curStep;
 					}
 				}
+
+				$this->steps[$curReadmeFile][$key] = $stepResult;
 
 				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$action->curFileModified)
 					$action->curFileModified = true;
@@ -461,6 +465,7 @@ class Patcher
 			}
 
 			$this->log[$this->action][$curReadmeFile] = $logReadme;
+			patcherLog(var_export($stepList, true));
 
 			$stepList = array_values($stepList);
 			if ($this->uninstall)

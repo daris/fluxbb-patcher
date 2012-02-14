@@ -686,8 +686,8 @@ function patcherLog($msg)
 
 	if (!isset($fh))
 	{
-		@unlink(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log');
-		$fh = @fopen(PUN_ROOT.'cache/patcher_'.gmdate('Y-m-d').'.log', 'a+');
+		@unlink(PUN_ROOT.'cache/patcher.log');
+		$fh = @fopen(PUN_ROOT.'cache/patcher.log', 'a+');
 		if ($fh === false)
 			return false;
 	}
