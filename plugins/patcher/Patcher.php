@@ -10,6 +10,16 @@
 class Patcher
 {
 	/**
+	 * Patcher version
+	 */
+	const VERSION = '2.0-alpha';
+
+	/**
+	 * Configuration file revision
+	 */
+	const CONFIG_REV = 1;
+
+	/**
 	 * @var Patcher_Mod Instance of the Patcher_Mod class
 	 */
 	public $mod = null;
@@ -23,31 +33,6 @@ class Patcher
 	 * @var array Orginal Patcher configuration (needed for checking whether something changed in configuration)
 	 */
 	public $configOrg = array();
-
-	/**
-	 * @var string Current file content
-	 */
-	public $curFile = null;
-
-	/**
-	 * @var string Relative path to the currently patched file
-	 */
-	public $curFilePath = null;
-
-	/**
-	 * @var bool Whether or not the current file was modified
-	 */
-	public $curFileModified = false;
-
-	/**
-	 * @var string The text that we want to replace with another in $curFile
-	 */
-	public $find = null;
-
-	/**
-	 * @var integer String position for the $curFile where we start to search specified string
-	 */
-	public $startPos = 0;
 
 	/**
 	 * @var integer Number of the current global step
@@ -78,16 +63,6 @@ class Patcher
 	public $enable = false;
 
 	/**
-	 * @var array Commands that are modifying current file
-	 */
-	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
-
-	/**
-	 * @var array Commands that are not touching current file
-	 */
-	public $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
-
-	/**
 	 * @var bool Only validate modification (without writing changes to the files)
 	 */
 	public $validate = false;
@@ -103,6 +78,11 @@ class Patcher
 	public $modifedFiles = array();
 
 	/**
+	 * @var array Commands that are not touching current file
+	 */
+	public $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
+
+	/**
 	 * Constructor
 	 *
 	 * @param type $mod
@@ -115,7 +95,7 @@ class Patcher
 		$this->mod = $mod;
 
 		$this->config = $this->configOrg = loadPatcherConfig();
-		$this->config['patcher_config_rev'] = PATCHER_CONFIG_REV;
+		$this->config['patcher_config_rev'] = self::CONFIG_REV;
 	}
 
 
@@ -229,6 +209,7 @@ class Patcher
 		global $fs;
 
 		// Revert modified files
+		// TODO: fix this
 		foreach ($this->orginalFiles as $curFile => $contents)
 			$fs->put(PUN_ROOT.$curFile, $contents);
 	}
@@ -366,8 +347,7 @@ class Patcher
 				}
 			}
 		}
-		//	patcherLog(__FUNCTION__.': <? $steps ='.var_export($steps, true));
-//print_r($steps);
+
 		return $steps;
 	}
 
@@ -419,11 +399,7 @@ class Patcher
 
 			foreach ($stepList as $key => $curStep)
 			{
-				$action->executeStep($curStep, $this->steps[$curReadmeFile][$key]);
-
-				if (!(($this->uninstall || $this->disable) && $curStep['command'] == 'NOTE') // Don't display Note message when uninstalling mod
-					/*&& $curStep['status'] != STATUS_NOTHING_TO_DO*/) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
-					// TODO: isset($this->config['installed_mods'][$this->mod->id]['disabled']) ????
+				if ($action->executeStep($curStep, $this->steps[$curReadmeFile][$key]))
 				{
 					if (in_array($curStep['command'], $this->globalCommands))
 					{
@@ -455,7 +431,7 @@ class Patcher
 				}
 
 				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$action->curFileModified)
-					$action->curFileModified = $this->curFileModified = true;
+					$action->curFileModified = true;
 
 				if ($curStep['status'] == STATUS_NOT_DONE)
 				{

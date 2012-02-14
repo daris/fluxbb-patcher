@@ -11,13 +11,18 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Uninstall extends Patcher_Action_Install
 {
-	function executeStep(&$curStep, &$elem)
+	function executeStep(&$curStep)
 	{
-		parent::executeStep($curStep, $elem);
+		parent::executeStep($curStep);
 
 		// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
 		if ($curStep['status'] == STATUS_DONE)
-			$elem['status'] = $curStep['status'] = STATUS_REVERTED;
+			$curStep['status'] = STATUS_REVERTED;
+
+		// Don't display Note message when uninstalling mod
+		return ($curStep['command'] != 'NOTE');
+			/*&& $curStep['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
+			// TODO: isset($this->config['installed_mods'][$this->mod->id]['disabled']) ????*/
 	}
 
 	/**

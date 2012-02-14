@@ -21,9 +21,6 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
-define('PATCHER_VERSION', '2.0-alpha');
-define('PATCHER_CONFIG_REV', '1');
-
 // Enable debug mode for now (remove when releasing stable version)
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
@@ -145,7 +142,7 @@ $mod_repo = getModRepo(isset($_GET['check_for_updates']));
 // Check for patcher updates
 $patcher_version = isset($mod_repo['mods']['patcher']['last_release']['version']) ? $mod_repo['mods']['patcher']['last_release']['version'] : null;
 
-if (version_compare($patcher_version, PATCHER_VERSION, '>'))
+if (version_compare($patcher_version, Patcher::VERSION, '>'))
 	$notes[] = sprintf($langPatcher['New Patcher version available'], $patcher_version, '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
 
 // Check needed directories to be writable
@@ -185,20 +182,23 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	// Load patcher configuration from file
 	$patcherConfig = loadPatcherConfig();
 
+	$isInstalled = isset($patcherConfig['installed_mods'][$modId]);
+	$isEnabled = !isset($patcherConfig['installed_mods'][$modId]['disabled']);
+
 	// Mod is installed and we want to install again
-	if ($action == 'install' && isset($patcherConfig['installed_mods'][$modId]))
+	if ($action == 'install' && $isInstalled)
 		message($langPatcher['Mod already installed']);
 
 	// Do not allow to uninstall mod if it is not installed
-	elseif ($action == 'uninstall' && !isset($patcherConfig['installed_mods'][$modId]))
+	elseif ($action == 'uninstall' && !$isInstalled)
 		message($langPatcher['Mod already uninstalled']);
 
 	// Mod is already enabled
-	elseif ($action == 'enable' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
+	elseif ($action == 'enable' && $isEnabled)
 		message($langPatcher['Mod already enabled']);
 
 	// Mod is disabled and we want to disable again
-	elseif ($action == 'disable' && isset($patcherConfig['installed_mods'][$modId]['disabled']))
+	elseif ($action == 'disable' && !$isEnabled)
 		message($langPatcher['Mod already disabled']);
 
 	$mod = new Patcher_Mod($modId);
@@ -213,21 +213,18 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 	$logs = array();
 
 	$patcher = new Patcher($mod);
-	$isValid = true;
+	$success = true;
 
 	// If user wants to update mod, first remove its code from files (disable mod) and then update it
 	if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
-	{
-		$isValid = $patcher->executeAction('disable', true);
-	}
+		$success &= $patcher->executeAction('disable', true);
 
-	$isValid &= $patcher->executeAction($action, true);
+	$success &= $patcher->executeAction($action, true);
 
 	// Do the patching
 	$logs = $patcher->log;
-	$done = $isValid; // TODO: remove
 
-	if (!$isValid)
+	if (!$success)
 	{
 		$requirements['failed'] = true;
 		$requirements = array_merge($requirements, $patcher->unmetRequirements());
@@ -239,13 +236,11 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 
 	// Do patching! :)
 	if (!isset($requirements['failed']) // there are no unmet requirements
-		&& $isValid
+		&& $success
 		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 	{
-		// patcherLog('ap_patcher.php: '.var_export($logs, true));
 		$patcher->makeChanges();
 		$logs = $patcher->log;
-				// patcherLog('ap_patcher.php: '.var_export($logs, true));
 
 		// Store logs in session as we may want to view logs in another page
 		$_SESSION['patcher_logs'] = serialize($logs);
@@ -392,7 +387,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 		}
 
 ?>
-<?php if ($done) : ?>
+<?php if ($success) : ?>
 							<p><strong><?php echo $langPatcher['Congratulations'] ?></strong><br /><?php echo $doneInfo[$action] ?></p>
 <?php else: ?>
 							<p><strong><?php echo $failedInfo[$action] ?></strong><br /><?php echo $langPatcher['Mod patching failed'] ?></p>
@@ -678,7 +673,7 @@ else
 	echo $warning;
 ?>
 	<div class="plugin blockform">
-		<h2><span><?php echo sprintf($langPatcher['Patcher head'], PATCHER_VERSION).$donate_button ?></span></h2>
+		<h2><span><?php echo sprintf($langPatcher['Patcher head'], Patcher::VERSION).$donate_button ?></span></h2>
 
 		<div class="box">
 			<form action="<?php echo PLUGIN_URL ?>" method="post">

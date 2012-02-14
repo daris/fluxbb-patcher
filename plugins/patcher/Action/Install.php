@@ -81,7 +81,7 @@ class Patcher_Action_Install
 	public $modifedFiles = array();
 
 
-	function executeStep(&$curStep, &$elem)
+	function executeStep(&$curStep)
 	{
 		if (!isset($curStep['status']))
 			$curStep['status'] = STATUS_UNKNOWN;
@@ -105,11 +105,9 @@ class Patcher_Action_Install
 			$curStep['comments'] = $this->comments;
 
 			if (in_array($this->command, $this->modifyFileCommands) && $this->validate)
-			{
-				$elem['validated'] = true;
-				$elem['status'] = $curStep['status'];
-			}
+				$curStep['validated'] = true;
 		}
+		return true;
 	}
 
 	/**
@@ -422,6 +420,18 @@ class Patcher_Action_Install
 
 		$this->find = $this->code;
 		return $status;
+	}
+
+	function replaceQuery($curFileQuery, $findQuery, $codeQuery, $findLine, $queryLine, $codeLine)
+	{
+		$replaceWith = replaceQuery($curFileQuery, $codeQuery); // query
+
+		if (!$replaceWith)
+			return false;
+
+		$line = str_replace($codeQuery, $replaceWith, $codeLine); // line with query
+		$this->find = str_replace($findLine, $queryLine, $this->find);
+		$this->code = str_replace($codeLine, $line, $this->code);
 	}
 
 	/**
