@@ -94,7 +94,6 @@ class Patcher
 	{
 		$this->mod = $mod;
 
-		$this->config = $this->configOrg = loadPatcherConfig();
 		$this->config['patcher_config_rev'] = self::CONFIG_REV;
 	}
 
@@ -388,7 +387,9 @@ class Patcher
 		foreach ($this->log as $log)
 			foreach ($log as $curActionLog)
 				$i += count($curActionLog);
-		$this->log[$this->action] = array();
+
+		$log_key = $this->action.':'.$this->mod->title;
+		$this->log[$log_key] = array();
 
 		$steps = $this->steps; // TODO: there is something wrong with variables visibility
 //		patcherLog(var_export($steps, true));
@@ -464,8 +465,8 @@ class Patcher
 				$i++;
 			}
 
-			$this->log[$this->action][$curReadmeFile] = $logReadme;
-			patcherLog(var_export($stepList, true));
+			$this->log[$log_key][$curReadmeFile] = $logReadme;
+//			patcherLog(var_export($stepList, true));
 
 			$stepList = array_values($stepList);
 			if ($this->uninstall)

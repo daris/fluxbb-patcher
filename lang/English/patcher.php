@@ -87,10 +87,10 @@ return array(
 'Show log'						=> 'Show log',
 'Return to mod list'			=> 'Return to mod list',
 
-'Mod already installed'			=> 'Modification already installed.',
-'Mod already uninstalled'		=> 'Modification already uninstalled.',
-'Mod already enabled'			=> 'Modification already enabled.',
-'Mod already disabled'			=> 'Modification already disabled.',
+'Mod already installed'			=> 'Modification %s has been already installed.',
+'Mod already uninstalled'		=> 'Modification %s has been already uninstalled.',
+'Mod already enabled'			=> 'Modification %s has been already enabled.',
+'Mod already disabled'			=> 'Modification %s has been already disabled.',
 
 'Modification overview'			=> 'Modification overview',
 'Description'					=> 'Description',

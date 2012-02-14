@@ -174,74 +174,126 @@ if (count($notes) > 0)
 $donate_button = '<form style="float: right" action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_s-xclick"><input type="hidden" name="hosted_button_id" value="ZEAHSYTUXTTFJ"><input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"><img alt="" border="0" src="https://www.paypalobjects.com/pl_PL/i/scr/pixel.gif" width="1" height="1"></form>';
 
 // User wants to do some action?
-if (isset($modId) && file_exists(MODS_DIR.$modId))
+if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 {
 	// Load patcher configuration from file
 	$patcherConfig = loadPatcherConfig();
 
-	$isInstalled = isset($patcherConfig['installed_mods'][$modId]);
-	$isEnabled = !isset($patcherConfig['installed_mods'][$modId]['disabled']);
+	$mods = isset($_POST['install']) ? array_keys($_POST['mods']) : array($modId);
+	if (isset($_POST['install']))
+		$action = 'install';
 
-	// Mod is installed and we want to install again
-	if ($action == 'install' && $isInstalled)
-		message($langPatcher['Mod already installed']);
+	$installResult = array();
 
-	// Do not allow to uninstall mod if it is not installed
-	elseif ($action == 'uninstall' && !$isInstalled)
-		message($langPatcher['Mod already uninstalled']);
-
-	// Mod is already enabled
-	elseif ($action == 'enable' && $isEnabled)
-		message($langPatcher['Mod already enabled']);
-
-	// Mod is disabled and we want to disable again
-	elseif ($action == 'disable' && !$isEnabled)
-		message($langPatcher['Mod already disabled']);
-
-	$mod = new Patcher_Mod($modId);
-	if (!$mod->isValid)
-		message($langPatcher['Invalid mod dir']);
-
-	// Get the requirement list
-	$requirements = $mod->checkRequirements();
-
-	unset($_SESSION['patcher_logs']);
-	unset($_SESSION['patcher_steps']);
-	$logs = array();
-
-	$patcher = new Patcher($mod);
-	$success = true;
-
-	// If user wants to update mod, first remove its code from files (disable mod) and then update it
-	if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
-		$success &= $patcher->executeAction('disable', true);
-
-	$success &= $patcher->executeAction($action, true);
-
-	// Do the patching
-	$logs = $patcher->log;
-
-	if (!$success)
+	foreach ($mods as $modId)
 	{
-		$requirements['failed'] = true;
-		$requirements = array_merge($requirements, $patcher->unmetRequirements());
-		$_SESSION['patcher_steps'] = serialize($patcher->steps);
-	}
+		$isInstalled = isset($patcherConfig['installed_mods'][$modId]);
+		$isEnabled = !isset($patcherConfig['installed_mods'][$modId]['disabled']);
 
-	// Store logs in session as we may want to view logs in another page
-	$_SESSION['patcher_logs'] = serialize($logs);
+		$message = '';
+		// Mod is installed and we want to install again
+		if ($action == 'install' && $isInstalled)
+			$message = sprintf($langPatcher['Mod already installed'], $modId);
 
-	// Do patching! :)
-	if (!isset($requirements['failed']) // there are no unmet requirements
-		&& $success
-		&& (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
-	{
-		$patcher->makeChanges();
-		$logs = $patcher->log;
+		// Do not allow to uninstall mod if it is not installed
+		elseif ($action == 'uninstall' && !$isInstalled)
+			$message = sprintf($langPatcher['Mod already uninstalled'], $modId);
+
+		// Mod is already enabled
+		elseif ($action == 'enable' && $isEnabled)
+			$message = sprintf($langPatcher['Mod already enabled'], $modId);
+
+		// Mod is disabled and we want to disable again
+		elseif ($action == 'disable' && !$isEnabled)
+			$message = sprintf($langPatcher['Mod already disabled'], $modId);
+
+		if (!empty($message))
+		{
+			if (isset($_POST['install']))
+			{
+				$result = array(
+					$action.':'.$modId => array(
+						'skipped' => array(
+							'status' => STATUS_DONE,
+							'message' => $message
+						)
+					)
+				);
+				$installResult = array_merge($installResult, $result);
+				// Store logs in session as we may want to view logs in another page
+				$_SESSION['patcher_logs'] = serialize($installResult);
+				$success = true;
+				continue;
+			}
+			else
+				message($message);
+		}
+
+		$mod = new Patcher_Mod($modId);
+		if (!$mod->isValid)
+			message($langPatcher['Invalid mod dir']);
+
+		// Get the requirement list
+		$requirements = $mod->checkRequirements();
+
+		$logs = array();
+
+		$patcher = new Patcher($mod);
+		$patcher->config = $patcher->configOrg = $patcherConfig;
+
+		$success = true;
+
+		// If user wants to update mod, first remove its code from files (disable mod) and then update it
+		if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
+			$success &= $patcher->executeAction('disable', true);
+
+		$success &= $patcher->executeAction($action, true);
+
+		// Do the patching
+		//$logs = $patcher->log;
+
+		if (!$success)
+		{
+			$requirements['failed'] = true;
+			$requirements = array_merge($requirements, $patcher->unmetRequirements());
+			$_SESSION['patcher_steps'] = serialize($patcher->steps);
+
+			if (isset($_POST['install']))
+			{
+				$result = array(
+					$action.':'.$modId => array(
+						'skipped' => array(
+							'status' => STATUS_NOT_DONE,
+							'message' => 'Failed to install <a href="'.PLUGIN_URL.'?mod='.pun_htmlspecialchars($modId).'&action=install">More details</a>',
+						)
+					)
+				);
+				$installResult = array_merge($installResult, $result);
+				$_SESSION['patcher_logs'] = serialize($installResult);
+				continue;
+			}
+		}
+			// Do patching! :)
+		if ($success && (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
+		{
+			$patcher->makeChanges();
+			$logs = $patcher->log;
+		}
+
+		unset($_SESSION['patcher_steps']);
 
 		// Store logs in session as we may want to view logs in another page
-		$_SESSION['patcher_logs'] = serialize($logs);
+		$installResult = array_merge($installResult, $logs);
+		// patcherLog('<? $installResult = '.var_export($installResult, true));
+		// patcherLog('<? $logs = '.var_export($logs, true));
+		$_SESSION['patcher_logs'] = serialize($installResult);
 
+		$patcherConfig = $patcher->config;
+	}
+
+
+	if ($success || isset($_POST['install']))
+	{
 		generate_admin_menu($plugin);
 
 ?>
@@ -281,9 +333,13 @@ if (isset($modId) && file_exists(MODS_DIR.$modId))
 			'update'	=> $langPatcher['Updating']
 		);
 		// Loop through each action
-		foreach ($logs as $curAction => $log)
+		foreach ($installResult as $curAct => $log)
 		{
-			echo "\n\t\t\t\t\t\t".'<p>'.$actionInfo[$curAction].'...<br />';
+			list($curAction, $curMod) = explode(':', $curAct);
+			echo "\n\t\t\t\t\t\t".'<p>'.$actionInfo[$curAction].' <strong>'.pun_htmlspecialchars($curMod).'</strong>...<br />';
+
+			if (isset($log['skipped']))
+				echo "\n\t\t\t\t\t\t".'<strong style="color: '.($log['skipped']['status'] ? 'green' : 'red').'">'.$log['skipped']['message'].'</strong><br />';
 
 			// The array containing list of actions that were done
 			$actions = array();
@@ -756,7 +812,7 @@ else
 	<div class="plugin blockform">
 		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&amp;check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
 		<div class="box">
-			<div class="fakeform">
+			<form method="post">
 
 <?php
 
@@ -860,6 +916,7 @@ else
 ?>
 				<div class="inform">
 					<fieldset>
+						<div style="float: right"><input type="submit" name="install" value="Install"></div>
 						<legend><?php echo $langPatcher[$section] ?></legend>
 						<div class="infldset">
 <?php
@@ -877,6 +934,7 @@ else
 									<tr>
 										<th class="tcl"><?php echo $langPatcher['Mod title'] ?></th>
 										<th class="tcr" style="width: 30%"><?php echo $langPatcher['Action'] ?></th>
+										<th style="width: 10px">Select</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -988,6 +1046,7 @@ else
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
 											<?php echo implode('<br />'."\n", $actionsInfo) ?>
 										</td>
+										<td><input type="checkbox" name="mods[<?php echo pun_htmlspecialchars($curMod->id) ?>]" value="1" /></td>
 									</tr>
 <?php
 				$i++;
@@ -1005,7 +1064,7 @@ else
 	}
 ?>
 
-			</div>
+			</form>
 		</div>
 	</div>
 <?php

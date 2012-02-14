@@ -520,6 +520,9 @@ class Patcher_Action_Install
 	{
 		global $langPatcher;
 
+		$suffix = '_'.substr(sha1(rand()), 0, 6);
+		$installFunc = 'install'.$suffix;
+
 		if (defined('PATCHER_NO_SAVE') || $this->validate)
 			return STATUS_UNKNOWN;
 
@@ -549,6 +552,8 @@ class Patcher_Action_Install
 				$installCode = substr($installCode, 0, $len);
 				$installCode = str_replace(array('define(\'PUN_TURN_OFF_MAINT\', 1);', 'define(\'PUN_ROOT\', \'./\');', 'require PUN_ROOT.\'include/common.php\';'), '', $installCode);
 				$installCode = str_replace('or error(', 'or patcherError(', $installCode);
+				$installCode = str_replace('function install(', 'function install'.$suffix.'(', $installCode);
+				$installCode = str_replace('function restore(', 'function restore'.$suffix.'(', $installCode);
 
 				$lines = explode("\n", $installCode);
 				foreach ($lines as $curLine)
@@ -557,7 +562,7 @@ class Patcher_Action_Install
 
 				eval($installCode);
 
-				install();
+				$installFunc();
 				$this->result = sprintf($langPatcher['Database prepared for'], $mod_title);
 			}
 			return STATUS_DONE;
