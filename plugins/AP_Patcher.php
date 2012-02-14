@@ -7,9 +7,6 @@
  * @package Patcher
  */
 
-// uncoment if you want to dsiable download feature
-// define('PATCHER_NO_DOWNLOAD', 1);
-
 // Make sure no one attempts to run this script "directly"
 if (!defined('PUN'))
 	exit;
