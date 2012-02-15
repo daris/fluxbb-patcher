@@ -7,41 +7,8 @@
  * @package Patcher
  */
 
-class Patcher_FileSystem
+class Patcher_FileSystem_PHP extends Patcher_FileSystem
 {
-	static function load($type, $options)
-	{
-		$class = 'Patcher_FileSystem_'.$type;
-		if (!class_exists($class))
-		{
-			if (!file_exists(PATCHER_ROOT.'FileSystem/'.$type.'.php'))
-				error('No such FileSystem type: '.$type);
-
-			require PATCHER_ROOT.'FileSystem/'.$type.'.php';
-		}
-
-		return new $class($options);
-	}
-
-	public $options;
-	public $root;
-
-	function __construct($options = null)
-	{
-		$this->options = $options;
-		$this->root = PUN_ROOT;
-	}
-
-	/**
-	 * Return path to the temporary file in cache directory
-	 *
-	 * @return string
-	 */
-	function tmpname()
-	{
-		return FORUM_CACHE_DIR.md5(time().rand());
-	}
-
 	/**
 	 * Create directory
 	 *
@@ -50,7 +17,7 @@ class Patcher_FileSystem
 	 */
 	function mkdir($dir)
 	{
-		throw new Exception('Not implemented');
+		return mkdir($dir);
 	}
 
 	/**
@@ -62,7 +29,7 @@ class Patcher_FileSystem
 	 */
 	function move($src, $dest)
 	{
-		throw new Exception('Not implemented');
+		return rename($src, $dest);
 	}
 
 	/**
@@ -74,7 +41,7 @@ class Patcher_FileSystem
 	 */
 	function copy($src, $dest)
 	{
-		throw new Exception('Not implemented');
+		return copy($src, $dest);
 	}
 
 	/**
@@ -86,7 +53,7 @@ class Patcher_FileSystem
 	 */
 	function put($file, $data)
 	{
-		throw new Exception('Not implemented');
+		return file_put_contents($file, $data);
 	}
 
 	/**
@@ -97,7 +64,7 @@ class Patcher_FileSystem
 	 */
 	function delete($file)
 	{
-		throw new Exception('Not implemented');
+		return unlink($file);
 	}
 
 	/**
@@ -108,35 +75,23 @@ class Patcher_FileSystem
 	 */
 	function rmDir($path)
 	{
-		throw new Exception('Not implemented');
-	}
+		if (!is_dir($path))
+			return false;
 
-	/**
-	 * Get the list of files from specified directory that we want to remove
-	 *
-	 * @param type $path
-	 * @return type
-	 */
-	function listToRemove($path)
-	{
-		$files = array();
-		$d = dir($path);
-		while ($f = $d->read())
+		$list = $this->listToRemove($path);
+
+		// It files aren't writable the rest of this function will not be executed
+		$this->areFilesWritable($list);
+
+		foreach ($list as $curFile)
 		{
-			if ($f == '.' || $f == '..')
-				continue;
-
-			if (is_file($path.'/'.$f))
-				$files[] = $path.'/'.$f;
+			if (is_dir($curFile))
+				rmdir($curFile);
 			else
-			{
-				$files = array_merge($files, $this->listToRemove($path.'/'.$f));
-				//$directories[] = $path.'/'.$f;
-			}
+				$this->delete($curFile);
 		}
-		$d->close();
-		$files[] = $path;
-		return $files;
+
+		return true;
 	}
 
 	/**
@@ -148,7 +103,22 @@ class Patcher_FileSystem
 	 */
 	function copyDir($source, $dest)
 	{
-		throw new Exception('Not implemented');
+		if (!is_dir($dest))
+			$this->mkdir($dest);
+
+		$d = dir($source);
+		while ($f = $d->read())
+		{
+			if ($f != '.' && $f != '..' && $f != '.git' && $f != '.svn')
+			{
+				if (is_dir($source.'/'.$f))
+					$this->copyDir($source.'/'.$f, $dest.'/'.$f);
+				else
+					$this->copy($source.'/'.$f, $dest.'/'.$f);
+			}
+		}
+		$d->close();
+		return true;
 	}
 
 	/**
@@ -182,7 +152,10 @@ class Patcher_FileSystem
 	 */
 	function isWritable($path)
 	{
-		throw new Exception('Not implemented');
+		if ($path == PUN_ROOT.'.')
+			return $this->isWritable(PUN_ROOT);
+
+		return is_writable($path);
 	}
 
 	/**
@@ -204,7 +177,6 @@ class Patcher_FileSystem
 
 		if (count($notWritable) > 0)
 			message($langPatcher['Files not writable info'].':<br />'.implode('<br />', $notWritable));
-
 		return true;
 	}
 }

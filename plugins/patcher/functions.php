@@ -521,6 +521,33 @@ function downloadUpdate($modId, $version)
 }
 
 /**
+ * Download Patcher update and extract it
+ *
+ * @param string $version
+ * @return type
+ */
+function downloadPatcherUpdate($version)
+{
+	global $langPatcher, $fs;
+
+	$extractTo = PATCHER_ROOT.'../../';
+
+	if (!$fs->isWritable($extractTo))
+		message(sprintf($langPatcher['Directory not writable'], pun_htmlspecialchars($extractTo)));
+
+	$filename = basename('patcher_v'.$version.'.zip');
+	$tmpname = $fs->tmpname();
+	downloadFile(sprintf(PATCHER_REPO_RELEASE_URL, 'patcher', urldecode($version), urldecode($filename)), $tmpname);
+
+	$zip = new Patcher_ZipArchive($tmpname);
+	if (!$zip->extract($extractTo))
+		message($langPatcher['Failed to extract file']);
+	$zip->close();
+
+	redirect(PLUGIN_URL, $langPatcher['Modification updated redirect']);
+}
+
+/**
  * Download modification package from the http://fluxbb.org/resources repository
  *
  * @param type $modId

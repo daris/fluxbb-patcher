@@ -6,10 +6,16 @@
 // define('PATCHER_NO_DOWNLOAD', 1);
 
 // Comment out if you want to disable FTP layer
-$ftpData = array(
-	'host' => '127.0.0.1',		// FTP server hostname (example: fluxbb.org)
-	'port' => 21,				// FTP post (you probably do not need to change this value)
-	'user' => 'root',			// FTP account username
-	'pass' => '123456',			// FTP account password
-	'path' => 'public_html/',	// Path to the FluxBB directory (relative to the FTP directory)
+
+$config = array(
+	'filesystem' => array(
+		'type'		=> 'FTP',
+		'options'	=> array(
+			'host' => '127.0.0.1',		// FTP server hostname (example: fluxbb.org)
+			'port' => 21,				// FTP post (you probably do not need to change this value)
+			'user' => 'root',			// FTP account username
+			'pass' => '123456',			// FTP account password
+			'path' => 'public_html/',	// Path to the FluxBB directory (relative to the FTP directory)
+		)
+	)
 );

@@ -62,7 +62,10 @@ if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php')
 else
 	$langPatcher = require PATCHER_ROOT.'../../lang/English/patcher.php';
 
-$fs = new Patcher_FileSystem(isset($ftpData) ? $ftpData : null);
+if (!isset($config))
+	$config = array('filesystem' => array('type' => 'PHP'));
+
+$fs = Patcher_FileSystem::load($config['filesystem']['type'], $config['filesystem']['options']);
 
 // We want the complete error message if the script fails
 if (!defined('PUN_DEBUG'))
@@ -113,7 +116,10 @@ if (isset($_GET['download_update']))
 	if (!isset($modId) || empty($modId))
 		message($lang_common['Bad request']);
 
-	downloadUpdate($modId, $_GET['download_update']);
+	if ($modId == 'patcher')
+		downloadPatcherUpdate($_GET['download_update']);
+	else
+		downloadUpdate($modId, $_GET['download_update']);
 }
 
 // Download modification from FluxBB repository
@@ -145,7 +151,7 @@ $mod_repo = getModRepo(isset($_GET['check_for_updates']));
 $patcher_version = isset($mod_repo['mods']['patcher']['last_release']['version']) ? $mod_repo['mods']['patcher']['last_release']['version'] : null;
 
 if (version_compare($patcher_version, Patcher::VERSION, '>'))
-	$notes[] = sprintf($langPatcher['New Patcher version available'], $patcher_version, '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
+	$notes[] = sprintf($langPatcher['New Patcher version available'], '<a href="'.PLUGIN_URL.'&amp;mod_id=patcher&download_update='.pun_htmlspecialchars($patcher_version).'">'.$langPatcher['Download and install update'].'</a>', $patcher_version, '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
 
 // Check needed directories to be writable
 $dirsNotWritable = array();
@@ -940,9 +946,9 @@ else
 								<thead>
 									<tr>
 										<th class="tcl" colspan="2"><?php echo $langPatcher['Mod title'] ?></th>
-										<th class="tcr" style="width: 25%"><?php echo $langPatcher['Action'] ?></th>
-<?php if ($section != 'Mods to download') : ?>										<th style="width: 10px"><?php echo $langPatcher['Select'] ?></th>
-<?php endif; ?>									</tr>
+										<th class="tcr" style="width: 170px"><?php echo $langPatcher['Action'] ?></th>
+										<th style="width: 40px"><?php echo ($section != 'Mods to download') ? $langPatcher['Select'] : '&nbsp;' ?></th>
+								</tr>
 								</thead>
 								<tbody>
 <?php
@@ -1050,8 +1056,8 @@ else
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
 											<?php echo implode('<br />'."\n", $actionsInfo) ?>
 										</td>
-<?php if (get_class($curMod) != 'Patcher_RepoMod') : ?>										<td><input type="checkbox" name="mods[<?php echo pun_htmlspecialchars($curMod->id) ?>]" value="1" /></td>
-<?php endif; ?>									</tr>
+										<td><?php echo (get_class($curMod) != 'Patcher_RepoMod') ? '<input type="checkbox" name="mods['.pun_htmlspecialchars($curMod->id).']" value="1" />' : '&nbsp;' ?></td>
+									</tr>
 <?php
 				$i++;
 			}
