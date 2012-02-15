@@ -174,13 +174,13 @@ if (count($notes) > 0)
 $donate_button = '<form style="float: right" action="https://www.paypal.com/cgi-bin/webscr" method="post"><input type="hidden" name="cmd" value="_s-xclick"><input type="hidden" name="hosted_button_id" value="ZEAHSYTUXTTFJ"><input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"><img alt="" border="0" src="https://www.paypalobjects.com/pl_PL/i/scr/pixel.gif" width="1" height="1"></form>';
 
 // User wants to do some action?
-if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
+if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 {
 	// Load patcher configuration from file
 	$patcherConfig = loadPatcherConfig();
 
-	$mods = isset($_POST['install']) ? array_keys($_POST['mods']) : array($modId);
-	if (isset($_POST['install']))
+	$mods = isset($_POST['mods']) ? array_keys($_POST['mods']) : array($modId);
+	if (isset($_POST['mods']) && isset($_POST['install']))
 		$action = 'install';
 
 	$installResult = array();
@@ -229,8 +229,8 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 				message($message);
 		}
 
-		$mod = new Patcher_Mod($modId);
-		if (!$mod->isValid)
+		$mod = Patcher_Mod::load($modId);
+		if (!$mod)
 			message($langPatcher['Invalid mod dir']);
 
 		// Get the requirement list
@@ -241,7 +241,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 		$patcher = new Patcher($mod);
 		$patcher->config = $patcher->configOrg = $patcherConfig;
 
-		$success = true;
+		$success = $valid = true;
 
 		// If user wants to update mod, first remove its code from files (disable mod) and then update it
 		if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
@@ -250,13 +250,14 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 		$success &= $patcher->executeAction($action, true);
 
 		// Do the patching
-		//$logs = $patcher->log;
+		$logs = $patcher->log;
 
 		if (!$success)
 		{
 			$requirements['failed'] = true;
 			$requirements = array_merge($requirements, $patcher->unmetRequirements());
 			$_SESSION['patcher_steps'] = serialize($patcher->steps);
+			$valid = false;
 
 			if (isset($_POST['install']))
 			{
@@ -273,8 +274,9 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 				continue;
 			}
 		}
-			// Do patching! :)
-		if ($success && (isset($_POST['install']) || /*in_array($action, array('enable', 'disable'))*/ !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
+
+		// Do patching! :)
+		if ($success && (isset($_POST['install']) || !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 		{
 			$patcher->makeChanges();
 			$logs = $patcher->log;
@@ -284,17 +286,15 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 
 		// Store logs in session as we may want to view logs in another page
 		$installResult = array_merge($installResult, $logs);
-		// patcherLog('<? $installResult = '.var_export($installResult, true));
-		// patcherLog('<? $logs = '.var_export($logs, true));
 		$_SESSION['patcher_logs'] = serialize($installResult);
 
 		$patcherConfig = $patcher->config;
 	}
 
-
-	if ($success || isset($_POST['install']))
+	if (isset($_POST['install']) || ($valid && !in_array($action, array('install', 'uninstall'))))
 	{
 		generate_admin_menu($plugin);
+
 
 ?>
 	<div class="blockform">
@@ -455,8 +455,8 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 			} ?>
 							<p>
 								<a href="<?php echo PLUGIN_URL ?>&amp;show_log"><?php echo $langPatcher['Show log'] ?></a> |
-<?php if (in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=update"><?php echo $langPatcher['Update'] ?></a> | <?php endif; ?>
-<?php if ($action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=uninstall"><?php echo $langPatcher['Uninstall'] ?></a> |  <?php endif; ?>
+<?php if (!isset($_POST['mods']) && in_array($action, array('install', 'update'))) : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=update"><?php echo $langPatcher['Update'] ?></a> | <?php endif; ?>
+<?php if (!isset($_POST['mods']) && $action != 'uninstall') : ?>								<a href="<?php echo PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($modId) ?>&amp;action=uninstall"><?php echo $langPatcher['Uninstall'] ?></a> |  <?php endif; ?>
 								<a href="<?php echo PLUGIN_URL ?>"><?php echo $langPatcher['Return to mod list'] ?></a>
 							</p>
 						</div>
@@ -472,6 +472,10 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['install']))
 	else
 	{
 		require PUN_ROOT.'include/parser.php'; // need for handle_url_tag()
+
+		$mod = Patcher_Mod::load($modId);
+		if (!$mod)
+			message($langPatcher['Invalid mod dir']);
 
 		$detailedInfo = array();
 		// Generate mod info
@@ -827,7 +831,7 @@ else
 		if (substr($modId, 0, 1) == '.' || !is_dir(MODS_DIR.$modId) || $fs->isEmptyDir(MODS_DIR.$modId))
 			continue;
 
-		$mod = new Patcher_Mod($modId);
+		$mod = Patcher_Mod::load($modId);
 		if (!$mod->isValid)
 			continue;
 
@@ -872,7 +876,7 @@ else
 
 			if ($updateVersion != '')
 			{
-				$updatedMod = new Patcher_Mod($modId);
+				$updatedMod = Patcher_Mod::load($modId);
 				$updatedMod->isInstalled = $mod->isInstalled;
 				$updatedMod->isEnabled = $mod->isEnabled;
 				if (isset($hasUpdate['local']))
@@ -979,7 +983,7 @@ else
 
 				$status = '';
 				$actions = array(array(), array());
-				if (get_class($curMod) == 'Patcher_Mod')
+				if (get_class($curMod) != 'Patcher_RepoMod')
 				{
 					if ($section == 'Mods failed to uninstall')
 					{

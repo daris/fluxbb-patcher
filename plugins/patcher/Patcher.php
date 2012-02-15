@@ -413,12 +413,12 @@ class Patcher
 							$code = array();
 							foreach ($this->mod->filesToUpload as $from => $to)
 								$code[] = $from.' to '.$to;
-							$curStep['substeps'][0] = array('code' => implode("\n", $code));
+							$curStep['substeps'][0] = array('status' => STATUS_DONE, 'code' => implode("\n", $code));
 							unset($curStep['code']);
 						}
 						elseif ($curStep['command'] == 'RUN CODE')
 						{
-							$curStep['substeps'][0] = array('code' => $curStep['code']);
+							$curStep['substeps'][0] = array('status' => STATUS_DONE, 'code' => $curStep['code']);
 							unset($curStep['code']);
 						}
 

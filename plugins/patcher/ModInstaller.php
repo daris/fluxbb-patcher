@@ -7,125 +7,14 @@
  * @package Patcher
  */
 
-class Patcher_RepoMod
+require_once PATCHER_ROOT.'Mod.php';
+
+class Patcher_ModInstaller extends Patcher_Mod
 {
-	/**
-	 * @var string Modification id (directory)
-	 */
-	// public $id;
-
-	/**
-	 * @var string Modification title
-	 */
-	// public $title;
-
-	/**
-	 * @var string Modification version
-	 */
-	// public $version;
-
-	/**
-	 * @var string FluxBB versions that this mod is compatible with
-	 */
-	// public $worksOn;
-
-	/**
-	 * @var string URL of the modification repository
-	 */
-	// public $repositoryUrl;
-
-	/**
-	 * @var bool Whether or not modification is valid
-	 */
-	// public $isValid;
-
-	/**
-	 * @var string Modification description
-	 */
-	// public $description;
-
-	/**
-	 * Constructor
-	 *
-	 * @param type $id
-	 * 		Modification ID
-	 *
-	 * @param type $curMod
-	 *
-	 * @return type
-	 */
-	function __construct($id, $curMod)
-	{
-		$this->id = $id;
-		$this->title = $curMod['name'];
-		$this->repositoryUrl = sprintf(PATCHER_REPO_MOD_URL, urldecode($this->id));
-		$this->isValid = true;
-		$this->version = $curMod['last_release']['version'];
-		$this->worksOn = array_reverse($curMod['last_release']['forum_versions']);
-		if (isset($curMod['description']))
-			$this->description = $curMod['description'];
-	}
-
-	/**
-	 * Check whether modification is compatible with installed FluxBB release
-	 *
-	 * @return bool
-	 */
-	function isCompatible()
-	{
-		global $pun_config;
-
-		if (!isset($this->worksOn))
-			return false;
-
-		foreach ($this->worksOn as $curVersion)
-		{
-			if (strpos($curVersion, '*') !== false && preg_match('/'.str_replace('\*', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
-				|| strpos($curVersion, 'x') !== false && preg_match('/'.str_replace('x', '*', preg_quote($curVersion)).'/', $pun_config['o_cur_version'])
-				|| $curVersion == $pun_config['o_cur_version']
-				|| $curVersion == substr($pun_config['o_cur_version'], 0, strlen($curVersion))
-				|| substr($curVersion, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
-					return true;
-
-			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
-				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
-		}
-
-		return false;
-	}
-}
-
-
-class Patcher_Mod extends Patcher_RepoMod
-{
-	static function load($modId)
-	{
-		$mod = new Patcher_Mod($modId);
-		if ($mod->isValid)
-			return $mod;
-
-		require_once PATCHER_ROOT.'ModInstaller.php';
-		$mod = new Patcher_ModInstaller($modId);
-		if ($mod->isValid)
-			return $mod;
-
-		return false;
-	}
-
 	/**
 	 * @var string Modification id (directory)
 	 */
 	public $id = null;
-
-	/**
-	 * @var string Main readme file directory
-	 */
-	public $readmeFileDir = null;
-
-	/**
-	 * @var string Main readme file path (variable accessible via __get method)
-	 */
-//	public $readmeFileName = null;
 
 	/**
 	 * @var string Full path to the modification directory
@@ -133,14 +22,9 @@ class Patcher_Mod extends Patcher_RepoMod
 	public $modDir = null;
 
 	/**
-	 * @var string Main readme file content
+	 * @var string Path to the plugin directory (that contains mod_config.php and search_insert.php files)
 	 */
-	private $readmeFile = null;
-
-	/**
-	 * @var string List of readme files in current mod directory (including subdirectories)
-	 */
-//	public $readmeFileList = null;
+	private $pluginDir = null;
 
 	/**
 	 * Constructor
@@ -154,13 +38,16 @@ class Patcher_Mod extends Patcher_RepoMod
 	{
 		$this->id = $id;
 		$this->modDir = MODS_DIR.$this->id.'/';
-		if (!is_dir($this->modDir) || !isset($this->readmeFileName))
+		$this->pluginDir = $this->getPluginDir();
+
+		if (!is_dir($this->modDir) || !$this->pluginDir)
 		{
 			$this->isValid = false;
 			return false;
 		}
-		$this->readmeFileDir = $this->modDir.dirname($this->readmeFileName);
-		$this->readmeFile = file_get_contents($this->modDir.$this->readmeFileName);
+
+		require $this->pluginDir.'/mod_config.php';
+		$this->modConfig = $mod_config;
 	}
 
 	/**
@@ -186,112 +73,52 @@ class Patcher_Mod extends Patcher_RepoMod
 		return isset($value) && !empty($value);
 	}
 
-
 	/**
-	 * Look for readme file name
+	 * Get the readme file list for specified directory
 	 *
-	 * @return string
+	 * @return type
 	 */
-	function getReadmeFileName()
+	function getPluginDir()
 	{
-		if (file_exists(MODS_DIR.$this->id.'/readme.txt'))
-			return 'readme.txt';
+		$directory = $this->modDir.'/files/plugins/';
 
-		if (count($this->readmeFileList) == 1)
-			return $this->readmeFileList[0];
+		if (!is_dir($directory))
+			return false;
 
-		foreach ($this->readmeFileList as $key => $curReadme)
+		$dir = dir($directory);
+		while ($d = $dir->read())
 		{
-			if (preg_match('/(install|read\s?me|lisezmoi).*?(\.txt)?/i', $curReadme))
-				return $curReadme;
+			if (substr($d, 0, 1) != '.')
+			{
+				if (file_exists($directory.$d.'/mod_config.php'))
+					return $directory.$d;
+			}
 		}
+		$dir->close();
 
 		return false;
 	}
 
 	/**
-	 * Get the readme file list for specified directory
+	 * Load search_insert.php file
 	 *
-	 * @param type $dirpath
-	 * @param type $subdirectory
 	 * @return type
 	 */
-	function getReadmeFileList($dirpath = '', $subdirectory = true)
+	function getSearchInsert()
 	{
-		// Load readme file list
-		if ($dirpath == '')
-			$dirpath = $this->modDir;
-
-		$result = array();
-		$dir = dir($dirpath);
-		while ($file = $dir->read())
-		{
-			if (substr($file, 0, 1) != '.')
-			{
-				if (is_dir($dirpath.'/'.$file))
-				{
-					if ($subdirectory)
-						$result = array_merge($result, $this->getReadmeFileList($dirpath.'/'.$file, false));
-				}
-				else if ((strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false || strpos(strtolower($file), 'lisezmoi') !== false) && (strpos(strtolower($file), '.txt') !== false || strpos(strtolower($file), '.') === false))
-					$result[] = ltrim(str_replace($this->modDir, '', $dirpath.'/'.$file), '/');
-			}
-		}
-		$dir->close();
-
-		return $result;
-	}
-
-	/**
-	 * Return array containing modification information
-	 *
-	 * @return array
-	 */
-	function getModInfo()
-	{
-		$file = $this->readmeFile;
-
-		if (!isset($this->readmeFile) || empty($this->readmeFile))
+		if (!file_exists($this->pluginDir.'/search_insert.php'))
 			return array();
 
-		$modInfo = array();
+		require $this->pluginDir.'/search_insert.php';
+		$result = array();
+		if (isset($files_to_insert))
+			$result['files_to_insert'] = $files_to_insert;
+		if (isset($search_file))
+			$result['search_file'] = $search_file;
+		if (isset($insert_file))
+			$result['insert_file'] = $insert_file;
 
-		$file = substr($file, 0, strpos($file, '#--'));
-		$file = trim($file, '# '."\n\r\t");
-
-		// Gizzmo's syntax - strip out *****
-		$file = preg_replace('#\*{5,}#', '', $file);
-
-		$lines = explode("\n", $file);
-		$transformations = array(
-			'title'				=> 'mod title',
-			'version mod'		=> 'mod version',
-			'version'			=> 'mod version',
-			'affected file'		=> 'affected files',
-			'works on'			=> 'works on fluxbb',
-			'works on punbb'	=> 'works on fluxbb', // this should not be here :)
-		);
-		$last_info = '';
-		foreach ($lines as $line)
-		{
-			$line = ltrim(trim($line), '#*');
-	/*		if ($line == '')
-				continue;
-	*/
-			if (strpos(substr($line, 0, 25), ':') !== false)
-			{
-				$last_info = trim(strtolower(substr($line, 0, strpos($line, ':'))));
-				if (isset($transformations[$last_info]))
-					$last_info = $transformations[$last_info];
-				$modInfo[$last_info] = trim(substr($line, strpos($line, ':') + 1));
-			}
-			elseif ($last_info != '')
-				$modInfo[$last_info] .= "\n".trim($line);
-		}
-
-		$this->isValid = isset($modInfo['mod version']);
-
-		return $modInfo;
+		return $result;
 	}
 
 	/**
@@ -311,21 +138,10 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getAuthor()
 	{
-		if (!isset($this->modInfo['author']))
+		if (!isset($this->modConfig['author']))
 			return '';
 
-		$author = $this->modInfo['author'];
-		if (preg_match('#^(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
-			|| preg_match('#^([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
-			$author = $m[1];
-
-		if (strpos($author, ';') !== false)
-			$author = substr($author, 0, strpos($author, ';'));
-
-		if (strpos($author, ' - ') !== false)
-			$author = substr($author, 0, strpos($author, ' - '));
-
-		return trim($author);
+		return $this->modConfig['author'];
 	}
 
 	/**
@@ -335,12 +151,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getAuthorEmail()
 	{
-		if (!isset($this->modInfo['author']))
-			return '';
-
-		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->modInfo['author'], $m) // name (test@gmail.com)
-			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->modInfo['author'], $m)) // test@gmail.com
-			return trim($m[1]);
+		return '';
 	}
 
 	/**
@@ -350,10 +161,10 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getTitle()
 	{
-		if (!isset($this->modInfo['mod title']))
+		if (!isset($this->modConfig['mod_name']))
 			return ucfirst(str_replace(array('-', '_'), ' ', $this->id));
 
-		return trim($this->modInfo['mod title']);
+		return trim($this->modConfig['mod_name']);
 	}
 
 	/**
@@ -363,10 +174,10 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getVersion()
 	{
-		if (!isset($this->modInfo['mod version']))
+		if (!isset($this->modConfig['version']))
 			return '';
 
-		return $this->modInfo['mod version'];
+		return $this->modConfig['version'];
 	}
 
 	/**
@@ -376,10 +187,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getDescription()
 	{
-		if (!isset($this->modInfo['description']))
-			return '';
-
-		return $this->modInfo['description'];
+		return '';
 	}
 
 	/**
@@ -389,10 +197,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getAffectsDb()
 	{
-		if (!isset($this->modInfo['affects db']))
-			return '';
-
-		return $this->modInfo['affects db'];
+		return false;
 	}
 
 	/**
@@ -402,10 +207,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getImportant()
 	{
-		if (!isset($this->modInfo['important']))
-			return '';
-
-		return $this->modInfo['important'];
+		return '';
 	}
 
 	/**
@@ -415,10 +217,10 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getReleaseDate()
 	{
-		if (!isset($this->modInfo['release date']))
+		if (!isset($this->modConfig['release_date']))
 			return '';
 
-		return $this->modInfo['release date'];
+		return $this->modConfig['release_date'];
 	}
 
 	/**
@@ -428,14 +230,11 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getWorksOn()
 	{
-		if (!isset($this->modInfo['works on fluxbb']))
+		if (!isset($this->modConfig['fluxbb_versions']))
 			return array();
 
-		$worksOn = str_replace(array(' and ', '.x', '.*'), array(',', ''), $this->modInfo['works on fluxbb']);
-		$worksOn = preg_replace('/[^a-zA-Z0-9-\.\*]+/', ',', $worksOn);
-		$versions = array_filter(array_map('trim', explode(',', $worksOn)));
-		usort($versions, 'version_compare');
-		return array_reverse($versions);
+		usort($this->modConfig['fluxbb_versions'], 'version_compare');
+		return array_reverse($this->modConfig['fluxbb_versions']);
 	}
 
 	/**
@@ -445,51 +244,23 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getRepositoryUrl()
 	{
-		if (!isset($this->modInfo['repository url']) || strpos($this->modInfo['repository url'], '(Leave unedited)') !== false)
-			return '';
-
-		return $this->modInfo['repository url'];
+		return '';
 	}
 
 	/**
 	 * Get list of the affected files by this modification
 	 *
+	 * @todo fix the following
 	 * @return array
 	 */
 	function getAffectedFiles()
 	{
-		if (!isset($this->modInfo['affected files']))
-			return '';
-
 		$files = array();
-		$delimiter = (strpos($this->modInfo['affected files'], ', ') !== false) ? ',' : "\n";
-		$affectedFiles = explode($delimiter, $this->modInfo['affected files']);
-		foreach ($affectedFiles as $curFile)
-		{
-			// Do some fix for current file :)
-			$curFile = str_replace(array('[language]', 'your_lang'), 'English', trim($curFile));
-			$curFile = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $curFile);
 
-			// Delete everything after ( and [ charachters
-			if (strpos($curFile, ' (') !== false)
-				$curFile = substr($curFile, 0, strpos($curFile, ' ('));
-			if (strpos($curFile, ' [') !== false)
-				$curFile = substr($curFile, 0, strpos($curFile, ' ['));
+		if (isset($this->searchInsert['files_to_insert']))
+			$files = array_merge($files, $this->searchInsert['files_to_insert']);
 
-			// Does not look like a file?
-			if (($pos = strrpos($curFile, '.')) === false || $pos < strlen($curFile) - 5 || $pos >= strlen($curFile) - 1)
-				continue;
-
-			// Exclude lines that has Null, None or No word
-			if (!empty($curFile) && !in_array(strtolower($curFile), array('null', 'none', 'no')))
-				$files[] = trim($curFile);
-		}
-
-		if (file_exists($this->readmeFileDir.'/patcher.affected_files.php'))
-			$files = array_merge($files, require($this->readmeFileDir.'/patcher.affected_files.php'));
-
-		sort($files);
-		return array_unique($files);
+		return $files;
 	}
 
 	/**
@@ -499,18 +270,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getUploadCode()
 	{
-		if (strpos($this->readmeFile, 'UPLOAD ]--') === false)
-			return false;
-
-		$uploadCode = substr($this->readmeFile, strpos($this->readmeFile, 'UPLOAD ]--'));
-
-		// Mpok's style (first line - English, second - translation)
-		if (preg_match('/\]-+\s*\n#-+\[/si', $uploadCode))
-			$uploadCode = preg_replace('/(\]-+\r?\n)#-+.*?\n/si', '$1', $uploadCode, 1);
-
-		$uploadCode = substr($uploadCode, strpos($uploadCode, "\n") + 1);
-		$uploadCode = substr($uploadCode, 0, strpos($uploadCode, '#--'));
-		return trim($uploadCode, '#'."\n\r");
+		return '';
 	}
 
 	/**
