@@ -147,6 +147,9 @@ return array(
 'Status'						=> 'Status',
 'Action'						=> 'Action',
 
+'With selected'					=> 'With selected',
+'Select'						=> 'Select',
+
 'Installed'						=> 'Installed',
 'Not installed'					=> 'Not installed',
 'Install'						=> 'Install',

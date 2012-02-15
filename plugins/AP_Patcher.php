@@ -87,8 +87,10 @@ if (!defined('BACKUPS_DIR'))
 if (!session_id())
 	session_start();
 
+$patchActions = array('install', 'uninstall', 'update', 'enable', 'disable');
+
 $modId = isset($_GET['mod_id']) ? basename($_GET['mod_id']) : null;
-$action = isset($_GET['action']) && in_array($_GET['action'], array('install', 'uninstall', 'update', 'enable', 'disable', 'show_log')) ? $_GET['action'] : 'install';
+$action = isset($_GET['action']) && in_array($_GET['action'], array_merge($patchActions, array('show_log'))) ? $_GET['action'] : 'install';
 $file = isset($_GET['file']) ? $_GET['file'] : 'readme.txt';
 
 // Revert from backup
@@ -180,8 +182,13 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 	$patcherConfig = loadPatcherConfig();
 
 	$mods = isset($_POST['mods']) ? array_keys($_POST['mods']) : array($modId);
-	if (isset($_POST['mods']) && isset($_POST['install']))
-		$action = 'install';
+	if (isset($_POST['mods']))
+	{
+		foreach ($patchActions as $curAction)
+			if (isset($_POST[$curAction]))
+				$action = $curAction;
+	}
+
 
 	$installResult = array();
 
@@ -209,7 +216,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 
 		if (!empty($message))
 		{
-			if (isset($_POST['install']))
+			if (isset($_POST['mods']))
 			{
 				$result = array(
 					$action.':'.$modId => array(
@@ -241,7 +248,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 		$patcher = new Patcher($mod);
 		$patcher->config = $patcher->configOrg = $patcherConfig;
 
-		$success = $valid = true;
+		$success = $isValid = true;
 
 		// If user wants to update mod, first remove its code from files (disable mod) and then update it
 		if ($action == 'update' && !isset($patcherConfig['installed_mods'][$modId]['disabled']))
@@ -257,9 +264,9 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 			$requirements['failed'] = true;
 			$requirements = array_merge($requirements, $patcher->unmetRequirements());
 			$_SESSION['patcher_steps'] = serialize($patcher->steps);
-			$valid = false;
+			$isValid = false;
 
-			if (isset($_POST['install']))
+			if (isset($_POST['mods']))
 			{
 				$result = array(
 					$action.':'.$modId => array(
@@ -276,7 +283,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 		}
 
 		// Do patching! :)
-		if ($success && (isset($_POST['install']) || !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
+		if ($success && (isset($_POST['mods']) || !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
 		{
 			$patcher->makeChanges();
 			$logs = $patcher->log;
@@ -291,7 +298,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 		$patcherConfig = $patcher->config;
 	}
 
-	if (isset($_POST['install']) || ($valid && !in_array($action, array('install', 'uninstall'))))
+	if (isset($_POST['mods']) || (!in_array($action, array('install', 'uninstall')) && $isValid) || isset($_POST[$action]))
 	{
 		generate_admin_menu($plugin);
 
@@ -546,7 +553,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 
 					<p class="buttons">
 <?php if (isset($requirements['failed'])) : ?>						<input type="submit" name="check_again" value="<?php echo $langPatcher['Check again'] ?>" /><?php endif; ?>
-						<input type="submit" name="install" value="<?php echo $langPatcher[ucfirst($action)] ?>"<?php echo isset($requirements['failed']) ? ' disabled="disabled"' : '' ?> />
+						<input type="submit" name="<?php echo pun_htmlspecialchars($action) ?>" value="<?php echo $langPatcher[ucfirst($action)] ?>"<?php echo isset($requirements['failed']) ? ' disabled="disabled"' : '' ?> />
 						<a href="<?php echo PLUGIN_URL ?>"><?php echo $langPatcher['Return to mod list'] ?></a>
 					</p>
 				</div>
@@ -910,7 +917,7 @@ else
 
 	foreach ($modList as $section => $mods)
 	{
-		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && count($mods) == 0)
+		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && empty($mods))
 			continue;
 
 		$i = 0;
@@ -920,11 +927,12 @@ else
 ?>
 				<div class="inform">
 					<fieldset>
-						<div style="float: right"><input type="submit" name="install" value="Install"></div>
+<?php if (!empty($mods) && $section != 'Mods to download') : ?>						<div style="float: right; padding: 6px 0px 0px;"><?php echo $langPatcher['With selected'] ?>: <input type="submit" name="install" value="<?php echo $langPatcher['Install'] ?>" /> <input type="submit" name="uninstall" value="<?php echo $langPatcher['Uninstall'] ?>" /> <input type="submit" name="enable" value="<?php echo $langPatcher['Enable'] ?>" /> <input type="submit" name="disable" value="<?php echo $langPatcher['Disable'] ?>" /></div>
+<?php endif; ?>
 						<legend><?php echo $langPatcher[$section] ?></legend>
 						<div class="infldset">
 <?php
-		if (count($mods) == 0)
+		if (empty($mods))
 		{
 ?>
 							<p><?php echo $langPatcher['No '.strtolower($section)] ?></p>
@@ -937,9 +945,9 @@ else
 								<thead>
 									<tr>
 										<th class="tcl"><?php echo $langPatcher['Mod title'] ?></th>
-										<th class="tcr" style="width: 30%"><?php echo $langPatcher['Action'] ?></th>
-										<th style="width: 10px">Select</th>
-									</tr>
+										<th class="tcr" style="width: 25%"><?php echo $langPatcher['Action'] ?></th>
+<?php if ($section != 'Mods to download') : ?>										<th style="width: 10px"><?php echo $langPatcher['Select'] ?></th>
+<?php endif; ?>									</tr>
 								</thead>
 								<tbody>
 <?php
@@ -1050,8 +1058,8 @@ else
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
 											<?php echo implode('<br />'."\n", $actionsInfo) ?>
 										</td>
-										<td><input type="checkbox" name="mods[<?php echo pun_htmlspecialchars($curMod->id) ?>]" value="1" /></td>
-									</tr>
+<?php if (get_class($curMod) != 'Patcher_RepoMod') : ?>										<td><input type="checkbox" name="mods[<?php echo pun_htmlspecialchars($curMod->id) ?>]" value="1" /></td>
+<?php endif; ?>									</tr>
 <?php
 				$i++;
 			}
