@@ -18,6 +18,9 @@ define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
 if (!defined('PATCHER_ROOT'))
 	define('PATCHER_ROOT', PUN_ROOT.'plugins/patcher/');
 
+if (!defined('PATCHER_ROOT_URL'))
+	define('PATCHER_ROOT_URL', $pun_config['o_base_url'].'/'.substr(realpath(PATCHER_ROOT.'../../'), strlen(PUN_ROOT)));
+
 // Enable debug mode for now (remove when releasing stable version)
 if (!defined('PUN_DEBUG'))
 	define('PUN_DEBUG', 1);
@@ -931,20 +934,12 @@ else
 <?php endif; ?>
 						<legend><?php echo $langPatcher[$section] ?></legend>
 						<div class="infldset">
-<?php
-		if (empty($mods))
-		{
-?>
-							<p><?php echo $langPatcher['No '.strtolower($section)] ?></p>
-<?php
-		}
-		else
-		{
-?>
+<?php if (empty($mods)) : ?>							<p><?php echo $langPatcher['No '.strtolower($section)] ?></p>
+<?php else : ?>
 							<table>
 								<thead>
 									<tr>
-										<th class="tcl"><?php echo $langPatcher['Mod title'] ?></th>
+										<th class="tcl" colspan="2"><?php echo $langPatcher['Mod title'] ?></th>
 										<th class="tcr" style="width: 25%"><?php echo $langPatcher['Action'] ?></th>
 <?php if ($section != 'Mods to download') : ?>										<th style="width: 10px"><?php echo $langPatcher['Select'] ?></th>
 <?php endif; ?>									</tr>
@@ -977,10 +972,6 @@ else
 					else
 						$info[] = '<br />'.pun_htmlspecialchars($curMod->description);
 				}
-
-				// Is the mod compatible with FluxBB version
-				if (!$curMod->isCompatible())
-					$info[] = '<br /><span style="color: #a00; display: inline">'.$langPatcher['Unsupported version info'].'</span>';
 
 				if (isset($curMod->important))
 					$info[] = '<br /><span style="color: #a00"><strong>'.$langPatcher['Important'].'</strong>: '.pun_htmlspecialchars($curMod->important).'</span>';
@@ -1053,6 +1044,7 @@ else
 
 ?>
 									<tr class="mod-info <?php echo ($i % 2 == 0) ? 'roweven' : 'rowodd' ?>">
+										<td style="width: 20px; background-repeat: no-repeat; background-position: center center; background-image: url(<?php echo PATCHER_ROOT_URL ?>/img/patcher/bullet_<?php echo $curMod->isCompatible() ? 'green' : 'red' ?>.png)"<?php echo $curMod->isCompatible() ? '' : ' title="'.$langPatcher['Unsupported version info'].'"' ?>>&nbsp;</td>
 										<td><?php echo implode("\n", $info) ?></td>
 										<td class="tcr">
 											<?php echo ($status != '') ? $status.'<br />' : '' ?>
@@ -1063,7 +1055,7 @@ else
 <?php
 				$i++;
 			}
-		}
+endif;
 
 ?>
 								</tbody>
