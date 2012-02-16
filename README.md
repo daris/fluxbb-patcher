@@ -14,7 +14,7 @@ This script allows you to easily install and uninstall FluxBB modifications.
 The basic Linux server permission settings does not allow to modify files via PHP. There are two ways of making Patcher to do this:
 
 1. Change chmod of FluxBB root directory to 0777 - but it is a security issue, I suggest to do step 2 instead :)
-2. Enable FTP layer by renaming plugins/patcher/config_sample.php to config.php (in the same directory) and filling the FTP login details.
+2. Enable FTP layer by renaming plugins/patcher/config.example.php to config.php (in the same directory) and filling the FTP login details.
 
 Example below:
 
