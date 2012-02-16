@@ -7,7 +7,7 @@
  * @package Patcher
  */
 
-require PATCHER_ROOT.'ZIP/Pcl/PclZip.php';
+require PATCHER_ROOT.'Zip/Pcl/PclZip.php';
 
 /**
  * Wrapper for PclZip library
