@@ -11,6 +11,8 @@
 if (!defined('PUN'))
 	exit;
 
+define('MIN_PHP_VERSION', '5.0');
+
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
 define('PUN_PLUGIN_LOADED', 1);
 define('PLUGIN_URL', 'admin_loader.php?plugin=AP_Patcher.php');
@@ -61,6 +63,10 @@ if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php')
 	$langPatcher = require PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php';
 else
 	$langPatcher = require PATCHER_ROOT.'../../lang/English/patcher.php';
+
+// Make sure we are running at least MIN_PHP_VERSION
+if (!function_exists('version_compare') || version_compare(PHP_VERSION, MIN_PHP_VERSION, '<'))
+	exit(sprintf($langPatcher['You are running error'], 'PHP', PHP_VERSION, Patcher::VERSION, MIN_PHP_VERSION));
 
 if (!isset($config))
 	$config = array('filesystem' => array('type' => 'Native', 'options' => array()), 'zip' => array('type' => 'Native', 'options' => array()));

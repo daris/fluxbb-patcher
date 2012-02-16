@@ -23,8 +23,8 @@ abstract class Patcher_FileSystem
 		return new $class($options);
 	}
 
-	public $options;
-	public $root;
+	protected $options;
+	protected $root;
 
 	function __construct($options = null)
 	{
@@ -45,13 +45,10 @@ abstract class Patcher_FileSystem
 	/**
 	 * Create directory
 	 *
-	 * @param type $directory
+	 * @param type $dir
 	 * @return type
 	 */
-	function mkdir($dir)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function mkdir($dir);
 
 	/**
 	 * Move directory or file
@@ -60,10 +57,7 @@ abstract class Patcher_FileSystem
 	 * @param type $dest
 	 * @return type
 	 */
-	function move($src, $dest)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function move($src, $dest);
 
 	/**
 	 * Copy file to another location
@@ -72,10 +66,7 @@ abstract class Patcher_FileSystem
 	 * @param type $dest
 	 * @return type
 	 */
-	function copy($src, $dest)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function copy($src, $dest);
 
 	/**
 	 * Save specified file
@@ -84,10 +75,7 @@ abstract class Patcher_FileSystem
 	 * @param type $data
 	 * @return type
 	 */
-	function put($file, $data)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function put($file, $data);
 
 	/**
 	 * Delete file
@@ -95,10 +83,7 @@ abstract class Patcher_FileSystem
 	 * @param type $file
 	 * @return type
 	 */
-	function delete($file)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function delete($file);
 
 	/**
 	 * Remove directory recursively
@@ -106,10 +91,7 @@ abstract class Patcher_FileSystem
 	 * @param type $path
 	 * @return type
 	 */
-	function rmDir($path)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function rmDir($path);
 
 	/**
 	 * Get the list of files from specified directory that we want to remove
@@ -146,10 +128,7 @@ abstract class Patcher_FileSystem
 	 * @param type $dest
 	 * @return type
 	 */
-	function copyDir($source, $dest)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function copyDir($source, $dest);
 
 	/**
 	 * Check whether given directory is empty
@@ -180,10 +159,7 @@ abstract class Patcher_FileSystem
 	 * @param type $path
 	 * @return type
 	 */
-	function isWritable($path)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function isWritable($path);
 
 	/**
 	 * Check whether specified files are writable

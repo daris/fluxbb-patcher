@@ -33,24 +33,20 @@ abstract class Patcher_Zip
 	/**
 	 * @var ZipArchive Instance of ZipArchive or PclZip object
 	 */
-	private $zip;
+	protected $zip;
 
 	/**
 	 * @var bool Whether or not current file was opened for reading
 	 */
-	public $isOpen = false;
+	protected $isOpen = false;
 
 	/**
 	 * Open specified ZIP file
 	 *
 	 * @param type $file
-	 * @param type $create
 	 * @return type
 	 */
-	function open($file)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function open($file);
 
 	/**
 	 * Create specified ZIP file
@@ -58,20 +54,14 @@ abstract class Patcher_Zip
 	 * @param type $file
 	 * @return type
 	 */
-	function create($file)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function create($file);
 
 	/**
 	 * Return list of the files from ZIP file
 	 *
 	 * @return array
 	 */
-	function listContent()
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function listContent();
 
 	/**
 	 * Extract ZIP file to the specified directory
@@ -79,10 +69,7 @@ abstract class Patcher_Zip
 	 * @param type $extractTo
 	 * @return type
 	 */
-	function extract($extractTo)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function extract($extractTo);
 
 	/**
 	 * Add files to the ZIP archive
@@ -90,18 +77,12 @@ abstract class Patcher_Zip
 	 * @param array $files
 	 * @return bool
 	 */
-	function add($files)
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function add($files);
 
 	/**
 	 * Close current ZIP file
 	 *
 	 * @return bool
 	 */
-	function close()
-	{
-		throw new Exception('Not implemented');
-	}
+	abstract function close();
 }

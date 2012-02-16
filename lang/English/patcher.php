@@ -2,6 +2,8 @@
 
 return array(
 
+'You are running error'			=>	'You are running %1$s version %2$s. Patcher %3$s requires at least %1$s %4$s to run properly. You must upgrade your %1$s installation before you can continue.',
+
 'Backup created redirect'		=> 'Backup created. Redirecting …',
 'Important'						=> 'Important',
 'Directories not writable info'	=> 'The following directories are not writable',
