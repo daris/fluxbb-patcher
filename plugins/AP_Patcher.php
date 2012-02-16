@@ -198,7 +198,6 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 				$action = $curAction;
 	}
 
-
 	$installResult = array();
 
 	foreach ($mods as $modId)
@@ -292,7 +291,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 		}
 
 		// Do patching! :)
-		if ($success && (isset($_POST['mods']) || !in_array($action, array('install', 'uninstall')))) // user clicked button on previous page or wants to enable/disable mod
+		if ($success && (isset($_POST['mods']) || (!in_array($action, array('install', 'uninstall')) || isset($_POST[$action])))) // user clicked button on previous page or wants to enable/disable mod
 		{
 			$patcher->makeChanges();
 			$logs = $patcher->log;

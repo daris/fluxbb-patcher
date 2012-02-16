@@ -12,7 +12,7 @@ class Patcher
 	/**
 	 * Patcher version
 	 */
-	const VERSION = '2.0-dev';
+	const VERSION = '2.0-alpha';
 
 	/**
 	 * Configuration file revision

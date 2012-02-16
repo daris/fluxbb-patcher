@@ -218,7 +218,7 @@ class Patcher_Action_Install
 	{
 		global $langPatcher, $fs;
 
-		if (defined('PATCHER_NO_SAVE'))
+		if (defined('PATCHER_NO_SAVE') || $this->validate)
 			return STATUS_UNKNOWN;
 
 		foreach ($this->mod->filesToUpload as $from => $to)

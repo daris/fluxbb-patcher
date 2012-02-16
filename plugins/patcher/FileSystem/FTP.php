@@ -73,24 +73,30 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		if (!isset($rootRealPath))
 			$rootRealPath = str_replace('\\', '/', realpath(PUN_ROOT));
 
-		$len = strlen($rootRealPath);
-		$path = str_replace('\\', '/', realpath($path));
 
-//		echo 'root = '.$rootRealPath.'<br />path = '.$path.'<br />';
+		if (file_exists($path))
+		{
+			$path = str_replace('\\', '/', realpath($path));
+			$rootPath = $rootRealPath;
+		}
+		else
+			$rootPath = PUN_ROOT;
+
+		$len = strlen($rootPath);
+//		echo '<br />'.__FUNCTION__.'<br />path = '.$path.'<br />root = '.$rootPath.'<br />';
 
 		// Root directory?
-		if ($rootRealPath == $path)
+		if ($rootPath == $path)
 			return '.';
 
 		// Is the current path prefixed with PUN_ROOT directory?
-		else if (substr($path, 0, $len) == $rootRealPath)
+		else if (substr($path, 0, $len) == $rootPath)
 			return ltrim(substr($path, $len), '/\\');
 
-		else if (substr($rootRealPath, 0, strlen($path)) == $path)
+		else if (substr($rootPath, 0, strlen($path)) == $path)
 		{
-			$pathRest = substr($rootRealPath, strlen($path));
-//			echo $path.'<br />';
-			return str_repeat('../', substr_count($pathRest, '/'));//.ltrim(substr($rootRealPath, strlen($path)), '/\\');
+			$pathRest = substr($rootPath, strlen($path));
+			return str_repeat('../', substr_count($pathRest, '/'));
 		}
 
 		return '.';
@@ -237,13 +243,15 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		if (is_dir($path))
 		{
 			$baseName = basename(realpath($path));
-			$fixedPath = $this->relativePath($path.'../');
+			$fixedPath = $this->relativePath(rtrim($path, '/').'/../');
 
 			if (!empty($fixedPath) && substr($fixedPath, -1) != '/')
 				$fixedPath .= '/';
 
 			if ($fixedPath == '/')
 				$fixedPath = '';
+
+//			echo $fixedPath.'<br />';
 			$details = @$this->getFTP()->listDetails($fixedPath);
 
 			// Can't read directory contents?
