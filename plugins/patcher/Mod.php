@@ -237,10 +237,24 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getModInfo()
 	{
-		$file = $this->readmeFile;
+		static $transformations;
 
 		if (!isset($this->readmeFile) || empty($this->readmeFile))
 			return array();
+
+		if (!isset($transformations))
+		{
+			$transformations = array(
+				'title'				=> 'mod title',
+				'version mod'		=> 'mod version',
+				'version'			=> 'mod version',
+				'affected file'		=> 'affected files',
+				'works on'			=> 'works on fluxbb',
+				'works on punbb'	=> 'works on fluxbb', // this should not be here :)
+			);
+		}
+
+		$file = $this->readmeFile;
 
 		$modInfo = array();
 
@@ -251,15 +265,7 @@ class Patcher_Mod extends Patcher_RepoMod
 		$file = preg_replace('#\*{5,}#', '', $file);
 
 		$lines = explode("\n", $file);
-		$transformations = array(
-			'title'				=> 'mod title',
-			'version mod'		=> 'mod version',
-			'version'			=> 'mod version',
-			'affected file'		=> 'affected files',
-			'works on'			=> 'works on fluxbb',
-			'works on punbb'	=> 'works on fluxbb', // this should not be here :)
-		);
-		$last_info = '';
+		$lastInfo = '';
 		foreach ($lines as $line)
 		{
 			$line = ltrim(trim($line), '#*');
@@ -268,13 +274,13 @@ class Patcher_Mod extends Patcher_RepoMod
 	*/
 			if (strpos(substr($line, 0, 25), ':') !== false)
 			{
-				$last_info = trim(strtolower(substr($line, 0, strpos($line, ':'))));
-				if (isset($transformations[$last_info]))
-					$last_info = $transformations[$last_info];
-				$modInfo[$last_info] = trim(substr($line, strpos($line, ':') + 1));
+				$lastInfo = trim(strtolower(substr($line, 0, strpos($line, ':'))));
+				if (isset($transformations[$lastInfo]))
+					$lastInfo = $transformations[$lastInfo];
+				$modInfo[$lastInfo] = trim(substr($line, strpos($line, ':') + 1));
 			}
-			elseif ($last_info != '')
-				$modInfo[$last_info] .= "\n".trim($line);
+			elseif ($lastInfo != '')
+				$modInfo[$lastInfo] .= "\n".trim($line);
 		}
 
 		$this->isValid = isset($modInfo['mod version']);
@@ -303,15 +309,15 @@ class Patcher_Mod extends Patcher_RepoMod
 			return '';
 
 		$author = $this->modInfo['author'];
-		if (preg_match('#^(.*?) \(([^@]+@[^@]+\.[^@]+)\)#', $author, $m) // name (test@gmail.com)
+		if (preg_match('#^(.*?) [\(<](.+)[>\)]#', $author, $m) // name (test@gmail.com)
 			|| preg_match('#^([^@]+)@([^@]+\.[^@]+)#', $author, $m)) // test@gmail.com
 			$author = $m[1];
 
-		if (strpos($author, ';') !== false)
-			$author = substr($author, 0, strpos($author, ';'));
+		if (($pos = strpos($author, ';')) !== false)
+			$author = substr($author, 0, $pos);
 
-		if (strpos($author, ' - ') !== false)
-			$author = substr($author, 0, strpos($author, ' - '));
+		if (($pos = strpos($author, ' - ')) !== false)
+			$author = substr($author, 0, $pos);
 
 		return trim($author);
 	}
@@ -326,7 +332,7 @@ class Patcher_Mod extends Patcher_RepoMod
 		if (!isset($this->modInfo['author']))
 			return '';
 
-		if (preg_match('#\(([^@]+@[^@]+\.[^@]+)\)#', $this->modInfo['author'], $m) // name (test@gmail.com)
+		if (preg_match('#[\(<](.+)[>\)]#', $this->modInfo['author'], $m) // name (test@gmail.com)
 			|| preg_match('#([^@]+@[^@]+\.[^@]+)#', $this->modInfo['author'], $m)) // test@gmail.com
 			return trim($m[1]);
 	}
@@ -446,6 +452,20 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getAffectedFiles()
 	{
+		static $transformations;
+
+		if (!isset($transformations))
+		{
+			$transformations = array(
+				'[language]'					=> 'English',
+				'your_lang'						=> 'English',
+				'[style]'						=> 'Air',
+				'your_style'					=> 'Air',
+				'Your_style'					=> 'Air',
+				'For plugin installation:'		=> '',
+			);
+		}
+
 		if (!isset($this->modInfo['affected files']))
 			return '';
 
@@ -455,10 +475,9 @@ class Patcher_Mod extends Patcher_RepoMod
 		foreach ($affectedFiles as $curFile)
 		{
 			// Do some fix for current file :)
-			$curFile = str_replace(array('[language]', 'your_lang'), 'English', trim($curFile));
-			$curFile = str_replace(array('[style]', 'your_style', 'Your_style'), 'Air', $curFile);
+			$curFile = str_replace(array_keys($transformations), array_values($transformations), trim($curFile));
 
-			// Delete everything after ( and [ charachters
+			// Delete everything after ( and [ characters
 			if (strpos($curFile, ' (') !== false)
 				$curFile = substr($curFile, 0, strpos($curFile, ' ('));
 			if (strpos($curFile, ' [') !== false)
@@ -741,6 +760,23 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getSteps($readmeFile = null)
 	{
+		static $commandTransformations;
+
+		if (!isset($commandTransformations))
+		{
+			$commandTransformations = array(
+				'AFTER ADD'					=> array('ADD AFTER', 'AFTER INSERT'),
+				'BEFORE ADD'				=> array('ADD BEFORE'),
+				'OPEN'						=> array('OPEN FILE'),
+				'FIND'						=> array('FIND LINE', 'SEARCH', 'GO TO LINE'),
+				'AT THE END OF FILE ADD'	=> array('ADD AT THE BOTTOM OF THE FILE', 'ADD AT THE BOTTOM OF THE FUNCTION', 'AT THE END ADD', 'PLACE AT END OF THE FILE'),
+				'IN THIS LINE FIND' 		=> array('IN THE SAME LINE FIND', 'IN THESE LINES FIND', 'EVER IN THESE LINES FIND'),
+				'NOTE'						=> array('VISIT', 'NOTES'),
+				'UPLOAD'					=> array('UPLOAD THE CONTENT OF', 'SEND ON THE SERVER TO THE ROOT OF THE FORUM'),
+				'RUN'						=> array('LAUNCH'),
+			);
+		}
+
 		if ($readmeFile == null)
 			$readme = $this->readmeFile;
 		else
@@ -795,17 +831,6 @@ class Patcher_Mod extends Patcher_RepoMod
 			if (strpos($curCommand, 'REPLACE') !== false)
 				$curCommand = 'REPLACE';
 
-			$commandTransformations = array(
-				'AFTER ADD'					=> array('ADD AFTER', 'AFTER INSERT'),
-				'BEFORE ADD'				=> array('ADD BEFORE'),
-				'OPEN'						=> array('OPEN FILE'),
-				'FIND'						=> array('FIND LINE', 'SEARCH', 'GO TO LINE'),
-				'AT THE END OF FILE ADD'	=> array('ADD AT THE BOTTOM OF THE FILE', 'ADD AT THE BOTTOM OF THE FUNCTION', 'AT THE END ADD'),
-				'IN THIS LINE FIND' 		=> array('IN THE SAME LINE FIND', 'IN THESE LINES FIND', 'EVER IN THESE LINES FIND'),
-				'NOTE'						=> array('VISIT', 'NOTES'),
-				'UPLOAD'					=> array('UPLOAD THE CONTENT OF', 'SEND ON THE SERVER TO THE ROOT OF THE FORUM'),
-				'RUN'						=> array('LAUNCH'),
-			);
 			foreach ($commandTransformations as $newCommand => $commandsToFix)
 			{
 				if (in_array($curCommand, $commandsToFix))

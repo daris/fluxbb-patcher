@@ -176,7 +176,7 @@ class Patcher
 					{
 						if (!isset($requirements['cannot_open']))
 							$requirements['cannot_open'] = array();
-						$requirements['cannot_open'][] = array(false, $curStep['code'], 'Cannot open file <a href="'.PLUGIN_URL.'&show_log#a'.$key.'">#'.$key.'</a>');
+						$requirements['cannot_open'][] = array(false, $curStep['code'], $langPatcher['Cannot open file'].' <a href="'.PLUGIN_URL.'&show_log#a'.$key.'">#'.$key.'</a>');
 					}
 					if (isset($curStep['substeps']))
 					{

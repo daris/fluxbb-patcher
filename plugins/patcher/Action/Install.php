@@ -346,7 +346,7 @@ class Patcher_Action_Install
 	function stepReplace()
 	{
 		if (empty($this->find) || empty($this->curFile))
-			return STATUS_NOT_DONE;
+			return STATUS_NOTHING_TO_DO;
 
 		// Add QUERY ID at end of query line
 		if (strpos($this->code, 'query(') !== false)

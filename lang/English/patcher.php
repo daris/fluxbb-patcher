@@ -2,7 +2,7 @@
 
 return array(
 
-'You are running error'			=>	'You are running %1$s version %2$s. Patcher %3$s requires at least %1$s %4$s to run properly. You must upgrade your %1$s installation before you can continue.',
+'You are running error'			=> 'You are running %1$s version %2$s. Patcher %3$s requires at least %1$s %4$s to run properly. You must upgrade your %1$s installation before you can continue.',
 
 'Backup created redirect'		=> 'Backup created. Redirecting …',
 'Important'						=> 'Important',
@@ -34,8 +34,11 @@ return array(
 'Directories info'				=> 'This mod requires the following directories to be writable in order to install/uninstall it.',
 'Affected files info'			=> 'List of files that will be modified in installing/uninstalling mod process. All of them must be writable.',
 'Missing strings'				=> 'Missing strings',
-'Missing strings info'			=> 'Missing strings info',
+'Missing strings info'			=> 'There are some strings that has not been found in the specified files.',
 'Missing string'				=> 'Missing string',
+'Cannot open'					=> 'Files not found',
+'Cannot open info'				=> 'The following files were not found.',
+'Cannot open file'				=> 'Cannot open file',
 'Not exists'					=> 'Not exists',
 'Not writable'					=> 'Not writable',
 'Found'							=> 'Found',
@@ -123,7 +126,7 @@ return array(
 'Revert from backup'			=> 'Revert from backup',
 'Revert'						=> 'Revert',
 'Revert info'					=> 'Use this form to revert FluxBB files from backup.',
-'Revert info 2'					=> 'Reverting files will not uninstall any mods from databse. It will only revert all changes of files that was made by installing mods.',
+'Revert info 2'					=> 'Reverting files will not uninstall any mods from database. It will only revert all changes of files that was made by installing mods.',
 'No backups'					=> 'You have not created any backups yet. If you want to, use form above.',
 
 'Upload modification legend'	=> 'Upload modification',

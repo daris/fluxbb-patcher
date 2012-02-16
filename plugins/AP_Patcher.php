@@ -577,7 +577,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 
 
 <?php
-		if (count($requirements['files_to_upload']) > 0 || count($requirements['directories']) > 0 || count($requirements['affected_files']) > 0)
+		if (!empty($requirements['files_to_upload']) || !empty($requirements['directories']) || !empty($requirements['affected_files']) || !empty($requirements['missing_strings']) || !empty($requirements['cannot_open']))
 		{
 ?>
 		<h2><span><?php echo $langPatcher['Mod requirements'] ?></span></h2>
@@ -590,11 +590,12 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 				'files_to_upload' 	=> array($langPatcher['Files to upload'], $langPatcher['Files to upload info']),
 				'directories' 		=> array($langPatcher['Directories'], $langPatcher['Directories info']),
 				'affected_files' 	=> array($langPatcher['Affected files'], $langPatcher['Affected files info']),
-				'missing_strings' 	=> array($langPatcher['Missing strings'], $langPatcher['Missing strings info'])
+				'missing_strings' 	=> array($langPatcher['Missing strings'], $langPatcher['Missing strings info']),
+				'cannot_open' 		=> array($langPatcher['Cannot open'], $langPatcher['Cannot open info'])
 			);
 			foreach ($requirements as $type => $curRequirements)
 			{
-				if (!is_array($curRequirements) || count($curRequirements) == 0)
+				if (!is_array($curRequirements) || empty($curRequirements))
 					continue;
 
 ?>
