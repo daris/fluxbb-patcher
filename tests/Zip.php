@@ -23,7 +23,7 @@ abstract class ZipTest extends \PHPUnit_Framework_TestCase
 	public function testCreate()
 	{
 
-		self::$filename = 'C:/tmp/'.uniqid().'.zip';
+		self::$filename = '/tmp/'.uniqid().'.zip';
 		self::$zip->create(self::$filename);
 
 		self::$files = array(
@@ -56,7 +56,7 @@ abstract class ZipTest extends \PHPUnit_Framework_TestCase
 		foreach (self::$files as $curFile => $curPath)
 			$fileSize[$curFile] = filesize($curPath);
 
-		$dir = 'C:/tmp/'.uniqid().'/';
+		$dir = '/tmp/'.uniqid().'/';
 		mkdir($dir);
 		self::$zip->extract($dir);
 		$fileSizeAfter = array();
