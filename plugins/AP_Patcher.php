@@ -250,7 +250,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 				message($message);
 		}
 
-		$mod = Patcher_Mod::load($modId);
+		$mod = new Patcher_Mod($modId);
 		if (!$mod)
 			message($langPatcher['Invalid mod dir']);
 
@@ -295,6 +295,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 				continue;
 			}
 		}
+		patcherLog(var_export($patcher->config, true));
 
 		// Do patching! :)
 		if ($success && (isset($_POST['mods']) || (!in_array($action, array('install', 'uninstall')) || isset($_POST[$action])))) // user clicked button on previous page or wants to enable/disable mod
@@ -494,7 +495,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 	{
 		require PUN_ROOT.'include/parser.php'; // need for handle_url_tag()
 
-		$mod = Patcher_Mod::load($modId);
+		$mod = new Patcher_Mod($modId);
 		if (!$mod)
 			message($langPatcher['Invalid mod dir']);
 
@@ -646,11 +647,12 @@ elseif (isset($_GET['show_log']))
 		'update'	=> $langPatcher['Updating']
 	);
 
-	foreach ($logs as $curAction => $log)
+	foreach ($logs as $curActionInfo => $log)
 	{
+		list($curAction, $curMod) = explode(':', $curActionInfo);
 ?>
 	<div class="block blocktable">
-		<h2><span><?php echo $actionInfo[$curAction].$donate_button ?></span></h2>
+		<h2><span><?php echo $actionInfo[$curAction].' <strong>'.pun_htmlspecialchars($curMod).'</strong>'.$donate_button ?></span></h2>
 	</div>
 <?php
 
@@ -852,7 +854,7 @@ else
 		if (substr($modId, 0, 1) == '.' || !is_dir(MODS_DIR.$modId) || $fs->isEmptyDir(MODS_DIR.$modId))
 			continue;
 
-		$mod = Patcher_Mod::load($modId);
+		$mod = new Patcher_Mod($modId);
 		if (!$mod)
 			continue;
 
@@ -897,7 +899,7 @@ else
 
 			if ($updateVersion != '')
 			{
-				$updatedMod = Patcher_Mod::load($modId);
+				$updatedMod = new Patcher_Mod($modId);
 				$updatedMod->isInstalled = $mod->isInstalled;
 				$updatedMod->isEnabled = $mod->isEnabled;
 				if (isset($hasUpdate['local']))

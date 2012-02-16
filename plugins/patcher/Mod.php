@@ -98,20 +98,6 @@ class Patcher_RepoMod
 
 class Patcher_Mod extends Patcher_RepoMod
 {
-	static function load($modId)
-	{
-		$mod = new Patcher_Mod($modId);
-		if ($mod->isValid)
-			return $mod;
-
-		require_once PATCHER_ROOT.'ModInstaller.php';
-		$mod = new Patcher_ModInstaller($modId);
-		if ($mod->isValid)
-			return $mod;
-
-		return false;
-	}
-
 	/**
 	 * @var string Modification id (directory)
 	 */

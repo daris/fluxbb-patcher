@@ -541,6 +541,7 @@ class Patcher
 		$action->stepSave();
 
 		$_SESSION['patcher_files'] = serialize($action->modifedFiles);
+		$this->orginalFiles = array_merge($this->orginalFiles, $action->orginalFiles);
 
 		if ($this->config != $this->configOrg)
 		{

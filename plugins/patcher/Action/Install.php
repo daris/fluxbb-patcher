@@ -61,11 +61,6 @@ class Patcher_Action_Install
 	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
 
 	/**
-	 * @var array Commands that are not touching current file
-	 */
-	public $globalCommands = array('OPEN', 'RUN', 'RUN CODE', 'DELETE', 'RENAME', 'UPLOAD', 'NOTE');
-
-	/**
 	 * @var bool Only validate modification (without writing changes to the files)
 	 */
 	public $validate = false;
