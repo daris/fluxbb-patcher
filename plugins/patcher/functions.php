@@ -368,7 +368,7 @@ function preparseQuery(&$string)
  */
 function createBackup($backup)
 {
-	global $langPatcher, $fs;
+	global $langPatcher, $fs, $config;
 
 	if (!$fs->isWritable(BACKUPS_DIR))
 		message(sprintf($langPatcher['Directory not writable'], 'backups'));
@@ -405,7 +405,9 @@ function createBackup($backup)
 
 	$files[] = 'style/Air.css';
 
-	$zip = new Patcher_ZipArchive($fs->tmpname(), true);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->create($fs->tmpname());
+
 	if (!$zip->add($files))
 		message('Cannot add files to archive');
 	$zip->close();
@@ -423,7 +425,7 @@ function createBackup($backup)
  */
 function revert($file)
 {
-	global $pun_config, $langPatcher, $fs;
+	global $pun_config, $langPatcher, $fs, $config;
 
 	$dirsToCheck = array('', 'include', 'lang/English');
 	foreach ($dirsToCheck as $curDir)
@@ -433,9 +435,12 @@ function revert($file)
 	if (file_exists(PUN_ROOT.'patcher_config.php'))
 		$fs->delete(PUN_ROOT.'patcher_config.php');
 
-	$zip = new Patcher_ZipArchive(BACKUPS_DIR.$file);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->open(BACKUPS_DIR.$file);
+
 	if (!$zip->extract(PUN_ROOT))
 		message($langPatcher['Failed to extract file']);
+
 	$zip->close();
 
 	redirect(PLUGIN_URL, $langPatcher['Files reverted redirect']);
@@ -448,7 +453,7 @@ function revert($file)
  */
 function uploadMod()
 {
-	global $pun_config, $langPatcher, $fs;
+	global $pun_config, $langPatcher, $fs, $config;
 
 	if (!$fs->isWritable(MODS_DIR))
 		message(sprintf($langPatcher['Directory not writable'], 'mods'));
@@ -473,9 +478,12 @@ function uploadMod()
 	if (!is_dir(MODS_DIR.$modId) && !$fs->mkdir(MODS_DIR.$modId))
 		message(sprintf($langPatcher['Can\'t create mod directory'], pun_htmlspecialchars($modId)));
 
-	$zip = new Patcher_ZipArchive(MODS_DIR.$filename);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->open(MODS_DIR.$filename);
+
 	if (!$zip->extract(MODS_DIR.$modId))
 		message($langPatcher['Failed to extract file']);
+
 	$zip->close();
 
 	redirect(PLUGIN_URL.'&mod_id='.$modId, $langPatcher['Modification uploaded redirect']);
@@ -490,7 +498,7 @@ function uploadMod()
  */
 function downloadUpdate($modId, $version)
 {
-	global $langPatcher, $fs;
+	global $langPatcher, $fs, $config;
 
 	if (!$fs->isWritable(MODS_DIR))
 		message(sprintf($langPatcher['Directory not writable'], 'mods'));
@@ -510,9 +518,12 @@ function downloadUpdate($modId, $version)
 	if (!$fs->mkdir(MODS_DIR.$modId))
 		message(sprintf($langPatcher['Can\'t create mod directory'], pun_htmlspecialchars($modId)));
 
-	$zip = new Patcher_ZipArchive($tmpname);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->open($tmpname);
+
 	if (!$zip->extract(MODS_DIR.$modId))
 		message($langPatcher['Failed to extract file']);
+
 	$zip->close();
 
 	$redirect_url = (isset($_GET['update'])) ? '&mod_id='.$modId.'&action=update' : '';
@@ -528,7 +539,7 @@ function downloadUpdate($modId, $version)
  */
 function downloadPatcherUpdate($version)
 {
-	global $langPatcher, $fs;
+	global $langPatcher, $fs, $config;
 
 	$extractTo = PATCHER_ROOT.'../../';
 
@@ -539,9 +550,12 @@ function downloadPatcherUpdate($version)
 	$tmpname = $fs->tmpname();
 	downloadFile(sprintf(PATCHER_REPO_RELEASE_URL, 'patcher', urldecode($version), urldecode($filename)), $tmpname);
 
-	$zip = new Patcher_ZipArchive($tmpname);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->open($tmpname);
+
 	if (!$zip->extract($extractTo))
 		message($langPatcher['Failed to extract file']);
+
 	$zip->close();
 
 	redirect(PLUGIN_URL, $langPatcher['Modification updated redirect']);
@@ -555,7 +569,7 @@ function downloadPatcherUpdate($version)
  */
 function downloadMod($modId)
 {
-	global $langPatcher, $fs;
+	global $langPatcher, $fs, $config;
 
 	if (!$fs->isWritable(MODS_DIR))
 		message(sprintf($langPatcher['Directory not writable'], 'mods'));
@@ -580,9 +594,12 @@ function downloadMod($modId)
 	if (!is_dir(MODS_DIR.$modId) && !$fs->mkdir(MODS_DIR.$modId))
 		message(sprintf($langPatcher['Can\'t create mod directory'], pun_htmlspecialchars($modId)));
 
-	$zip = new Patcher_ZipArchive($tmpname);
+	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
+	$zip->open($tmpname);
+
 	if (!$zip->extract(MODS_DIR.$modId))
 		message($langPatcher['Failed to extract file']);
+
 	$zip->close();
 
 	redirect(PLUGIN_URL.'&mod_id='.$modId, $langPatcher['Modification downloaded redirect']);

@@ -7,7 +7,7 @@
 
 // Comment out if you want to disable FTP layer
 
-$config = array(
+return array(
 	'filesystem' => array(
 		'type'		=> 'FTP',
 		'options'	=> array(
@@ -17,5 +17,9 @@ $config = array(
 			'pass' => '123456',			// FTP account password
 			'path' => 'public_html/',	// Path to the FluxBB directory (relative to the FTP directory)
 		)
+	),
+	'zip'		=> array(
+		'type'		=> 'Native',
+		'options' 	=> array()
 	)
 );

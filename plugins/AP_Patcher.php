@@ -49,12 +49,12 @@ define('PATCHER_MODS_API_URL', 'http://fluxbb.org/api/json/resources/mods/');
 
 // Load configuration file
 if (file_exists(PATCHER_ROOT.'config.php'))
-	require PATCHER_ROOT.'config.php';
+	$config = require PATCHER_ROOT.'config.php';
 
 require PATCHER_ROOT.'Mod.php';
 require PATCHER_ROOT.'Patcher.php';
 require PATCHER_ROOT.'FileSystem.php';
-require PATCHER_ROOT.'ZipArchive.php';
+require PATCHER_ROOT.'Zip.php';
 
 // Load the language file (related to PATCHER_ROOT instead of PUN_ROOT as I have placed it somewhere else :P )
 if (file_exists(PATCHER_ROOT.'../../lang/'.$pun_user['language'].'/patcher.php'))
@@ -63,7 +63,7 @@ else
 	$langPatcher = require PATCHER_ROOT.'../../lang/English/patcher.php';
 
 if (!isset($config))
-	$config = array('filesystem' => array('type' => 'PHP'));
+	$config = array('filesystem' => array('type' => 'Native', 'options' => array()), 'zip' => array('type' => 'Native', 'options' => array()));
 
 $fs = Patcher_FileSystem::load($config['filesystem']['type'], $config['filesystem']['options']);
 
@@ -848,7 +848,7 @@ else
 			continue;
 
 		$mod = Patcher_Mod::load($modId);
-		if (!$mod->isValid)
+		if (!$mod)
 			continue;
 
 		$mod->isInstalled = isset($patcherConfig['installed_mods'][$mod->id]['version']);

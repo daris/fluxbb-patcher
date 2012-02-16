@@ -7,7 +7,7 @@
  * @package Patcher
  */
 
-class Patcher_FileSystem_PHP extends Patcher_FileSystem
+class Patcher_FileSystem_Native extends Patcher_FileSystem
 {
 	/**
 	 * Create directory

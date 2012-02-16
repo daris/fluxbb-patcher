@@ -7,7 +7,7 @@
  * @package Patcher
  */
 
-class Patcher_FileSystem
+abstract class Patcher_FileSystem
 {
 	static function load($type, $options)
 	{
@@ -15,7 +15,7 @@ class Patcher_FileSystem
 		if (!class_exists($class))
 		{
 			if (!file_exists(PATCHER_ROOT.'FileSystem/'.$type.'.php'))
-				error('No such FileSystem type: '.$type);
+				throw new Exception('No such FileSystem type: '.$type);
 
 			require PATCHER_ROOT.'FileSystem/'.$type.'.php';
 		}

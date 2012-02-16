@@ -7,43 +7,57 @@
  * @package Patcher
  */
 
+
 class Patcher_FileSystem_FTP extends Patcher_FileSystem
 {
 	/**
-	 * JFTP object
+	 * Joomla FTP class instance
 	 */
 	public $ftp;
-
-	public $isConnected = false;
 
 	/**
 	 * Connect to the FTP server (only when in FTP mode)
 	 *
 	 * @return type
 	 */
-	function checkConnection()
+	function getFTP()
 	{
-		if ($this->isConnected)
-			return false;
+		if (!is_object($this->ftp))
+		{
+			if (empty($this->options['host']))
+				throw new Exception('You have to define FTP host in config file');
 
-		require_once PATCHER_ROOT.'Ftp.php';
+			if (empty($this->options['port']))
+				throw new Exception('You have to define FTP port in config file');
 
-		$this->ftp = new JFTP();
-		if (!$this->ftp->connect($this->options['host'], $this->options['port']))
-			throw new Exception('FTP: Connection failed');
+			if (empty($this->options['user']))
+				throw new Exception('You have to define FTP username in config file');
 
-		if (!$this->ftp->login($this->options['user'], $this->options['pass']))
-			throw new Exception('FTP: Login failed');
+			if (empty($this->options['pass']))
+				throw new Exception('You have to define FTP password in config file');
 
-		if (!$this->ftp->chdir($this->options['path']))
-			throw new Exception('FTP: Directory change failed');
+			if (empty($this->options['path']))
+				throw new Exception('You have to define FTP path in config file');
 
-		if (!@$this->ftp->listDetails($this->fixPath('config.php')))
-			throw new Exception('FTP: The FluxBB root directory is not valid');
+			require_once PATCHER_ROOT.'FileSystem/FTP/FTP.php';
 
-		$this->root = $this->options['path'];
+			$this->ftp = new JFTP();
+			if (!$this->ftp->connect($this->options['host'], $this->options['port']))
+				throw new Exception('FTP: Connection failed');
 
-		$this->isConnected = true;
+			if (!$this->ftp->login($this->options['user'], $this->options['pass']))
+				throw new Exception('FTP: Login failed');
+
+			if (!$this->ftp->chdir($this->options['path']))
+				throw new Exception('FTP: Directory change failed');
+
+			if (!@$this->ftp->listDetails($this->fixPath('config.php')))
+				throw new Exception('FTP: The FluxBB root directory is not valid');
+
+			$this->root = $this->options['path'];
+		}
+
+		return $this->ftp;
 	}
 
 	/**
@@ -71,8 +85,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function mkdir($pathname)
 	{
-		$this->checkConnection();
-		return $this->ftp->mkdir($this->fixPath($pathname));
+		return $this->getFTP()->mkdir($this->fixPath($pathname));
 	}
 
 	/**
@@ -84,17 +97,15 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function move($src, $dest)
 	{
-		$this->checkConnection();
-
 		$srcPath = $this->fixPath($src);
 
 		// File is already on the FTP server (eg. in fluxbb cache directory) so move it to another location
 		if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-			return $this->ftp->rename($srcPath, $this->fixPath($dest));
+			return $this->getFTP()->rename($srcPath, $this->fixPath($dest));
 
 		// We have to upload file to the FTP server
 		else
-			return $this->ftp->store($src, $this->fixPath($dest)) && unlink($src);
+			return $this->getFTP()->store($src, $this->fixPath($dest)) && unlink($src);
 	}
 
 	/**
@@ -106,8 +117,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function copy($src, $dest)
 	{
-		$this->checkConnection();
-		return $this->ftp->store($src, $this->fixPath($dest));
+		return $this->getFTP()->store($src, $this->fixPath($dest));
 	}
 
 	/**
@@ -119,8 +129,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function put($file, $data)
 	{
-		$this->checkConnection();
-		return $this->ftp->write($this->fixPath($file), $data);
+		return $this->getFTP()->write($this->fixPath($file), $data);
 	}
 
 	/**
@@ -131,8 +140,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function delete($file)
 	{
-		$this->checkConnection();
-		return $this->ftp->delete($this->fixPath($file));
+		return $this->getFTP()->delete($this->fixPath($file));
 	}
 
 	/**
@@ -146,8 +154,6 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		if (!is_dir($path))
 			return false;
 
-		$this->checkConnection();
-
 		$list = $this->listToRemove($path);
 
 		// It files aren't writable the rest of this function will not be executed
@@ -158,7 +164,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			if (is_dir($curFile))
 			{
 				if ($this->isFtp)
-					$this->ftp->delete($this->fixPath($curFile));
+					$this->getFTP()->delete($this->fixPath($curFile));
 				else
 					rmdir($curFile);
 			}
@@ -206,8 +212,6 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		if ($path == PUN_ROOT.'.')
 			return $this->isWritable(PUN_ROOT);
 
-		$this->checkConnection();
-
 		$details = array();
 		$name = '';
 		if (is_dir($path))
@@ -217,7 +221,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			$fixedPath = $this->fixPath($path);
 			if ($fixedPath == './')
 				$fixedPath = '';
-			$details = @$this->ftp->listDetails($fixedPath.'../');
+			$details = @$this->getFTP()->listDetails($fixedPath.'../');
 
 			// Can't read directory contents?
 			if (!is_array($details))
@@ -240,7 +244,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		}
 		else
 		{
-			$details = $this->ftp->listDetails($this->fixPath($path));
+			$details = $this->getFTP()->listDetails($this->fixPath($path));
 			$name = $this->fixPath($path);
 
 			$rights = $details[0]['rights'];
