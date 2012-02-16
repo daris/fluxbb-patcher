@@ -734,6 +734,7 @@ function patcherLog($msg)
 		$fh = @fopen(PUN_ROOT.'cache/patcher.log', 'a+');
 		if ($fh === false)
 			return false;
+		fwrite($fh, '<?php'."\n");
 	}
 
 	fwrite($fh, $msg."\n");

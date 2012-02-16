@@ -11,7 +11,7 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Uninstall extends Patcher_Action_Install
 {
-	function executeStep(&$curStep)
+	function executeStep(&$curStep, &$stepResult)
 	{
 		parent::executeStep($curStep);
 

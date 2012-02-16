@@ -974,7 +974,7 @@ else
 					$info[] = ' <strong>v'.pun_htmlspecialchars($curMod->version).'</strong>';
 
 				if (isset($curMod->authorEmail) && isset($curMod->author))
-					$info[] = ' '.$langPatcher['by'].' <a href="mailto:'.pun_htmlspecialchars($curMod->authorEmail).'">'.pun_htmlspecialchars($curMod->author).'</a>';
+					$info[] = ' '.$langPatcher['by'].' <a href="'.(substr($curMod->authorEmail, 0, 4) == 'http' ? '' : 'mailto:').pun_htmlspecialchars($curMod->authorEmail).'">'.pun_htmlspecialchars($curMod->author).'</a>';
 				elseif (isset($curMod->author))
 					$info[] = ' '.$langPatcher['by'].' '.pun_htmlspecialchars($curMod->author);
 

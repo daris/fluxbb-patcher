@@ -61,6 +61,8 @@ class Patcher_RepoMod
 		$this->repositoryUrl = sprintf(PATCHER_REPO_MOD_URL, urldecode($this->id));
 		$this->isValid = true;
 		$this->version = $curMod['last_release']['version'];
+		$this->author = $curMod['author'];
+		$this->authorEmail = 'http://fluxbb.org/forums/profile.php?id='.$curMod['author_id'];
 		$this->worksOn = array_reverse($curMod['last_release']['forum_versions']);
 		if (isset($curMod['description']))
 			$this->description = $curMod['description'];
