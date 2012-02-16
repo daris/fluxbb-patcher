@@ -1,0 +1,13 @@
+language: php
+
+php:
+  - 5.3
+
+script: "phpunit tests/"
+
+notifications:
+  email:
+    recipients:
+      - daris91@gmail.com
+    on_success: never
+    on_failure: always

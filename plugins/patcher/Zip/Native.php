@@ -22,7 +22,7 @@ class Patcher_Zip_Native
 	function create($file)
 	{
 		$this->zip = new ZipArchive;
-		$this->isOpen = ($this->zip->open($this->file, ZIPARCHIVE::CREATE) === true);
+		$this->isOpen = ($this->zip->open($file, ZIPARCHIVE::CREATE) === true);
 		$this->file = $file;
 		return $this->isOpen;
 	}
@@ -119,17 +119,17 @@ class Patcher_Zip_Native
 			return false;
 
 		// Check whether there are some files that we can't read
-		$not_readable = array();
-		foreach ($files as $curFile)
+		$notReadable = array();
+		foreach ($files as $curFile => $curPath)
 		{
-			if (!is_readable(PUN_ROOT.$curFile))
-				$not_readable[] = $curFile;
+			if (!is_readable($curPath))
+				$notReadable[] = $curFile;
 		}
-		if (!empty($not_readable))
-			message('The following files are not readable:<br />'.implode('<br />', $not_readable));
+		if (!empty($notReadable))
+			message('The following files are not readable:<br />'.implode('<br />', $notReadable));
 
-		foreach ($files as $curFile)
-			$this->zip->addFile(PUN_ROOT.$curFile, $curFile);
+		foreach ($files as $curFile => $curPath)
+			$this->zip->addFile($curPath, $curFile);
 
 		return true;
 	}

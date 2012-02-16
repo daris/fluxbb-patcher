@@ -57,7 +57,11 @@ class Patcher_Zip_Pcl
 		if (!$this->isOpen)
 			return false;
 
-		return $zip->listContent();
+		$files = array();
+		foreach ($this->zip->listContent() as $curFile)
+			$files[] = $curFile['filename'];
+
+		return $files;
 	}
 
 	/**
@@ -105,17 +109,21 @@ class Patcher_Zip_Pcl
 			return false;
 
 		// Check whether there are some files that we can't read
-		$not_readable = array();
-		foreach ($files as $curFile)
+		$notReadable = array();
+		foreach ($files as $curFile => $curPath)
 		{
-			if (!is_readable(PUN_ROOT.$curFile))
-				$not_readable[] = $curFile;
+			if (!is_readable($curPath))
+				$notReadable[] = $curFile;
 		}
-		if (!empty($not_readable))
-			message('The following files are not readable:<br />'.implode('<br />', $not_readable));
+		if (!empty($notReadable))
+			throw new Exception('The following files are not readable:'."\n".implode("\n", $notReadable));
 
-		if ($this->zip->add(implode(',', $files)) === false)
-			message($this->zip->errorInfo(true));
+		$addFiles = array();
+		foreach ($files as $curFile => $curPath)
+			$addFiles[] = array(PCLZIP_ATT_FILE_NAME => $curPath, PCLZIP_ATT_FILE_NEW_FULL_NAME => $curFile);
+
+		if ($this->zip->add($addFiles) === false)
+			throw new Exception($this->zip->errorInfo(true));
 
 		return true;
 	}

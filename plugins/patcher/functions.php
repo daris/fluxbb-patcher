@@ -384,7 +384,7 @@ function createBackup($backup)
 	while ($file = $dir->read())
 	{
 		if (!in_array($file, array('.', '..', 'config.php', 'install_mod.php', 'gen.php', 'revert_backup.php')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.$file))
-			$files[] = $file;
+			$files[$file] = PUN_ROOT.$file;
 	}
 
 	// Add include directory to backup
@@ -392,7 +392,7 @@ function createBackup($backup)
 	while ($file = $dir->read())
 	{
 		if (!in_array($file, array('.', '..')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.'include/'.$file))
-			$files[] = 'include/'.$file;
+			$files['include/'.$file] = PUN_ROOT.'include/'.$file;
 	}
 
 	// Add lang/English directory to backup
@@ -400,10 +400,10 @@ function createBackup($backup)
 	while ($file = $dir->read())
 	{
 		if (!in_array($file, array('.', '..')) && substr($file, -4) == '.php' && is_file(PUN_ROOT.'lang/English/'.$file))
-			$files[] = 'lang/English/'.$file;
+			$files['lang/English/'.$file] = PUN_ROOT.'lang/English/'.$file;
 	}
 
-	$files[] = 'style/Air.css';
+	$files['style/Air.css'] = PUN_ROOT.'style/Air.css';
 
 	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
 	$zip->create($fs->tmpname());
