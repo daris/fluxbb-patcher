@@ -51,7 +51,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			if (!$this->ftp->chdir($this->options['path']))
 				throw new Exception('FTP: Directory change failed');
 
-			if (!@$this->ftp->listDetails($this->fixPath('config.php')))
+			if (!@$this->ftp->listDetails($this->relativePath('config.php')))
 				throw new Exception('FTP: The FluxBB root directory is not valid');
 
 			$this->root = $this->options['path'];
@@ -66,15 +66,34 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 * @param string $path
 	 * @return string
 	 */
-	function fixPath($path)
+	function relativePath($path)
 	{
-		$len = strlen(PUN_ROOT);
+		static $rootRealPath;
+
+		if (!isset($rootRealPath))
+			$rootRealPath = str_replace('\\', '/', realpath(PUN_ROOT));
+
+		$len = strlen($rootRealPath);
+		$path = str_replace('\\', '/', realpath($path));
+
+//		echo 'root = '.$rootRealPath.'<br />path = '.$path.'<br />';
+
+		// Root directory?
+		if ($rootRealPath == $path)
+			return '.';
 
 		// Is the current path prefixed with PUN_ROOT directory?
-		if (substr($path, 0, $len) == PUN_ROOT)
-			return ltrim(substr($path, $len), '/');
+		else if (substr($path, 0, $len) == $rootRealPath)
+			return ltrim(substr($path, $len), '/\\');
 
-		return $path;
+		else if (substr($rootRealPath, 0, strlen($path)) == $path)
+		{
+			$pathRest = substr($rootRealPath, strlen($path));
+//			echo $path.'<br />';
+			return str_repeat('../', substr_count($pathRest, '/'));//.ltrim(substr($rootRealPath, strlen($path)), '/\\');
+		}
+
+		return '.';
 	}
 
 	/**
@@ -85,7 +104,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function mkdir($pathname)
 	{
-		return $this->getFTP()->mkdir($this->fixPath($pathname));
+		return $this->getFTP()->mkdir($this->relativePath($pathname));
 	}
 
 	/**
@@ -97,15 +116,15 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function move($src, $dest)
 	{
-		$srcPath = $this->fixPath($src);
+		$srcPath = $this->relativePath($src);
 
 		// File is already on the FTP server (eg. in fluxbb cache directory) so move it to another location
 		if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-			return $this->getFTP()->rename($srcPath, $this->fixPath($dest));
+			return $this->getFTP()->rename($srcPath, $this->relativePath($dest));
 
 		// We have to upload file to the FTP server
 		else
-			return $this->getFTP()->store($src, $this->fixPath($dest)) && unlink($src);
+			return $this->getFTP()->store($src, $this->relativePath($dest)) && unlink($src);
 	}
 
 	/**
@@ -117,7 +136,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function copy($src, $dest)
 	{
-		return $this->getFTP()->store($src, $this->fixPath($dest));
+		return $this->getFTP()->store($src, $this->relativePath($dest));
 	}
 
 	/**
@@ -129,7 +148,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function put($file, $data)
 	{
-		return $this->getFTP()->write($this->fixPath($file), $data);
+		return $this->getFTP()->write($this->relativePath($file), $data);
 	}
 
 	/**
@@ -140,7 +159,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function delete($file)
 	{
-		return $this->getFTP()->delete($this->fixPath($file));
+		return $this->getFTP()->delete($this->relativePath($file));
 	}
 
 	/**
@@ -164,7 +183,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			if (is_dir($curFile))
 			{
 				if ($this->isFtp)
-					$this->getFTP()->delete($this->fixPath($curFile));
+					$this->getFTP()->delete($this->relativePath($curFile));
 				else
 					rmdir($curFile);
 			}
@@ -214,24 +233,26 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 
 		$details = array();
 		$name = '';
+
 		if (is_dir($path))
 		{
-			if (substr($path, -1) != '/')
-				$path .= '/';
-			$fixedPath = $this->fixPath($path);
-			if ($fixedPath == './')
+			$baseName = basename(realpath($path));
+			$fixedPath = $this->relativePath($path.'../');
+
+			if (!empty($fixedPath) && substr($fixedPath, -1) != '/')
+				$fixedPath .= '/';
+
+			if ($fixedPath == '/')
 				$fixedPath = '';
-			$details = @$this->getFTP()->listDetails($fixedPath.'../');
+			$details = @$this->getFTP()->listDetails($fixedPath);
 
 			// Can't read directory contents?
 			if (!is_array($details))
 				return false;
 
-			$name = basename($path);
-
 			foreach ($details as $cur_details)
 			{
-				if ($cur_details['name'] == $name)
+				if ($cur_details['name'] == $baseName)
 				{
 					//print_r($cur_details);
 					$rights = $cur_details['rights'];
@@ -244,8 +265,8 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		}
 		else
 		{
-			$details = $this->getFTP()->listDetails($this->fixPath($path));
-			$name = $this->fixPath($path);
+			$details = $this->getFTP()->listDetails($this->relativePath($path));
+			$name = $this->relativePath($path);
 
 			$rights = $details[0]['rights'];
 
