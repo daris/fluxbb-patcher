@@ -11,9 +11,26 @@
 class Patcher_FileSystem_FTP extends Patcher_FileSystem
 {
 	/**
-	 * Joomla FTP class instance
+	 * @var JFTP Joomla FTP class instance
 	 */
 	public $ftp;
+
+	/**
+	 * @var string Relative path to the FluxBB directory
+	 */
+	public $root;
+
+	/**
+	 * @var string Real path to the FluxBB root directory
+	 */
+	public $rootRealPath;
+
+	function __construct($options = null)
+	{
+		$this->options = $options;
+		$this->rootRealPath = str_replace('\\', '/', realpath(PUN_ROOT));
+		$this->root = $this->options['path'];
+	}
 
 	/**
 	 * Connect to the FTP server (only when in FTP mode)
@@ -53,8 +70,6 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 
 			if (!@$this->ftp->listDetails($this->relativePath('config.php')))
 				throw new Exception('FTP: The FluxBB root directory is not valid');
-
-			$this->root = $this->options['path'];
 		}
 
 		return $this->ftp;
@@ -68,16 +83,10 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function relativePath($path)
 	{
-		static $rootRealPath;
-
-		if (!isset($rootRealPath))
-			$rootRealPath = str_replace('\\', '/', realpath(PUN_ROOT));
-
-
 		if (file_exists($path))
 		{
 			$path = str_replace('\\', '/', realpath($path));
-			$rootPath = $rootRealPath;
+			$rootPath = $this->rootRealPath;
 		}
 		else
 			$rootPath = PUN_ROOT;
@@ -122,11 +131,11 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function move($src, $dest)
 	{
-		$srcPath = $this->relativePath($src);
+		$realSrcPath = str_replace('\\', '/', realpath($src));
 
 		// File is already on the FTP server (eg. in fluxbb cache directory) so move it to another location
-		if (substr($src, 0, strlen(PUN_ROOT)) == PUN_ROOT)
-			return $this->getFTP()->rename($srcPath, $this->relativePath($dest));
+		if (substr($realSrcPath, 0, strlen($this->rootRealPath)) == $this->rootRealPath)
+			return $this->getFTP()->rename($this->relativePath($src), $this->relativePath($dest));
 
 		// We have to upload file to the FTP server
 		else

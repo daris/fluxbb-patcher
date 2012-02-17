@@ -496,7 +496,7 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 		require PUN_ROOT.'include/parser.php'; // need for handle_url_tag()
 
 		$mod = new Patcher_Mod($modId);
-		if (!$mod)
+		if (!$mod->isValid)
 			message($langPatcher['Invalid mod dir']);
 
 		$detailedInfo = array();
@@ -716,12 +716,14 @@ elseif (isset($_GET['show_log']))
 						if (isset($curSubStep['comments']))
 							$comments = array_merge($comments, $curSubStep['comments']);
 
+						if (isset($curSubStep['code']) && empty($curSubStep['code']))
+							$curSubStep['code'] = '// Nothing';
 ?>
 						<tr>
 							<td>
 <?php if (isset($curSubStep['command'])) : ?>								<span style="float: right; margin-right: 1em;"><a href="#a<?php echo $id ?>">#<?php echo $id ?></a></span>
 								<span id="a<?php echo $id ?>" style="<?php echo $style ?>; display: block; margin-left: 1em"><?php echo pun_htmlspecialchars($curSubStep['command']).' '.((count($comments) > 0) ? '('.implode(', ', $comments).')' : '') ?></span><?php endif; ?>
-<?php if (isset($curSubStep['code']) && trim($curSubStep['code']) != '') : ?>
+<?php if (isset($curSubStep['code'])) : ?>
 								<div class="codebox"><pre style="max-height: 30em"><code><?php echo pun_htmlspecialchars($curSubStep['code']) ?></code></pre></div>
 <?php endif; ?>
 							</td>

@@ -359,8 +359,6 @@ class Patcher_Mod extends Patcher_RepoMod
 				$modInfo[$lastInfo] .= "\n".trim($line);
 		}
 
-		$this->isValid = isset($modInfo['mod version']);
-
 		return $modInfo;
 	}
 
@@ -371,7 +369,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getIsValid()
 	{
-		return isset($this->version);
+		return !empty($this->version);
 	}
 
 	/**
@@ -513,8 +511,14 @@ class Patcher_Mod extends Patcher_RepoMod
 			return array();
 
 		$worksOn = str_replace(array(' and ', '.x', '.*'), array(',', ''), $this->modInfo['works on fluxbb']);
-		$worksOn = preg_replace('/[^a-zA-Z0-9-\.\*]+/', ',', $worksOn);
 		$versions = array_filter(array_map('trim', explode(',', $worksOn)));
+		foreach ($versions as $key => &$curVersion)
+		{
+			if (!preg_match('/[a-zA-Z0-9-\.\*]+/', $curVersion, $matches))
+				unset($versions[$key]);
+			else
+				$curVersion = $matches[0];
+		}
 		usort($versions, 'version_compare');
 		return array_reverse($versions);
 	}
@@ -557,8 +561,7 @@ class Patcher_Mod extends Patcher_RepoMod
 			return '';
 
 		$files = array();
-		$delimiter = (strpos($this->modInfo['affected files'], ', ') !== false) ? ',' : "\n";
-		$affectedFiles = explode($delimiter, $this->modInfo['affected files']);
+		$affectedFiles = preg_split('/([,\n]| - )/', $this->modInfo['affected files']);
 		foreach ($affectedFiles as $curFile)
 		{
 			// Do some fix for current file :)
@@ -856,7 +859,7 @@ class Patcher_Mod extends Patcher_RepoMod
 				'BEFORE ADD'				=> array('ADD BEFORE'),
 				'OPEN'						=> array('OPEN FILE'),
 				'FIND'						=> array('FIND LINE', 'SEARCH', 'GO TO LINE'),
-				'AT THE END OF FILE ADD'	=> array('ADD AT THE BOTTOM OF THE FILE', 'ADD AT THE BOTTOM OF THE FUNCTION', 'AT THE END ADD', 'PLACE AT END OF THE FILE'),
+				'AT THE END OF FILE ADD'	=> array('ADD AT THE BOTTOM OF THE FILE', 'ADD AT THE BOTTOM', 'ADD AT THE BOTTOM OF THE FUNCTION', 'AT THE END ADD', 'PLACE AT END OF THE FILE'),
 				'IN THIS LINE FIND' 		=> array('IN THE SAME LINE FIND', 'IN THESE LINES FIND', 'EVER IN THESE LINES FIND'),
 				'NOTE'						=> array('VISIT', 'NOTES'),
 				'UPLOAD'					=> array('UPLOAD THE CONTENT OF', 'SEND ON THE SERVER TO THE ROOT OF THE FORUM'),
@@ -953,7 +956,7 @@ class Patcher_Mod extends Patcher_RepoMod
 				$curCode = str_replace(array('[style]', 'Your_style'), 'Air.css', $curCode);
 				$curCode = ltrim(trim($curCode), '/');
 
-				if (!file_exists(PUN_ROOT.$curCode) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.php#i', $curCode, $matches) && file_exists(PUN_ROOT.$matches[0]))
+				if (!file_exists(PUN_ROOT.$curCode) && preg_match('#[a-zA-Z0-9-_\/\\\\]+\.(php|css)#i', $curCode, $matches) && file_exists(PUN_ROOT.$matches[0]))
 					$curCode = $matches[0];
 			}
 			elseif ($curCommand == 'NOTE')
@@ -979,6 +982,14 @@ class Patcher_Mod extends Patcher_RepoMod
 
 			if (isset($curInfo))
 				$newStep['info'] = $curInfo;
+
+			if ($curCommand == 'FIND AND DELETE')
+			{
+				$newStep['command'] = 'FIND';
+				$steps[] = $newStep;
+				$newStep['command'] = 'REPLACE';
+				$newStep['code'] = '';
+			}
 			$steps[] = $newStep;
 		}
 

@@ -24,12 +24,10 @@ abstract class Patcher_FileSystem
 	}
 
 	protected $options;
-	protected $root;
 
 	function __construct($options = null)
 	{
 		$this->options = $options;
-		$this->root = PUN_ROOT;
 	}
 
 	/**
