@@ -834,11 +834,27 @@ else
 		</div>
 	</div>
 
+<script type="text/javascript">
+var checked = new Array();
+function toogleAll(form, field)
+{
+	if (typeof checked[form] == 'undefined')
+		checked[form] = new Array();
+
+	if (typeof checked[form][field] == 'undefined')
+		checked[form][field] = false;
+
+	var elem = document.forms[form].elements;
+	for (i = 0; i < elem.length; i++)
+		if (typeof elem[i].checked != 'undefined')
+			elem[i].checked = !checked[form][field];
+	checked[form][field] = (checked[form][field] == false);
+}
+</script>
 
 	<div class="plugin blockform">
 		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&amp;check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
 		<div class="box">
-			<form method="post">
 
 <?php
 
@@ -881,15 +897,16 @@ else
 		if (in_array($section, array('Mods failed to uninstall', 'Mods to update')) && empty($mods))
 			continue;
 
+		$formName = str_replace(' ', '-', $section);
+
 		$i = 0;
 
 		// Sort mod list using mod_title_compare function
 		uasort($mods, 'modTitleCompare');
 ?>
+			<form method="post" name="<?php echo $formName ?>">
 				<div class="inform">
 					<fieldset>
-<?php if (!empty($mods) && $section != 'Mods to download') : ?>						<div style="float: right; padding: 6px 0px 0px;"><?php echo $langPatcher['With selected'] ?>: <input type="submit" name="install" value="<?php echo $langPatcher['Install'] ?>" /> <input type="submit" name="uninstall" value="<?php echo $langPatcher['Uninstall'] ?>" /> <input type="submit" name="enable" value="<?php echo $langPatcher['Enable'] ?>" /> <input type="submit" name="disable" value="<?php echo $langPatcher['Disable'] ?>" /></div>
-<?php endif; ?>
 						<legend><?php echo $langPatcher[$section] ?></legend>
 						<div class="infldset">
 <?php if (empty($mods)) : ?>							<p><?php echo $langPatcher['No '.strtolower($section)] ?></p>
@@ -899,7 +916,7 @@ else
 									<tr>
 										<th class="tcl" colspan="2"><?php echo $langPatcher['Mod title'] ?></th>
 										<th class="tcr" style="width: 170px"><?php echo $langPatcher['Action'] ?></th>
-										<th style="width: 40px"><?php echo ($section != 'Mods to download') ? $langPatcher['Select'] : '&nbsp;' ?></th>
+										<th style="width: 40px"><?php echo ($section != 'Mods to download') ? '<input type="checkbox" onclick="toogleAll(\''.$formName.'\', \'mods\')" />' : '&nbsp;' ?></th>
 								</tr>
 								</thead>
 								<tbody>
@@ -1019,14 +1036,16 @@ endif;
 								</tbody>
 							</table>
 						</div>
+<?php if (!empty($mods) && in_array($section, array('Installed mods', 'Mods not installed'))) : ?>						<div style="text-align: right; padding: 6px 0px 0px;"><?php echo $langPatcher['With selected'] ?>: <?php if ($section == 'Mods not installed') : ?><input type="submit" name="install" value="<?php echo $langPatcher['Install'] ?>" /><?php elseif ($section == 'Installed mods'): ?><input type="submit" name="uninstall" value="<?php echo $langPatcher['Uninstall'] ?>" /> <input type="submit" name="enable" value="<?php echo $langPatcher['Enable'] ?>" /> <input type="submit" name="disable" value="<?php echo $langPatcher['Disable'] ?>" /><?php endif; ?></div>
+<?php endif; ?>
 					</fieldset>
 				</div>
+			</form>
 <?php
 
 	}
 ?>
 
-			</form>
 		</div>
 	</div>
 <?php
