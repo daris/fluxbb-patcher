@@ -151,10 +151,10 @@ if (isset($_POST['backup']))
 $notes = array();
 
 // Get modification repository
-$mod_repo = getModRepo(isset($_GET['check_for_updates']));
+$modRepo = getModRepo(isset($_GET['check_for_updates']));
 
 // Check for patcher updates
-$patcher_version = isset($mod_repo['mods']['patcher']['last_release']['version']) ? $mod_repo['mods']['patcher']['last_release']['version'] : null;
+$patcher_version = isset($modRepo['mods']['patcher']['last_release']['version']) ? $modRepo['mods']['patcher']['last_release']['version'] : null;
 
 if (version_compare($patcher_version, Patcher::VERSION, '>'))
 	$notes[] = sprintf($langPatcher['New Patcher version available'], '<a href="'.PLUGIN_URL.'&amp;mod_id=patcher&download_update='.pun_htmlspecialchars($patcher_version).'">'.$langPatcher['Download and install update'].'</a>', $patcher_version, '<a href="'.sprintf(PATCHER_REPO_MOD_URL, 'patcher').'">'.$langPatcher['Resources page'].'</a>');
@@ -208,24 +208,25 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 
 	foreach ($mods as $modId)
 	{
-		$isInstalled = isset($patcherConfig['installed_mods'][$modId]);
-		$isEnabled = !isset($patcherConfig['installed_mods'][$modId]['disabled']);
+		$mod = new Patcher_Mod($modId);
+		if (!$mod)
+			message($langPatcher['Invalid mod dir']);
 
 		$message = '';
 		// Mod is installed and we want to install again
-		if ($action == 'install' && $isInstalled)
+		if ($action == 'install' && $mod->isInstalled)
 			$message = sprintf($langPatcher['Mod already installed'], $modId);
 
 		// Do not allow to uninstall mod if it is not installed
-		elseif ($action == 'uninstall' && !$isInstalled)
+		elseif ($action == 'uninstall' && !$mod->isInstalled)
 			$message = sprintf($langPatcher['Mod already uninstalled'], $modId);
 
 		// Mod is already enabled
-		elseif ($action == 'enable' && $isEnabled)
+		elseif ($action == 'enable' && $mod->isEnabled)
 			$message = sprintf($langPatcher['Mod already enabled'], $modId);
 
 		// Mod is disabled and we want to disable again
-		elseif ($action == 'disable' && !$isEnabled)
+		elseif ($action == 'disable' && !$mod->isEnabled)
 			$message = sprintf($langPatcher['Mod already disabled'], $modId);
 
 		if (!empty($message))
@@ -250,9 +251,6 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 				message($message);
 		}
 
-		$mod = new Patcher_Mod($modId);
-		if (!$mod)
-			message($langPatcher['Invalid mod dir']);
 
 		// Get the requirement list
 		$requirements = $mod->checkRequirements();
@@ -539,8 +537,8 @@ if (isset($modId) && file_exists(MODS_DIR.$modId) || isset($_POST['mods']))
 					</dl>
 <?php if (!$mod->isCompatible()): ?>
 					<p style="color: #a00"><strong><?php echo $langPatcher['Warning'] ?>:</strong> <?php printf($langPatcher['Unsupported version'], $pun_config['o_cur_version'], pun_htmlspecialchars(implode(', ', $mod->worksOn))) ?></p>
-<?php endif; if (isset($mod_repo[$mod->id]['release']) && version_compare($mod_repo[$mod->id]['release'], $mod->version, '>')) : ?>
-					<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$mod_repo[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($mod_repo[$mod->id]['release'])) ?></a>.</p>
+<?php endif; if (isset($modRepo[$mod->id]['release']) && version_compare($modRepo[$mod->id]['release'], $mod->version, '>')) : ?>
+					<p style="color: #a00"><?php echo $langPatcher['Update info'].' <a href="'.PLUGIN_URL.'&amp;update&amp;mod_id='.urldecode($mod->id).'&amp;version='.$modRepo[$mod->id]['release'].'">'.sprintf($langPatcher['Download update'], pun_htmlspecialchars($modRepo[$mod->id]['release'])) ?></a>.</p>
 <?php endif; ?>
 <?php if ($action == 'install') : ?>					<p><label><input type="checkbox" name="skip_install" value="1" /> <?php echo $langPatcher['Skip install'] ?></label></p>
 <?php endif; ?>
@@ -859,75 +857,21 @@ else
 		if (!$mod)
 			continue;
 
-		$mod->isInstalled = isset($patcherConfig['installed_mods'][$mod->id]['version']);
-		$mod->isEnabled = isset($patcherConfig['installed_mods'][$mod->id]) && !isset($patcherConfig['installed_mods'][$mod->id]['disabled']);
 		$section = $mod->isInstalled ? 'Installed mods' : 'Mods not installed';
 
 		if (isset($patcherConfig['installed_mods'][$mod->id]['uninstall_failed']))
 			$section = 'Mods failed to uninstall';
 
 		// Look for updates
-		if ($mod->isInstalled)
-		{
-			$hasUpdate = array();
-			// new update in local copy
-			if (isset($patcherConfig['installed_mods'][$modId]['version']) && version_compare($mod->version, $patcherConfig['installed_mods'][$modId]['version'], '>'))
-				$hasUpdate['local'] = $mod->version;
-
-			// new update available to download from fluxbb.org repo
-			if (isset($mod_repo['mods'][$mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$mod->id]['last_release']['version'], $patcherConfig['installed_mods'][$modId]['version'], '>'))
-				$hasUpdate['repo'] = $mod_repo['mods'][$mod->id]['last_release']['version'];
-
-			// get newest update
-			$updateVersion = '';
-			if (isset($hasUpdate['local']) && isset($hasUpdate['repo']))
-			{
-				if (version_compare($hasUpdate['local'], $hasUpdate['repo'], '>='))
-				{
-					$updateVersion = $hasUpdate['local'];
-					unset($hasUpdate['repo']);
-				}
-				else
-				{
-					$updateVersion = $hasUpdate['repo'];
-					unset($hasUpdate['local']);
-				}
-			}
-			elseif (isset($hasUpdate['local']))
-				$updateVersion = $hasUpdate['local'];
-			elseif (isset($hasUpdate['repo']))
-				$updateVersion = $hasUpdate['repo'];
-
-			if ($updateVersion != '')
-			{
-				$updatedMod = new Patcher_Mod($modId);
-				$updatedMod->isInstalled = $mod->isInstalled;
-				$updatedMod->isEnabled = $mod->isEnabled;
-				if (isset($hasUpdate['local']))
-					$updatedMod->hasLocalUpdate = true;
-				else
-					$updatedMod->hasRepoUpdate = true;
-
-				$updatedMod->version = $updateVersion;
-				$modList['Mods to update'][$modId] = $updatedMod;
-
-				if (isset($hasUpdate['local']))
-					$mod->version = $patcherConfig['installed_mods'][$modId]['version'];
-			}
-		}
-		else
-		{
-			// new update available to download from fluxbb.org repo
-			if (isset($mod_repo['mods'][$mod->id]['last_release']['version']) && version_compare($mod_repo['mods'][$mod->id]['last_release']['version'], $mod->version, '>'))
-				$mod->hasRepoUpdate = $mod_repo['mods'][$mod->id]['last_release']['version'];
-		}
+		if ($mod->isInstalled && $mod->canUpdate)
+			$modList['Mods to update'][$modId] = new Patcher_Mod($modId, $mod->canUpdate);
 
 		$modList[$section][$modId] = $mod;
 	}
 
 	// Get the mod list from the FluxBB repo
-	if (isset($mod_repo['mods']))
-		foreach ($mod_repo['mods'] as $curModId => $curMod)
+	if (isset($modRepo['mods']))
+		foreach ($modRepo['mods'] as $curModId => $curMod)
 			if ($curModId != 'patcher' && !isset($modList['Installed mods'][$curModId]) && !isset($modList['Mods not installed'][$curModId]))
 				$modList['Mods to download'][$curModId] = new Patcher_RepoMod($curModId, $curMod);
 
@@ -1007,10 +951,10 @@ else
 					{
 						if ($section == 'Mods to update')
 						{
-							if (isset($curMod->hasRepoUpdate))
+							if ($curMod->canUpdate == 'repo')
 								$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&download_update='.pun_htmlspecialchars($curMod->version).'&update">'.$langPatcher['Download and install update'].'</a>';
 
-							if (isset($curMod->hasLocalUpdate))
+							if ($curMod->canUpdate == 'local')
 								$actions[0]['update'] = $langPatcher['Update'];
 						}
 						else
@@ -1030,11 +974,11 @@ else
 					}
 					else
 					{
-						if (isset($curMod->hasRepoUpdate))
-							$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&download_update='.pun_htmlspecialchars($curMod->hasRepoUpdate).'">'.sprintf($langPatcher['Download update'], $curMod->hasRepoUpdate).'</a>';
+						if ($curMod->canUpdate == 'repo')
+							$actions[0][] = '<a href="'.PLUGIN_URL.'&mod_id='.pun_htmlspecialchars($curMod->id).'&download_update='.pun_htmlspecialchars($curMod->updateVersion).'">'.sprintf($langPatcher['Download update'], $curMod->updateVersion).'</a>';
 
 						$status = '<strong style="color: red">'.$langPatcher['Not installed'].'</strong>';
-						$actions[1]['install'] = isset($curMod->hasRepoUpdate) ? $langPatcher['Install old version'] : $langPatcher['Install'];
+						$actions[1]['install'] = ($curMod->canUpdate == 'repo') ? $langPatcher['Install old version'] : $langPatcher['Install'];
 					}
 
 				}

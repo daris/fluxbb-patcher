@@ -66,6 +66,8 @@ class Patcher_RepoMod
 		$this->worksOn = array_reverse($curMod['last_release']['forum_versions']);
 		if (isset($curMod['description']))
 			$this->description = $curMod['description'];
+
+		$this->isInstalled = $this->isEnabled = false;
 	}
 
 	/**
@@ -88,10 +90,10 @@ class Patcher_RepoMod
 				|| $curVersion == substr($pun_config['o_cur_version'], 0, strlen($curVersion))
 				|| substr($curVersion, 0, strlen($pun_config['o_cur_version'])) == $pun_config['o_cur_version'])
 					return true;
-
-			elseif (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
-				return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
 		}
+
+		if (preg_match('#([>=<]+)\s*(.*)#', $this->worksOn[0], $matches))
+			return version_compare($pun_config['o_cur_version'], $matches[2], $matches[1]);
 
 		return false;
 	}
@@ -103,12 +105,12 @@ class Patcher_Mod extends Patcher_RepoMod
 	/**
 	 * @var string Modification id (directory)
 	 */
-	public $id = null;
+	public $id;
 
 	/**
 	 * @var string Main readme file directory
 	 */
-	public $readmeFileDir = null;
+	public $readmeFileDir;
 
 	/**
 	 * @var string Main readme file path (variable accessible via __get method)
@@ -118,17 +120,22 @@ class Patcher_Mod extends Patcher_RepoMod
 	/**
 	 * @var string Full path to the modification directory
 	 */
-	public $modDir = null;
+	public $modDir;
 
 	/**
 	 * @var string Main readme file content
 	 */
-	private $readmeFile = null;
+	private $readmeFile;
 
 	/**
 	 * @var string List of readme files in current mod directory (including subdirectories)
 	 */
 //	public $readmeFileList = null;
+
+	/**
+	 * @var string Is it a duplicate of the mod, but with the higher version number?
+	 */
+	public $isModUpdate;
 
 	/**
 	 * Constructor
@@ -138,7 +145,7 @@ class Patcher_Mod extends Patcher_RepoMod
 	 *
 	 * @return type
 	 */
-	function __construct($id)
+	function __construct($id, $isModUpdate = false)
 	{
 		$this->id = $id;
 		$this->modDir = MODS_DIR.$this->id.'/';
@@ -149,6 +156,7 @@ class Patcher_Mod extends Patcher_RepoMod
 		}
 		$this->readmeFileDir = $this->modDir.dirname($this->readmeFileName);
 		$this->readmeFile = file_get_contents($this->modDir.$this->readmeFileName);
+		$this->isModUpdate = $isModUpdate;
 	}
 
 	/**
@@ -167,13 +175,81 @@ class Patcher_Mod extends Patcher_RepoMod
 		return $this->$name;
 	}
 
-
 	function __isset($name)
 	{
 		$value = $this->$name;
 		return isset($value) && !empty($value);
 	}
 
+	/**
+	 * Determines whether mod is installed or not
+	 *
+	 * @return bool
+	 */
+	function getIsInstalled()
+	{
+		global $patcherConfig;
+		return isset($patcherConfig['installed_mods'][$this->id]['version']);
+	}
+
+	/**
+	 * Determines whether mod is installed and enabled
+	 *
+	 * @return bool
+	 */
+	function getIsEnabled()
+	{
+		global $patcherConfig;
+		return $this->isInstalled && !isset($patcherConfig['installed_mods'][$this->id]['disabled']);
+	}
+
+	/**
+	 * Determines whether there is a new update available to install
+	 *
+	 * @return string [repo|local] When there is new release or false when no new release
+	 */
+	function getCanUpdate()
+	{
+		global $patcherConfig, $modRepo;
+
+		// Look for updates
+		if ($this->isInstalled)
+		{
+			$hasUpdate = array();
+			$updateType = false;
+
+			// New update in local copy
+			if (isset($patcherConfig['installed_mods'][$this->id]['version']) && version_compare($this->modInfo['mod version'], $patcherConfig['installed_mods'][$this->id]['version'], '>'))
+				$hasUpdate['local'] = $this->modInfo['mod version'];
+
+			// New update available to download from fluxbb.org repo
+			if (isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $patcherConfig['installed_mods'][$this->id]['version'], '>'))
+				$hasUpdate['repo'] = $modRepo['mods'][$this->id]['last_release']['version'];
+
+			// Get newest update
+			if (isset($hasUpdate['local']) && isset($hasUpdate['repo']))
+				$updateType = version_compare($hasUpdate['local'], $hasUpdate['repo'], '>=') ? 'local' : 'repo';
+			elseif (isset($hasUpdate['local']))
+				$updateType = 'local';
+			elseif (isset($hasUpdate['repo']))
+				$updateType = 'repo';
+
+			if (!$updateType)
+				return false;
+
+			$this->updateVersion = $hasUpdate[$updateType];
+			return $updateType;
+		}
+
+		// New update available to download from fluxbb.org repo
+		else if (isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $this->version, '>'))
+		{
+			$this->updateVersion = $modRepo['mods'][$this->id]['last_release']['version'];
+			return 'repo';
+		}
+
+		return false;
+	}
 
 	/**
 	 * Look for readme file name
@@ -357,9 +433,20 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getVersion()
 	{
-		if (!isset($this->modInfo['mod version']))
+		global $patcherConfig, $modRepo;
+
+		// When it is not a mod update object and is installed, return the installed version
+		if (!$this->isModUpdate && $this->isInstalled && isset($patcherConfig['installed_mods'][$this->id]['version']))
+			return $patcherConfig['installed_mods'][$this->id]['version'];
+
+		// When it is a mod update object and there is a new version available, return update version
+		else if ($this->isModUpdate && $this->isInstalled && isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $patcherConfig['installed_mods'][$this->id]['version'], '>'))
+			return $modRepo['mods'][$this->id]['last_release']['version'];
+
+		else if (!isset($this->modInfo['mod version']))
 			return '';
 
+		// else return mod version from readme
 		return $this->modInfo['mod version'];
 	}
 
@@ -895,178 +982,203 @@ class Patcher_Mod extends Patcher_RepoMod
 			$steps[] = $newStep;
 		}
 
+		$steps = array_merge($steps, $this->getModInstallerSteps());
+
+		// Correct action IN THIS LINE FIND
+		if ($doInlineFind)
+			$steps = $this->fixInlineFindActions($steps);
+
+		return $steps;
+	}
+
+	/**
+	 * Change the IN THIS LINE FIND actions to the FIND => REPLACE structure
+	 *
+	 * @param array $steps
+	 * @return array
+	 */
+	function fixInlineFindActions($steps)
+	{
+		$find = $inlineFind = $inlineReplace = '';
+		$lastFindKey = 0;
+
+		foreach ($steps as $key => $curStep)
+		{
+			if ($curStep['command'] == 'OPEN')
+				$inlineFind = '';
+			elseif ($curStep['command'] == 'FIND')
+			{
+				if ($inlineReplace != '')
+					$steps[$lastFindKey + 1] = array('command' => 'REPLACE', 'code' => $inlineReplace);
+
+				$find = $curStep['code'];
+				$inlineFind = $inlineReplace = '';
+				$lastFindKey = $key;
+			}
+			elseif ($curStep['command'] == 'IN THIS LINE FIND')
+			{
+				if ($inlineReplace == '')
+					$inlineReplace = $find;
+				else
+					unset($steps[$key]);
+
+				$inlineFind = trim($curStep['code'], "\t");
+			}
+			elseif ($curStep['command'] == 'AFTER ADD' && $inlineFind != '')
+			{
+				$inlineReplace = str_replace($inlineFind, $inlineFind.trim($curStep['code'], "\t"), $inlineReplace);
+				unset($steps[$key]);
+			}
+			elseif ($curStep['command'] == 'REPLACE' && $inlineFind != '')
+				$inlineReplace = str_replace($inlineFind, $inlineFind.$inlineReplace, $inlineReplace);
+		}
+
+		// Fix section numbering
+		return array_values($steps);
+	}
+
+	/**
+	 * Get steps for the ModInstaller (search_inser.php and update_install.php files in plugins directory)
+	 *
+	 * @return type
+	 */
+	function getModInstallerSteps()
+	{
 		// Support for mod installer
 		$pluginsDir = null;
 		if (is_dir($this->readmeFileDir.'/plugins/'))
 			$pluginsDir = $this->readmeFileDir.'/plugins/';
 		elseif (is_dir($this->readmeFileDir.'/files/plugins/'))
 			$pluginsDir = $this->readmeFileDir.'/files/plugins/';
+		else
+			return array();
 
-		if (isset($pluginsDir))
+		$d = dir($pluginsDir);
+		while ($f = $d->read())
 		{
-			$d = dir($pluginsDir);
-			while ($f = $d->read())
+			if (substr($f, 0, 1) == '.')
+				continue;
+
+			// Mod installer
+			if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/search_insert.php'))
 			{
-				if (substr($f, 0, 1) == '.')
-					continue;
-
-				// Mod installer
-				if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/search_insert.php'))
+				require $pluginsDir.'/'.$f.'/search_insert.php';
+				$list_files = array();
+				$list_base = array();
+				// Do not modify the order below, otherwise some mods cannot be installed
+				// 1st files_to_insert - 2nd files_to_add - 3rd files_to_replace - 4th files_to_move
+				if (isset($files_to_insert))
+					$list_files[] = "files_to_insert";
+				if (isset($files_to_add))
+					$list_files[] = "files_to_add";
+				if (isset($files_to_replace))
+					$list_files[] = "files_to_replace";
+				if (isset($files_to_move))
 				{
-					require $pluginsDir.'/'.$f.'/search_insert.php';
-					$list_files = array();
-					$list_base = array();
-					// Do not modify the order below, otherwise some mods cannot be installed
-					// 1st files_to_insert - 2nd files_to_add - 3rd files_to_replace - 4th files_to_move
-					if(isset($files_to_insert)) $list_files[] = "files_to_insert";
-					if(isset($files_to_add)) $list_files[] = "files_to_add";
-					if(isset($files_to_replace)) $list_files[] = "files_to_replace";
-					if(isset($files_to_move)) {
-						$list_files[] = "files_to_move";
-						$move_start = "//modif oto - mod "/*.$mod_config['mod_name']*/." - Beginning of the block moved\n";
-						$move_end = "//modif oto - mod "/*.$mod_config['mod_name']*/." - End of the block moved\n";
-					}
-					//Database to modify
-					if(isset($fields_to_add)) $list_tables[] = "fields_to_add";
-					if(isset($config_to_insert)) $list_tables[] = "config_to_insert";
+					$list_files[] = "files_to_move";
+					$move_start = "//modif oto - mod "/*.$mod_config['mod_name']*/." - Beginning of the block moved\n";
+					$move_end = "//modif oto - mod "/*.$mod_config['mod_name']*/." - End of the block moved\n";
+				}
+				// Database to modify
+				if (isset($fields_to_add))
+					$list_tables[] = "fields_to_add";
+				if (isset($config_to_insert))
+					$list_tables[] = "config_to_insert";
 
-					//is there database modifications to do?
-					if(!empty($list_tables))
+				// is there database modifications to do?
+				if (!empty($list_tables))
+				{
+					$code_array = array();
+					global $db;
+
+					foreach ($list_tables as $base_name)
 					{
-						$code_array = array();
-						global $db;
+						foreach($$base_name as $table_value)
+						{//$table_value is name of table for modifications
+							if ($base_name == "fields_to_add")
+							{
+								for ($i =0 ; $i < count($add_field_name[$table_value]); $i++)
+									// If the field already exist there is no error.
+									$code_array[] = '$db->add_field(\''.$table_value.'\', \''.$add_field_name[$table_value][$i].'\', \''.$add_field_type[$table_value][$i].'\', \''.$add_allow_null[$table_value][$i].'\', \''.$add_default_value[$table_value][$i].'\') or error(\'Unable to add column '.$add_field_name[$table_value][$i].' to table '.$table_value.'\', __FILE__, __LINE__, $db->error());';
+							}
+							else if ($base_name == "config_to_insert")
+							{
+								$sql = "REPLACE INTO `".$db->prefix.$table_value."` (`conf_name`, `conf_value`) VALUES ";
+								for ($i = 0; $i < count($values[$table_value]); $i = $i + 2)
+									$sql .= "(\'".$db->escape($values[$table_value][$i])."\', \'".$db->escape($values[$table_value][$i+1])."\'),";
 
-						foreach($list_tables as $base_name)
-						{
-							foreach($$base_name as $table_value)
-							{//$table_value is name of table for modifications
-								if($base_name == "fields_to_add")
-								{
-									for($i=0;$i<count($add_field_name[$table_value]);$i++)
-									{
-										//If the field already exist there is no error.
-										$code_array[] = '$db->add_field(\''.$table_value.'\', \''.$add_field_name[$table_value][$i].'\', \''.$add_field_type[$table_value][$i].'\', \''.$add_allow_null[$table_value][$i].'\', \''.$add_default_value[$table_value][$i].'\') or error(\'Unable to add column '.$add_field_name[$table_value][$i].' to table '.$table_value.'\', __FILE__, __LINE__, $db->error());';
-									}
-								}
-								elseif($base_name == "config_to_insert")
-								{
-									$sql = "REPLACE INTO `".$db->prefix.$table_value."` (`conf_name`, `conf_value`) VALUES ";
-									for($i = 0;$i < count($values[$table_value]);$i = $i + 2) {
-										$sql .= "(\'".$db->escape($values[$table_value][$i])."\', \'".$db->escape($values[$table_value][$i+1])."\'),";
-										}
-									$sql = substr($sql,0,-1);
-									$code_array[] = '$db->query(\''.$sql.'\') or error(\'Unable to INSERT values INTO '.$table_value.'\', __FILE__, __LINE__, $db->error());';
-								}
+								$sql = substr($sql, 0, -1);
+								$code_array[] = '$db->query(\''.$sql.'\') or error(\'Unable to INSERT values INTO '.$table_value.'\', __FILE__, __LINE__, $db->error());';
 							}
 						}
-						$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->install)'."\n{\n".implode("\n", $code_array)."\n}\n");
 					}
+					$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->install)'."\n{\n".implode("\n", $code_array)."\n}\n");
+				}
 
-					foreach($list_files as $file_name)
+				foreach ($list_files as $file_name)
+				{
+					foreach ($$file_name as $file_value)
 					{
-						foreach($$file_name as $file_value)
+						$steps[] = array('command' => 'OPEN', 'code' => $file_value);
+
+						list($name_file,$ext_file) = explode('.',$file_value);
+
+						if ($file_name == "files_to_insert")
 						{
-							$steps[] = array('command' => 'OPEN', 'code' => $file_value);
-
-							list($name_file,$ext_file) = explode('.',$file_value);
-
-							if($file_name == "files_to_insert")
+							//Inserting the code before an existing line.
+							for($i = 0; $i < count($insert_file[$name_file]); $i++)
 							{
-								//Inserting the code before an existing line.
-								for($i=0;$i<count($insert_file[$name_file]);$i++)
-								{
-									$steps[] = array('command' => 'FIND', 'code' => $search_file[$name_file][$i]);
-									$steps[] = array('command' => 'BEFORE ADD', 'code' => $insert_file[$name_file][$i]);
-								}
+								$steps[] = array('command' => 'FIND', 'code' => $search_file[$name_file][$i]);
+								$steps[] = array('command' => 'BEFORE ADD', 'code' => $insert_file[$name_file][$i]);
 							}
-							elseif($file_name == "files_to_add")
+						}
+						elseif ($file_name == "files_to_add")
+						{
+							//Adding the code after an existing line.
+							for($i = 0; $i < count($insert_add_file[$name_file]); $i++)
 							{
-								//Adding the code after an existing line.
-								for($i=0;$i<count($insert_add_file[$name_file]);$i++)
-								{
-									$steps[] = array('command' => 'FIND', 'code' => $search_add_file[$name_file][$i]);
-									$steps[] = array('command' => 'AFTER ADD', 'code' => $insert_add_file[$name_file][$i]);
-								}
+								$steps[] = array('command' => 'FIND', 'code' => $search_add_file[$name_file][$i]);
+								$steps[] = array('command' => 'AFTER ADD', 'code' => $insert_add_file[$name_file][$i]);
 							}
-							elseif($file_name == "files_to_replace")
+						}
+						elseif ($file_name == "files_to_replace")
+						{
+							//Replacing an existing code by another one.
+							for($i=0; $i < count($insert_replace_file[$name_file]); $i++)
 							{
-								//Replacing an existing code by another one.
-								for($i=0;$i<count($insert_replace_file[$name_file]);$i++)
-								{
-									$steps[] = array('command' => 'FIND', 'code' => $search_replace_file[$name_file][$i]);
-									$steps[] = array('command' => 'REPLACE', 'code' => $insert_replace_file[$name_file][$i]);
-								}
+								$steps[] = array('command' => 'FIND', 'code' => $search_replace_file[$name_file][$i]);
+								$steps[] = array('command' => 'REPLACE', 'code' => $insert_replace_file[$name_file][$i]);
 							}
-							// currently unsupported
-	/*						elseif($file_name == "files_to_move")
+						}
+						// currently unsupported
+/*						elseif ($file_name == "files_to_move")
+						{
+							// Move code between two lines to another location
+							for ($i=0; $i < count($move_get_start[$name_file]); $i++)
 							{
-								// Move code between two lines to another location
-								for($i=0;$i<count($move_get_start[$name_file]);$i++) {
-									$pos_start = strpos($file_content, $move_get_start[$name_file][$i]) + strlen($move_get_start[$name_file][$i]);
+								$pos_start = strpos($file_content, $move_get_start[$name_file][$i]) + strlen($move_get_start[$name_file][$i]);
 								$pos_end = strpos($file_content, $move_get_end[$name_file][$i]);
-									$move_string = substr($file_content, $pos_start, $pos_end - $pos_start);
+								$move_string = substr($file_content, $pos_start, $pos_end - $pos_start);
 
-									$searching[] = $move_get_start[$name_file][$i].$move_string.$move_get_end[$name_file][$i];
-									$replacement[] = $move_get_start[$name_file][$i].$move_get_end[$name_file][$i];
-									$searching[] = $move_to_start[$name_file][$i].$move_to_end[$name_file][$i];
-									$replacement[] = $move_to_start[$name_file][$i].$move_start.$move_string.$move_end.$move_to_end[$name_file][$i];
-								}
-							}*/
-						}
+								$searching[] = $move_get_start[$name_file][$i].$move_string.$move_get_end[$name_file][$i];
+								$replacement[] = $move_get_start[$name_file][$i].$move_get_end[$name_file][$i];
+								$searching[] = $move_to_start[$name_file][$i].$move_to_end[$name_file][$i];
+								$replacement[] = $move_to_start[$name_file][$i].$move_start.$move_string.$move_end.$move_to_end[$name_file][$i];
+							}
+						}*/
 					}
 				}
-				// Mod installer
-				if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/update_install.php'))
-				{
-					$code = 'if ($this->install)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_install.php')."<?php\n".'}';
-					if (file_exists($pluginsDir.'/'.$f.'/update_uninstall.php'))
-						$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
-
-					$code = str_replace('?><?php', '', $code);
-					$steps[] = array('command' => 'RUN CODE', 'code' => $code);
-				}
 			}
-		}
-
-		// Correct action IN THIS LINE FIND
-		if ($doInlineFind)
-		{
-			$find = $replace = $inlineFind = $inlineReplace = '';
-			$lastFindKey = 0;
-			$modified = false;
-			foreach ($steps as $key => $curStep)
+			// Mod installer
+			if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/update_install.php'))
 			{
-				if ($curStep['command'] == 'OPEN')
-					$inlineFind = '';
-				elseif ($curStep['command'] == 'FIND')
-				{
-					if ($inlineReplace != '')
-						$steps[$lastFindKey + 1] = array('command' => 'REPLACE', 'code' => $inlineReplace);
+				$code = 'if ($this->install)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_install.php')."<?php\n".'}';
+				if (file_exists($pluginsDir.'/'.$f.'/update_uninstall.php'))
+					$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
 
-					$find = $curStep['code'];
-					$inlineFind = $inlineReplace = '';
-					$lastFindKey = $key;
-				}
-				elseif ($curStep['command'] == 'IN THIS LINE FIND')
-				{
-					if ($inlineReplace == '')
-						$inlineReplace = $find;
-					else
-						unset($steps[$key]);
-
-					$inlineFind = trim($curStep['code'], "\t");
-				}
-				elseif ($curStep['command'] == 'AFTER ADD' && $inlineFind != '')
-				{
-					$inlineReplace = str_replace($inlineFind, $inlineFind.trim($curStep['code'], "\t"), $inlineReplace);
-					unset($steps[$key]);
-				}
-				elseif ($curStep['command'] == 'REPLACE' && $inlineFind != '')
-					$inlineReplace = str_replace($inlineFind, $inlineFind.$inlineReplace, $inlineReplace);
+				$code = str_replace('?><?php', '', $code);
+				$steps[] = array('command' => 'RUN CODE', 'code' => $code);
 			}
-
-			// Fix section numbering
-			$steps = array_values($steps);
 		}
 
 		return $steps;
