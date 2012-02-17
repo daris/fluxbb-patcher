@@ -29,12 +29,12 @@ return array(
 'Mod installation status'		=> 'Mod installation status',
 'Mod requirements'				=> 'Mod requirements',
 'Files to upload'				=> 'Files to upload',
-'Files to upload info'			=> 'Following files have to be uploaded to FluxBB root directory, however there are some files that does not exist. The upload step defined in readme file probably points to invalid file location. Report this list to mod author as it does not allow you to install this mod using Patcher.',
+'Files to upload info'			=> 'Following files have to be uploaded to FluxBB root directory, however there are some files that do not exist. The upload step defined in readme file probably points to invalid file location. Report this list to mod author as it does not allow you to install this mod using Patcher.',
 'Directories'					=> 'Directories',
 'Directories info'				=> 'This mod requires the following directories to be writable in order to install/uninstall it.',
 'Affected files info'			=> 'List of files that will be modified in installing/uninstalling mod process. All of them must be writable.',
 'Missing strings'				=> 'Missing strings',
-'Missing strings info'			=> 'There are some strings that has not been found in the specified files.',
+'Missing strings info'			=> 'There are some strings that have not been found in the specified files.',
 'Missing string'				=> 'Missing string',
 'Cannot open'					=> 'Files not found',
 'Cannot open info'				=> 'The following files were not found.',
@@ -52,7 +52,7 @@ return array(
 
 'Unmet requirements'			=> 'Unmet requirements',
 'Check again'					=> 'Check again',
-'Unmet requirements info'		=> 'There are some unmet requirements that have to be corrected before you be able to install this mod. When you fix these issues, click Check again button.',
+'Unmet requirements info'		=> 'There are some unmet requirements that have to be corrected before you can install this mod. When you fix these issues, click Check again button.',
 'Congratulations'				=> 'Congratulations',
 'Mod installed'					=> 'Successfully installed new modification.',
 'Mod uninstalled'				=> 'Successfully removed modification.',
@@ -101,7 +101,7 @@ return array(
 'Description'					=> 'Description',
 'Warning'						=> 'Warning',
 'Unsupported version'			=> 'The mod you are about to install was not made specifically to support your current version of FluxBB (%s). This mod supports FluxBB versions: %s. If you are uncertain about installing the mod due to this potential version conflict, contact the mod author.',
-'Unsupported version info'		=> 'This mod you was not made specifically to support your current version of FluxBB.',
+'Unsupported version info'		=> 'This mod was not made specifically to support your current version of FluxBB.',
 'Following files not writable'	=> 'Following files are not writable: %s. Please check permission settings for these files before proceeding.',
 'Update info'					=> 'You are going to install an outdated version of this modification.',
 'Download update'				=> 'Download update (%s)',
@@ -213,6 +213,6 @@ return array(
 'RENAME'						=> 'RENAME',
 'RUN CODE'						=> 'RUN CODE',
 
-'Root directory not writable message' => 'FluxBB root directory is not writable.<br /><br />The basic Linux server permission settings does not allow to modify files via PHP.<br />There are two ways of making Patcher to do this:<br />1. Change chmod of each FluxBB directory to 0777 (and apply for each file) - but it is a seciurity issue and I suggest you to do step 2 instead :)<br />2. Enable FTP layer by renaming plugins/patcher/config_sample.php to config.php and filling the FTP login details. This way Patcher will use a FTP account to make changes to the files.<br /><br />More details about permission problem:<br /><a href="http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems">http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems</a>',
+'Root directory not writable message' => 'FluxBB root directory is not writable.<br /><br />The basic Linux server permission settings does not allow to modify files via PHP.<br />There are two ways of making Patcher to do this:<br />1. Change chmod of each FluxBB directory to 0777 (and apply for each file) - but it is a security issue and I suggest you to do step 2 instead :)<br />2. Enable FTP layer by renaming plugins/patcher/config_sample.php to config.php and filling the FTP login details. This way Patcher will use a FTP account to make changes to the files.<br /><br />More details about permission problem:<br /><a href="http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems">http://www.joomlaholic.com/forum/showthread.php?787-File-Ownership-Problems</a>',
 
 );
