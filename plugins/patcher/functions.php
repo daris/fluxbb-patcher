@@ -716,8 +716,9 @@ function patcherError()
 
 function patcherErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
 {
+	patcherLog($errno.' '.$errstr.' in '.$errfile.' on line '.$errline);
+
 	ob_start();
-	echo $errno.' '.$errstr.' in '.$errfile.', '.$errline."\n";
 	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 	$contents = ob_get_clean();
 
@@ -739,4 +740,17 @@ function patcherLog($msg)
 
 	fwrite($fh, $msg."\n");
 //	fclose($fh);
+}
+
+function patcherExceptionHandler($exception)
+{
+	patcherLog('Error: '.$exception->getMessage().' on line '.$exception->getFile().', '.$exception->getLine());
+
+	ob_start();
+	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+	$contents = ob_get_clean();
+
+	patcherLog($contents."\n----\n");
+
+	error($exception->getMessage(), $exception->getFile(), $exception->getLine());
 }

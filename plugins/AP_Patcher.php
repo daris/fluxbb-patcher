@@ -36,6 +36,8 @@ if (defined('PUN_DEBUG'))
 	set_error_handler('patcherErrorHandler');
 }
 
+set_exception_handler('patcherExceptionHandler');
+
 // Status constants
 define('STATUS_UNKNOWN', -1);
 define('STATUS_NOT_DONE', 0);
@@ -1036,7 +1038,13 @@ endif;
 								</tbody>
 							</table>
 						</div>
-<?php if (!empty($mods) && in_array($section, array('Installed mods', 'Mods not installed'))) : ?>						<div style="text-align: right; padding: 6px 0px 0px;"><?php echo $langPatcher['With selected'] ?>: <?php if ($section == 'Mods not installed') : ?><input type="submit" name="install" value="<?php echo $langPatcher['Install'] ?>" /><?php elseif ($section == 'Installed mods'): ?><input type="submit" name="uninstall" value="<?php echo $langPatcher['Uninstall'] ?>" /> <input type="submit" name="enable" value="<?php echo $langPatcher['Enable'] ?>" /> <input type="submit" name="disable" value="<?php echo $langPatcher['Disable'] ?>" /><?php endif; ?></div>
+<?php if (!empty($mods) && in_array($section, array('Installed mods', 'Mods not installed'))) : ?>						<div style="text-align: right; padding: 6px 0px 0px;">
+							<?php echo $langPatcher['With selected'] ?>:
+<?php if ($section == 'Mods not installed') : ?>							<input type="submit" name="install" value="<?php echo $langPatcher['Install'] ?>" />
+<?php elseif ($section == 'Installed mods'): ?>							<input type="submit" name="uninstall" value="<?php echo $langPatcher['Uninstall'] ?>" />
+							<input type="submit" name="enable" value="<?php echo $langPatcher['Enable'] ?>" />
+							<input type="submit" name="disable" value="<?php echo $langPatcher['Disable'] ?>" />
+<?php endif; ?>						</div>
 <?php endif; ?>
 					</fieldset>
 				</div>
