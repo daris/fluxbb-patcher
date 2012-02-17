@@ -242,7 +242,7 @@ class Patcher_Mod extends Patcher_RepoMod
 		}
 
 		// New update available to download from fluxbb.org repo
-		else if (isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $this->version, '>'))
+		elseif (isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $this->version, '>'))
 		{
 			$this->updateVersion = $modRepo['mods'][$this->id]['last_release']['version'];
 			return 'repo';
@@ -297,7 +297,7 @@ class Patcher_Mod extends Patcher_RepoMod
 					if ($subdirectory)
 						$result = array_merge($result, $this->getReadmeFileList($dirpath.'/'.$file, false));
 				}
-				else if ((strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false || strpos(strtolower($file), 'lisezmoi') !== false) && (strpos(strtolower($file), '.txt') !== false || strpos(strtolower($file), '.') === false))
+				elseif ((strpos(strtolower($file), 'read') !== false && strpos(strtolower($file), 'me') !== false || strpos(strtolower($file), 'lisezmoi') !== false) && (strpos(strtolower($file), '.txt') !== false || strpos(strtolower($file), '.') === false))
 					$result[] = ltrim(str_replace($this->modDir, '', $dirpath.'/'.$file), '/');
 			}
 		}
@@ -440,10 +440,10 @@ class Patcher_Mod extends Patcher_RepoMod
 			return $patcherConfig['installed_mods'][$this->id]['version'];
 
 		// When it is a mod update object and there is a new version available, return update version
-		else if ($this->isModUpdate && $this->isInstalled && isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $patcherConfig['installed_mods'][$this->id]['version'], '>'))
+		elseif ($this->isModUpdate && $this->isInstalled && isset($modRepo['mods'][$this->id]['last_release']['version']) && version_compare($modRepo['mods'][$this->id]['last_release']['version'], $patcherConfig['installed_mods'][$this->id]['version'], '>'))
 			return $modRepo['mods'][$this->id]['last_release']['version'];
 
-		else if (!isset($this->modInfo['mod version']))
+		elseif (!isset($this->modInfo['mod version']))
 			return '';
 
 		// else return mod version from readme
@@ -1044,6 +1044,8 @@ class Patcher_Mod extends Patcher_RepoMod
 	 */
 	function getModInstallerSteps()
 	{
+		$steps = array();
+
 		// Support for mod installer
 		$pluginsDir = null;
 		if (is_dir($this->readmeFileDir.'/plugins/'))
@@ -1051,7 +1053,7 @@ class Patcher_Mod extends Patcher_RepoMod
 		elseif (is_dir($this->readmeFileDir.'/files/plugins/'))
 			$pluginsDir = $this->readmeFileDir.'/files/plugins/';
 		else
-			return array();
+			return $steps;
 
 		$d = dir($pluginsDir);
 		while ($f = $d->read())
@@ -1101,7 +1103,7 @@ class Patcher_Mod extends Patcher_RepoMod
 									// If the field already exist there is no error.
 									$code_array[] = '$db->add_field(\''.$table_value.'\', \''.$add_field_name[$table_value][$i].'\', \''.$add_field_type[$table_value][$i].'\', \''.$add_allow_null[$table_value][$i].'\', \''.$add_default_value[$table_value][$i].'\') or error(\'Unable to add column '.$add_field_name[$table_value][$i].' to table '.$table_value.'\', __FILE__, __LINE__, $db->error());';
 							}
-							else if ($base_name == "config_to_insert")
+							elseif ($base_name == "config_to_insert")
 							{
 								$sql = "REPLACE INTO `".$db->prefix.$table_value."` (`conf_name`, `conf_value`) VALUES ";
 								for ($i = 0; $i < count($values[$table_value]); $i = $i + 2)

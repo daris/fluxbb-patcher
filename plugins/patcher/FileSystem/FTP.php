@@ -90,10 +90,10 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			return '.';
 
 		// Is the current path prefixed with PUN_ROOT directory?
-		else if (substr($path, 0, $len) == $rootPath)
+		elseif (substr($path, 0, $len) == $rootPath)
 			return ltrim(substr($path, $len), '/\\');
 
-		else if (substr($rootPath, 0, strlen($path)) == $path)
+		elseif (substr($rootPath, 0, strlen($path)) == $path)
 		{
 			$pathRest = substr($rootPath, strlen($path));
 			return str_repeat('../', substr_count($pathRest, '/'));
