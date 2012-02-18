@@ -43,6 +43,12 @@ class Patcher
 	 * @var string Action we want to execute
 	 * 		Possibilities are: install, uninstall, enable, disable, update
 	 */
+	public $actionType = null;
+
+	/**
+	 * @var Patcher_Action
+	 * 		An instance of the Patcher_Action class
+	 */
 	public $action = null;
 
 	/**
@@ -54,13 +60,6 @@ class Patcher
 	 * @var array Results of the patching process
 	 */
 	public $log = array();
-
-	// Determine current action
-	public $install = false;
-	public $uninstall = false;
-	public $update = false;
-	public $disable = false;
-	public $enable = false;
 
 	/**
 	 * @var bool Only validate modification (without writing changes to the files)
@@ -107,15 +106,13 @@ class Patcher
 	/**
 	 * Execute specified action
 	 *
-	 * @param string $action
+	 * @param string $actionType
 	 * @param bool $validateOnly
 	 * @return bool
 	 */
-	function executeAction($action, $validateOnly = false)
+	function executeAction($actionType, $validateOnly = false)
 	{
-		$this->install = $this->uninstall = $this->update = $this->disable = $this->enable = false;
-		$this->action = $action;
-		$this->$action = true;
+		$this->actionType = $actionType;
 		$this->steps = $this->getSteps();
 
 		$this->validate = $validateOnly;
@@ -222,7 +219,7 @@ class Patcher
 	{
 		$steps = array();
 
-		if ($this->install || $this->update)
+		if ($this->actionType == 'install' || $this->actionType == 'update')
 		{
 			if ($this->mod->isValid)
 			{
@@ -279,7 +276,7 @@ class Patcher
 					$steps[$curReadmeFile] = $stepList;
 			}
 
-			if ($this->uninstall || $this->disable)
+			if ($this->actionType == 'uninstall' || $this->actionType == 'disable')
 			{
 				// Reverse readme list
 				$steps = array_reverse($steps);
@@ -361,34 +358,28 @@ class Patcher
 		global $fs;
 		$failed = false;
 
-		$action = $this->determineAction();
-		$action->validate = $this->validate;
-		$action->config = $this->config;
-		$action->mod = $this->mod;
-		$action->action = $this->action;
-		$cur_action = $this->action;
-		$action->$cur_action = true;
+		$this->action = $this->determineAction();
 
-		if ($this->uninstall || $this->disable)
+		if ($this->actionType == 'uninstall' || $this->actionType == 'disable')
 		{
 			foreach ($this->mod->filesToUpload as $from => $to)
 			{
 				// Copy install mod file as we want to uninstall mod
-				if ($this->uninstall && strpos($from, 'install_mod.php') !== false)
+				if ($this->actionType == 'uninstall' && strpos($from, 'install_mod.php') !== false)
 					$fs->copy($this->mod->readmeFileDir.'/'.$from, PUN_ROOT.'install_mod.php');
 				elseif (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
 					$fs->copy($this->mod->readmeFileDir.'/'.$from, PUN_ROOT.'gen.php');
 			}
 		}
-		if ($this->uninstall)
-			$action->friendlyUrlUninstallUpload();
+		if ($this->actionType == 'uninstall')
+			$this->action->friendlyUrlUninstallUpload();
 
 		$i = 1;
 		foreach ($this->log as $log)
 			foreach ($log as $curActionLog)
 				$i += count($curActionLog);
 
-		$log_key = $this->action.':'.$this->mod->title;
+		$log_key = $this->actionType.':'.$this->mod->title;
 		$this->log[$log_key] = array();
 
 		$steps = $this->steps; // TODO: there is something wrong with variables visibility
@@ -402,11 +393,11 @@ class Patcher
 			foreach ($stepList as $key => $curStep)
 			{
 				$stepResult = $curStep;
-				if ($action->executeStep($curStep, $stepResult))
+				if ($this->action->executeStep($curStep, $stepResult))
 				{
 					if (in_array($curStep['command'], $this->globalCommands))
 					{
-						$this->globalStep = $action->globalStep = $i; // it is a global action
+						$this->globalStep = $this->action->globalStep = $i; // it is a global action
 
 						if ($curStep['command'] == 'UPLOAD')
 						{
@@ -435,8 +426,8 @@ class Patcher
 
 				$this->steps[$curReadmeFile][$key] = $stepResult;
 
-				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$action->curFileModified)
-					$action->curFileModified = true;
+				if (($curStep['status'] == STATUS_DONE || $curStep['status'] == STATUS_REVERTED) && $curStep['command'] != 'OPEN' && !$this->action->curFileModified)
+					$this->action->curFileModified = true;
 
 				if ($curStep['status'] == STATUS_NOT_DONE)
 				{
@@ -445,7 +436,7 @@ class Patcher
 						$failed = true;
 
 					// Delete step if it fails
-					if ($this->install || $this->update)
+					if ($this->actionType == 'install' || $this->actionType == 'update')
 					{
 						if (in_array($curStep['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && $key > 0 && isset($stepList[$key-1]) && $stepList[$key-1]['command'] == 'FIND')
 							unset($stepList[$key-1]);
@@ -454,7 +445,7 @@ class Patcher
 				}
 
 				// Delete step for uninstall when step was done
-				if ($this->uninstall && $curStep['status'] != STATUS_NOT_DONE && !in_array($curStep['command'], array('FIND', 'OPEN')))
+				if ($this->actionType == 'uninstall' && $curStep['status'] != STATUS_NOT_DONE && !in_array($curStep['command'], array('FIND', 'OPEN')))
 				{
 					if (in_array($curStep['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && isset($stepList[$key-1]) && $stepList[$key-1]['command'] == 'FIND')
 						unset($stepList[$key-1]);
@@ -469,7 +460,7 @@ class Patcher
 //			patcherLog(var_export($stepList, true));
 
 			$stepList = array_values($stepList);
-			if ($this->uninstall)
+			if ($this->actionType == 'uninstall')
 			{
 				// Delete empty OPEN steps
 				foreach ($stepList as $key => $curStep)
@@ -484,7 +475,7 @@ class Patcher
 			$curMod = substr($curReadmeFile, 0, strpos($curReadmeFile, '/'));
 			$curReadme = substr($curReadmeFile, strpos($curReadmeFile, '/') + 1);
 
-			if ($this->uninstall)
+			if ($this->actionType == 'uninstall')
 			{
 				if (count($stepList) == 0 && isset($this->config['installed_mods'][$curMod]) && in_array($curReadme, $this->config['installed_mods'][$curMod]))
 					$this->config['installed_mods'][$curMod] = array_diff($this->config['installed_mods'][$curMod], array($curReadme)); // delete an element
@@ -494,7 +485,7 @@ class Patcher
 				else
 					$this->config['steps'][$curReadmeFile] = $stepList;
 			}
-			elseif ($this->install || $this->update)
+			elseif ($this->actionType == 'install' || $this->actionType == 'update')
 			{
 				if (!isset($this->config['installed_mods'][$curMod]))
 					$this->config['installed_mods'][$curMod] = array();
@@ -506,42 +497,13 @@ class Patcher
 			}
 		}
 
-		// Update patcher configuration
-		if ($this->uninstall)
-		{
-			if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
-				unset($this->config['installed_mods'][$this->mod->id]['disabled']);
-
-			if (isset($this->config['installed_mods'][$this->mod->id]['version']))
-				unset($this->config['installed_mods'][$this->mod->id]['version']);
-
-			if ($failed)
-				$this->config['installed_mods'][$this->mod->id]['uninstall_failed'] = true;
-			else
-			{
-				if (isset($this->config['installed_mods'][$this->mod->id]['uninstall_failed']))
-					unset($this->config['installed_mods'][$this->mod->id]['uninstall_failed']);
-				if (empty($this->config['installed_mods'][$this->mod->id]))
-					unset($this->config['installed_mods'][$this->mod->id]);
-			}
-		}
-		elseif ($this->install || $this->update)
-		{
-			$this->config['installed_mods'][$this->mod->id]['version'] = $this->mod->version;
-
-			if ($this->update && isset($this->config['installed_mods'][$this->mod->id]['disabled']))
-				unset($this->config['installed_mods'][$this->mod->id]['disabled']);
-		}
-		elseif ($this->enable && isset($this->config['installed_mods'][$this->mod->id]['disabled']))
-			unset($this->config['installed_mods'][$this->mod->id]['disabled']);
-		elseif ($this->disable && $GLOBALS['action'] != 'update')
-			$this->config['installed_mods'][$this->mod->id]['disabled'] = 1;
-
 		// when some file was opened, save it
-		$action->stepSave();
+		$this->action->stepSave();
 
-		$_SESSION['patcher_files'] = serialize($action->modifedFiles);
-		$this->orginalFiles = array_merge($this->orginalFiles, $action->orginalFiles);
+		// Update patcher configuration
+		$this->action->updateConfig($failed);
+
+		$_SESSION['patcher_files'] = serialize($this->modifedFiles);
 
 		if ($this->config != $this->configOrg)
 		{
@@ -556,31 +518,31 @@ class Patcher
 
 	function determineAction()
 	{
-		switch ($this->action)
+		switch ($this->actionType)
 		{
 			case 'install':
 				require_once PATCHER_ROOT.'Action/Install.php';
-				$action = new Patcher_Action_Install;
+				$action = new Patcher_Action_Install($this);
 				break;
 
 			case 'uninstall':
 				require_once PATCHER_ROOT.'Action/Uninstall.php';
-				$action = new Patcher_Action_Uninstall;
+				$action = new Patcher_Action_Uninstall($this);
 				break;
 
 			case 'enable':
 				require_once PATCHER_ROOT.'Action/Enable.php';
-				$action = new Patcher_Action_Enable;
+				$action = new Patcher_Action_Enable($this);
 				break;
 
 			case 'disable':
 				require_once PATCHER_ROOT.'Action/Disable.php';
-				$action = new Patcher_Action_Disable;
+				$action = new Patcher_Action_Disable($this);
 				break;
 
 			case 'update':
 				require_once PATCHER_ROOT.'Action/Update.php';
-				$action = new Patcher_Action_Update;
+				$action = new Patcher_Action_Update($this);
 				break;
 
 		}

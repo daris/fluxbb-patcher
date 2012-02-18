@@ -1050,8 +1050,12 @@ class Patcher_Mod extends Patcher_RepoMod
 
 	/**
 	 * Get steps for the ModInstaller (search_inser.php and update_install.php files in plugins directory)
+	 * Following function is copied from the ModInstaller plugin with minor modifications
+	 * @link http://fluxbb.org/resources/mods/mod-installer-plugin/
 	 *
-	 * @return type
+	 * @todo #22 Group steps by the file (currently steps are mixed for different variables, eg. mod reverse-messages-order)
+	 *
+	 * @return array
 	 */
 	function getModInstallerSteps()
 	{
@@ -1125,7 +1129,7 @@ class Patcher_Mod extends Patcher_RepoMod
 							}
 						}
 					}
-					$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->install)'."\n{\n".implode("\n", $code_array)."\n}\n");
+					$steps[] = array('action' => 'RUN CODE', 'code' => 'if ($this->patcher->actionType == \'install\')'."\n{\n".implode("\n", $code_array)."\n}\n");
 				}
 
 				foreach ($list_files as $file_name)
@@ -1134,7 +1138,7 @@ class Patcher_Mod extends Patcher_RepoMod
 					{
 						$steps[] = array('command' => 'OPEN', 'code' => $file_value);
 
-						list($name_file,$ext_file) = explode('.',$file_value);
+						list($name_file,$ext_file) = explode('.', $file_value);
 
 						if ($file_name == "files_to_insert")
 						{
@@ -1185,9 +1189,9 @@ class Patcher_Mod extends Patcher_RepoMod
 			// Mod installer
 			if (is_dir($pluginsDir.'/'.$f) && file_exists($pluginsDir.'/'.$f.'/update_install.php'))
 			{
-				$code = 'if ($this->install)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_install.php')."<?php\n".'}';
+				$code = 'if ($this->patcher->actionType == \'install\')'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_install.php')."<?php\n".'}';
 				if (file_exists($pluginsDir.'/'.$f.'/update_uninstall.php'))
-					$code .= "\n\n".'if ($this->uninstall)'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
+					$code .= "\n\n".'if ($this->patcher->actionType == \'uninstall\')'."\n{\n?>".file_get_contents($pluginsDir.'/'.$f.'/update_uninstall.php')."<?php\n".'}';
 
 				$code = str_replace('?><?php', '', $code);
 				$steps[] = array('command' => 'RUN CODE', 'code' => $code);

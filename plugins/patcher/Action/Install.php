@@ -10,6 +10,11 @@
 class Patcher_Action_Install
 {
 	/**
+	 * @var Patcher Patcher instance
+	 */
+	protected $patcher;
+
+	/**
 	 * @var string Current file content
 	 */
 	public $curFile = null;
@@ -75,14 +80,40 @@ class Patcher_Action_Install
 	 */
 	public $modifedFiles = array();
 
-	// Determine current action
-	public $install = false;
-	public $uninstall = false;
-	public $update = false;
-	public $disable = false;
-	public $enable = false;
+	/**
+	 * Class constructor
+	 *
+	 * @param Patcher $patcher
+	 * 		Patcher class instance
+	 *
+	 * @return type
+	 */
+	function __construct($patcher)
+	{
+		$this->patcher = $patcher;
+	}
 
-
+	/**
+	 * Execute specified step
+	 *
+	 * @param array &$curStep
+	 * 		Step to process, for example:
+	 * 		array(
+	 * 			'command'	=> 'FIND',
+	 * 			'code'		=> '// some code'
+	 * 		)
+	 *
+	 * @param array &$stepResult
+	 * 		Duplicate of the $curStep array, contains result of the executing step, for example:
+	 * 		array(
+	 * 			'command'	=> 'FIND',
+	 * 			'code'		=> '// some code'
+	 * 			'validate'	=> true,
+	 * 			'status'	=> STATUS_DONE
+	 * 		)
+	 *
+	 * @return type
+	 */
 	function executeStep(&$curStep, &$stepResult)
 	{
 		if (!isset($curStep['status']))
@@ -97,7 +128,7 @@ class Patcher_Action_Install
 			$this->result = '';
 
 			// Execute current step
-			if ($this->validate || (!$this->validate && !isset($curStep['validated'])))
+			if ($this->patcher->validate || (!$this->patcher->validate && !isset($curStep['validated'])))
 				$curStep['status'] = $this->$function();
 
 			if ($this->result != '')
@@ -106,13 +137,24 @@ class Patcher_Action_Install
 			$curStep['code'] = $this->code;
 			$curStep['comments'] = $this->comments;
 
-			if (in_array($this->command, $this->modifyFileCommands) && $this->validate)
+			if (in_array($this->command, $this->modifyFileCommands) && $this->patcher->validate)
 			{
 				$stepResult['validated'] = true;
 				$stepResult['status'] = $curStep['status'];
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Update Patcher configuration after patching
+	 *
+	 * @param bool $failed Whether patching failed or not
+	 * @return type
+	 */
+	function updateconfig($failed)
+	{
+		$this->patcher->config['installed_mods'][$this->patcher->mod->id]['version'] = $this->patcher->mod->version;
 	}
 
 	/**
@@ -213,20 +255,20 @@ class Patcher_Action_Install
 	{
 		global $langPatcher, $fs;
 
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
-		foreach ($this->mod->filesToUpload as $from => $to)
+		foreach ($this->patcher->mod->filesToUpload as $from => $to)
 		{
-			if (is_dir($this->mod->readmeFileDir.'/'.$from))
-				$fs->copyDir($this->mod->readmeFileDir.'/'.$from, PUN_ROOT.$to);
+			if (is_dir($this->patcher->mod->readmeFileDir.'/'.$from))
+				$fs->copyDir($this->patcher->mod->readmeFileDir.'/'.$from, PUN_ROOT.$to);
 				// TODO: friendly_url_upload for directory
 			else
 			{
 				if (is_dir(PUN_ROOT.$to) || substr($to, -1) == '/' || strpos(basename($to), '.') === false) // as a comment above
 					$to .= (substr($to, -1) == '/' ? '' : '/').basename($from);
 
-				if (!$fs->copy($this->mod->readmeFileDir.'/'.$from, PUN_ROOT.$to))
+				if (!$fs->copy($this->patcher->mod->readmeFileDir.'/'.$from, PUN_ROOT.$to))
 					message(sprintf($langPatcher['Can\'t copy file'], pun_htmlspecialchars($from), pun_htmlspecialchars($to))); // TODO: move message somewhere :)
 
 				$this->friendlyUrlUpload($to);
@@ -270,12 +312,12 @@ class Patcher_Action_Install
 		if (!$fs->isWritable(PUN_ROOT.$this->code))
 			message(sprintf($langPatcher['File not writable'], pun_htmlspecialchars($this->code)));
 
-		if (isset($this->modifedFiles[$this->code]))
-			$this->curFile = $this->modifedFiles[$this->code];
+		if (isset($this->patcher->modifedFiles[$this->code]))
+			$this->curFile = $this->patcher->modifedFiles[$this->code];
 		else
 		{
 			$this->curFile = file_get_contents(PUN_ROOT.$this->code);
-			$this->orginalFiles[$this->code] = $this->curFile;
+			$this->patcher->orginalFiles[$this->code] = $this->curFile;
 		}
 
 		// Convert EOL to Unix style
@@ -302,8 +344,8 @@ class Patcher_Action_Install
 
 		$this->friendlyUrlSave();
 
-		if ($this->validate)
-			$this->modifedFiles[$this->curFilePath] = $this->curFile;
+		if ($this->patcher->validate)
+			$this->patcher->modifedFiles[$this->curFilePath] = $this->curFile;
 
 		elseif (!defined('PATCHER_NO_SAVE'))
 		{
@@ -386,7 +428,7 @@ class Patcher_Action_Install
 					$queryLine = trim($matches[0]);
 					$curFileQuery = $matches[1];
 
-					if ($this->uninstall || $this->disable)
+					if ($this->patcher->actionType == 'uninstall' || $this->patcher->actionType == 'disable')
 					{
 						$replaceWith = revertQuery($curFileQuery, $codeQuery, $findQuery);
 
@@ -416,7 +458,7 @@ class Patcher_Action_Install
 				}
 			}
 
-			if ($this->install || $this->enable || strpos($this->curFile, $this->code) !== false)
+			if ($this->patcher->actionType == 'install' || $this->patcher->actionType == 'enable' || strpos($this->curFile, $this->code) !== false)
 			{
 				$status = $this->replaceCode(trim($this->find), trim($this->code));
 				$this->comments[] = 'Query ID';
@@ -498,7 +540,7 @@ class Patcher_Action_Install
 	 */
 	function stepRunCode()
 	{
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		global $db;
@@ -518,7 +560,7 @@ class Patcher_Action_Install
 		$suffix = '_'.substr(sha1(rand()), 0, 6);
 		$installFunc = 'install'.$suffix;
 
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		if ($this->code == 'install_mod.php')
@@ -579,7 +621,7 @@ class Patcher_Action_Install
 	{
 		global $fs;
 
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		$this->code = trim($this->code);
@@ -601,7 +643,7 @@ class Patcher_Action_Install
 	function stepRename()
 	{
 		global $fs;
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		$this->code = trim($this->code);
@@ -627,10 +669,10 @@ class Patcher_Action_Install
 	 */
 	function friendlyUrlOpen()
 	{
-		if ($this->mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']) || !isset($this->config['steps']['friendly-url/files/gen.php']))
+		if ($this->patcher->mod->id == 'friendly-url' || !isset($this->patcher->config['installed_mods']['friendly-url']) || isset($this->patcher->config['installed_mods']['friendly-url']['disabled']) || !isset($this->patcher->config['steps']['friendly-url/files/gen.php']))
 			return;
 
-		$steps = $this->config['steps']['friendly-url/files/gen.php'];
+		$steps = $this->patcher->config['steps']['friendly-url/files/gen.php'];
 		$steps = array_values($steps);
 		$curFile = '';
 
@@ -641,9 +683,9 @@ class Patcher_Action_Install
 			if ($found)
 			{
 				// Revert changes
-				unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
+				unset($this->patcher->config['steps']['friendly-url/files/gen.php'][$i]);
 				$changes[] = array('replace' => $steps[$i]['code'], 'search' => $steps[++$i]['code']);
-				unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
+				unset($this->patcher->config['steps']['friendly-url/files/gen.php'][$i]);
 
 				if (isset($steps[$i+1]['command']) && $steps[$i+1]['command'] == 'OPEN')
 					break;
@@ -652,9 +694,9 @@ class Patcher_Action_Install
 			if (!$found && (!isset($steps[$i]['command']) || $steps[$i]['command'] != 'OPEN' || $steps[$i]['code'] != $this->curFilePath))
 				continue;
 			$found = true;
-			unset($this->config['steps']['friendly-url/files/gen.php'][$i]);
+			unset($this->patcher->config['steps']['friendly-url/files/gen.php'][$i]);
 		}
-		$this->config['steps']['friendly-url/files/gen.php'] = array_values($this->config['steps']['friendly-url/files/gen.php']);
+		$this->patcher->config['steps']['friendly-url/files/gen.php'] = array_values($this->patcher->config['steps']['friendly-url/files/gen.php']);
 		$changes = array_reverse($changes);
 		$endPos = strlen($this->curFile);
 		foreach ($changes as $curChange)
@@ -676,19 +718,19 @@ class Patcher_Action_Install
 	 */
 	function friendlyUrlSave()
 	{
-		if ($this->mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled']))
+		if ($this->patcher->mod->id == 'friendly-url' || !isset($this->patcher->config['installed_mods']['friendly-url']) || isset($this->patcher->config['installed_mods']['friendly-url']['disabled']))
 			return;
 
 		$curReadmeFile = 'friendly-url/files/gen.php';
-		if (!isset($this->config['steps'][$curReadmeFile]))
-			$this->config['steps'][$curReadmeFile] = array();
+		if (!isset($this->patcher->config['steps'][$curReadmeFile]))
+			$this->patcher->config['steps'][$curReadmeFile] = array();
 
 		if (file_exists(MODS_DIR.'friendly-url/files/gen.php'))
 		{
 			$changes = array();
 			require_once MODS_DIR.'friendly-url/files/gen.php';
 			$this->curFile = urlReplaceFile($this->curFilePath, $this->curFile, $changes);
-			$this->config['steps'][$curReadmeFile] = array_merge($this->config['steps'][$curReadmeFile], urlGetSteps($changes));
+			$this->patcher->config['steps'][$curReadmeFile] = array_merge($this->patcher->config['steps'][$curReadmeFile], urlGetSteps($changes));
 		}
 	}
 
@@ -702,14 +744,14 @@ class Patcher_Action_Install
 	{
 		global $fs;
 
-		if ($this->mod->id == 'friendly-url' || !isset($this->config['installed_mods']['friendly-url']) || isset($this->config['installed_mods']['friendly-url']['disabled'])
+		if ($this->patcher->mod->id == 'friendly-url' || !isset($this->patcher->config['installed_mods']['friendly-url']) || isset($this->patcher->config['installed_mods']['friendly-url']['disabled'])
 			|| substr($curFileName, -4) != '.php' || in_array($curFileName, array('gen.php', 'install_mod.php'))
 			|| dirname($curFileName) != '.' && substr($curFileName, 0, 7) != 'include') // directory other than PUN_ROOT and include
 			return;
 
 		$genFile = 'friendly-url/files/gen.php';
-		if (!isset($this->config['steps'][$genFile]))
-			$this->config['steps'][$genFile] = array();
+		if (!isset($this->patcher->config['steps'][$genFile]))
+			$this->patcher->config['steps'][$genFile] = array();
 
 		if (file_exists(MODS_DIR.$genFile))
 		{
@@ -719,7 +761,7 @@ class Patcher_Action_Install
 			$curFile = urlReplaceFile($curFileName, $curFile, $changes);
 			if (count($changes) > 0)
 				$fs->put(PUN_ROOT.$curFileName, $curFile);
-			$this->config['steps'][$genFile] = array_merge($this->config['steps'][$genFile], urlGetSteps($changes));
+			$this->patcher->config['steps'][$genFile] = array_merge($this->patcher->config['steps'][$genFile], urlGetSteps($changes));
 		}
 	}
 }

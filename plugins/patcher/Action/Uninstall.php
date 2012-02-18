@@ -11,9 +11,30 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Uninstall extends Patcher_Action_Install
 {
+	/**
+	 * Execute specified step
+	 *
+	 * @param array &$curStep
+	 * 		Step to process, for example:
+	 * 		array(
+	 * 			'command'	=> 'FIND',
+	 * 			'code'		=> '// some code'
+	 * 		)
+	 *
+	 * @param array &$stepResult
+	 * 		Duplicate of the $curStep array, contains result of the executing step, for example:
+	 * 		array(
+	 * 			'command'	=> 'FIND',
+	 * 			'code'		=> '// some code'
+	 * 			'validate'	=> true,
+	 * 			'status'	=> STATUS_DONE
+	 * 		)
+	 *
+	 * @return type
+	 */
 	function executeStep(&$curStep, &$stepResult)
 	{
-		parent::executeStep($curStep);
+		parent::executeStep($curStep, $stepResult);
 
 		// Replace STATUS_DONE with STATUS_REVERTED when uninstalling mod
 		if ($curStep['status'] == STATUS_DONE)
@@ -22,7 +43,32 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		// Don't display Note message when uninstalling mod
 		return ($curStep['command'] != 'NOTE');
 			/*&& $curStep['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
-			// TODO: isset($this->config['installed_mods'][$this->mod->id]['disabled']) ????*/
+			// TODO: isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']) ????*/
+	}
+
+	/**
+	 * Update Patcher configuration after patching
+	 *
+	 * @param bool $failed Whether patching failed or not
+	 * @return type
+	 */
+	function updateConfig($failed)
+	{
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
+			unset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']);
+
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['version']))
+			unset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['version']);
+
+		if ($failed)
+			$this->patcher->config['installed_mods'][$this->patcher->mod->id]['uninstall_failed'] = true;
+		else
+		{
+			if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['uninstall_failed']))
+				unset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['uninstall_failed']);
+			if (empty($this->patcher->config['installed_mods'][$this->patcher->mod->id]))
+				unset($this->patcher->config['installed_mods'][$this->patcher->mod->id]);
+		}
 	}
 
 	/**
@@ -35,7 +81,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function replaceCode($find, $replace)
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		// Swap $find with $replace
@@ -80,11 +126,11 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	{
 		global $langPatcher, $fs;
 
-		if ($this->validate)
+		if ($this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		$directories = array();
-		foreach ($this->mod->filesToUpload as $from => $to)
+		foreach ($this->patcher->mod->filesToUpload as $from => $to)
 		{
 			if (file_exists(PUN_ROOT.$to))
 				$fs->delete(PUN_ROOT.$to);
@@ -122,7 +168,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		$this->stepSave();
 
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		$status = parent::stepOpen();
@@ -140,7 +186,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		$this->find = $this->code;
 
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		return STATUS_UNKNOWN;
@@ -154,7 +200,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function stepReplace()
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']) || $this->curFilePath == '')
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']) || $this->curFilePath == '')
 			return STATUS_NOTHING_TO_DO;
 
 		if (empty($this->find))
@@ -171,7 +217,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function stepAfterAdd()
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		return parent::stepAfterAdd();
@@ -185,7 +231,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function stepBeforeAdd()
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		return parent::stepBeforeAdd();
@@ -199,7 +245,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function stepAtTheEndOfFileAdd()
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		// TODO: not tested
@@ -219,7 +265,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function stepAddNewElementsOfArray()
 	{
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		$count = 0;
@@ -239,7 +285,7 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	{
 		global $langPatcher;
 
-		if (defined('PATCHER_NO_SAVE') || $this->validate)
+		if (defined('PATCHER_NO_SAVE') || $this->patcher->validate)
 			return STATUS_UNKNOWN;
 
 		if ($this->code == 'install_mod.php')
@@ -313,24 +359,24 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 	function friendlyUrlUninstallUpload()
 	{
 		$genFile = 'friendly-url/files/gen.php';
-		if (!isset($this->config['steps'][$genFile]))
+		if (!isset($this->patcher->config['steps'][$genFile]))
 			return;
 
-		foreach ($this->mod->filesToUpload as $from => $to)
+		foreach ($this->patcher->mod->filesToUpload as $from => $to)
 		{
 			$removeSteps = false;
-			foreach ($this->config['steps'][$genFile] as $key => $curStep)
+			foreach ($this->patcher->config['steps'][$genFile] as $key => $curStep)
 			{
 				if ($removeSteps)
 				{
 					if (in_array($curStep['command'], $this->modifyFileCommands))
-						unset($this->config['steps'][$genFile][$key]);
+						unset($this->patcher->config['steps'][$genFile][$key]);
 					else
 						$removeSteps = false;
 				}
 				elseif ($curStep['command'] == 'OPEN' && $curStep['code'] == $to)
 				{
-					unset($this->config['steps'][$genFile][$key]);
+					unset($this->patcher->config['steps'][$genFile][$key]);
 					$removeSteps = true;
 				}
 			}

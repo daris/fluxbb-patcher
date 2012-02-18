@@ -12,6 +12,18 @@ require_once PATCHER_ROOT.'Action/Uninstall.php';
 class Patcher_Action_Disable extends Patcher_Action_Uninstall
 {
 	/**
+	 * Update Patcher configuration after patching
+	 *
+	 * @param bool $failed Whether patching failed or not
+	 * @return type
+	 */
+	function updateconfig($failed)
+	{
+		if ($GLOBALS['action'] != 'update')
+			$this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled'] = 1;
+	}
+
+	/**
 	 * Execute upload step from readme
 	 *
 	 * @return type
@@ -31,7 +43,7 @@ class Patcher_Action_Disable extends Patcher_Action_Uninstall
 		$this->find = $this->code;
 
 		// Mod was already disabled before
-		if (isset($this->config['installed_mods'][$this->mod->id]['disabled']))
+		if (isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']))
 			return STATUS_NOTHING_TO_DO;
 
 		return STATUS_UNKNOWN;
