@@ -11,6 +11,27 @@ require_once PATCHER_ROOT.'Action/Uninstall.php';
 
 class Patcher_Action_Disable extends Patcher_Action_Uninstall
 {
+	function patchInit()
+	{
+		global $fs;
+
+		foreach ($this->patcher->mod->filesToUpload as $from => $to)
+		{
+			if (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
+				$fs->copy($this->patcher->mod->readmeFileDir.'/'.$from, PUN_ROOT.'gen.php');
+		}
+	}
+
+	function updateStepList($curStep, &$stepList, $key)
+	{
+		return false;
+	}
+
+	function updateReadmeStepList(&$stepList, $curReadmeFile, $curMod, $curReadme)
+	{
+		return false;
+	}
+
 	/**
 	 * Update Patcher configuration after patching
 	 *

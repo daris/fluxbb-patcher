@@ -11,6 +11,22 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Uninstall extends Patcher_Action_Install
 {
+	function patchInit()
+	{
+		global $fs;
+
+		foreach ($this->patcher->mod->filesToUpload as $from => $to)
+		{
+			// Copy install mod file as we want to uninstall mod
+			if (strpos($from, 'install_mod.php') !== false)
+				$fs->copy($this->patcher->mod->readmeFileDir.'/'.$from, PUN_ROOT.'install_mod.php');
+			elseif (strpos($from, 'gen.php') !== false) // TODO: make this relative to RUN commands
+				$fs->copy($this->patcher->mod->readmeFileDir.'/'.$from, PUN_ROOT.'gen.php');
+		}
+
+		$this->friendlyUrlUninstallUpload();
+	}
+
 	/**
 	 * Execute specified step
 	 *
@@ -44,6 +60,38 @@ class Patcher_Action_Uninstall extends Patcher_Action_Install
 		return ($curStep['command'] != 'NOTE');
 			/*&& $curStep['status'] != STATUS_NOTHING_TO_DO) // Skip if mod is disabled and we want to uninstall it (as file changes has been already reverted)
 			// TODO: isset($this->patcher->config['installed_mods'][$this->patcher->mod->id]['disabled']) ????*/
+	}
+
+	function updateStepList($curStep, &$stepList, $key)
+	{
+		// Delete step for uninstall when step was done
+		if ($curStep['status'] != STATUS_NOT_DONE && !in_array($curStep['command'], array('FIND', 'OPEN')))
+		{
+			if (in_array($curStep['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && isset($stepList[$key-1]) && $stepList[$key-1]['command'] == 'FIND')
+				unset($stepList[$key-1]);
+
+			unset($stepList[$key]);
+		}
+	}
+
+	function updateReadmeStepList(&$stepList, $curReadmeFile, $curMod, $curReadme)
+	{
+		// Delete empty OPEN steps
+		foreach ($stepList as $key => $curStep)
+		{
+			if ($curStep['command'] == 'OPEN' && ((isset($stepList[$key+1]['command']) && $stepList[$key+1]['command'] == 'OPEN') || !isset($stepList[$key+1])))
+				unset($stepList[$key]);
+		}
+		$stepList = array_values($stepList);
+
+		// Update configuration for specified readme file
+		if (count($stepList) == 0 && isset($this->patcher->config['installed_mods'][$curMod]) && in_array($curReadme, $this->patcher->config['installed_mods'][$curMod]))
+			$this->patcher->config['installed_mods'][$curMod] = array_diff($this->patcher->config['installed_mods'][$curMod], array($curReadme)); // delete an element
+
+		if (empty($stepList))
+			unset($this->patcher->config['steps'][$curReadmeFile]);
+		else
+			$this->patcher->config['steps'][$curReadmeFile] = $stepList;
 	}
 
 	/**

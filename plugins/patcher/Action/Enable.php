@@ -11,6 +11,16 @@ require_once PATCHER_ROOT.'Action/Install.php';
 
 class Patcher_Action_Enable extends Patcher_Action_Install
 {
+	function updateStepList($curStep, &$stepList, $key)
+	{
+		return false;
+	}
+
+	function updateReadmeStepList(&$stepList, $curReadmeFile, $curMod, $curReadme)
+	{
+		return false;
+	}
+
 	/**
 	 * Update Patcher configuration after patching
 	 *

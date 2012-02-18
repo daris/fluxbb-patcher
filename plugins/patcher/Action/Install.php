@@ -93,6 +93,11 @@ class Patcher_Action_Install
 		$this->patcher = $patcher;
 	}
 
+	function patchInit()
+	{
+		return false;
+	}
+
 	/**
 	 * Execute specified step
 	 *
@@ -144,6 +149,27 @@ class Patcher_Action_Install
 			}
 		}
 		return true;
+	}
+
+	function updateStepList($curStep, &$stepList, $key)
+	{
+		if ($curStep['status'] == STATUS_NOT_DONE)
+		{
+			if (in_array($curStep['command'], array('BEFORE ADD', 'AFTER ADD', 'REPLACE')) && $key > 0 && isset($stepList[$key-1]) && $stepList[$key-1]['command'] == 'FIND')
+				unset($stepList[$key-1]);
+			unset($stepList[$key]);
+		}
+	}
+
+	function updateReadmeStepList(&$stepList, $curReadmeFile, $curMod, $curReadme)
+	{
+		if (!isset($this->patcher->config['installed_mods'][$curMod]))
+			$this->patcher->config['installed_mods'][$curMod] = array();
+
+		if (!in_array($curReadme, $this->patcher->config['installed_mods'][$curMod]))
+			$this->patcher->config['installed_mods'][$curMod][] = $curReadme;
+
+		$this->patcher->config['steps'][$curReadmeFile] = $stepList;
 	}
 
 	/**
