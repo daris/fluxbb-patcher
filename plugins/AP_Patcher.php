@@ -70,8 +70,8 @@ else
 if (!function_exists('version_compare') || version_compare(PHP_VERSION, MIN_PHP_VERSION, '<'))
 	exit(sprintf($langPatcher['You are running error'], 'PHP', PHP_VERSION, Patcher::VERSION, MIN_PHP_VERSION));
 
-if (!isset($config))
-	$config = array('filesystem' => array('type' => 'Native', 'options' => array()), 'zip' => array('type' => 'Native', 'options' => array()));
+if (!is_array($config))
+	throw new Exception('The config file (plugins/patcher/config.php) is in old format. Please update it (look in the config.example.php file for instructions)');
 
 $fs = Patcher_FileSystem::load($config['filesystem']['type'], $config['filesystem']['options']);
 

@@ -66,7 +66,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 				throw new Exception('FTP: Login failed');
 
 			if (!$this->ftp->chdir($this->options['path']))
-				throw new Exception('FTP: Directory change failed');
+				throw new Exception('FTP: Directory "'.$this->options['path'].'" does not exist');
 
 			if (!@$this->ftp->listDetails($this->relativePath('config.php')))
 				throw new Exception('FTP: The FluxBB root directory is not valid');
@@ -196,12 +196,7 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 		foreach ($list as $curFile)
 		{
 			if (is_dir($curFile))
-			{
-				if ($this->isFtp)
-					$this->getFTP()->delete($this->relativePath($curFile));
-				else
-					rmdir($curFile);
-			}
+				$this->getFTP()->delete($this->relativePath($curFile));
 			else
 				$this->delete($curFile);
 		}
@@ -243,42 +238,19 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 	 */
 	function isWritable($path)
 	{
-		if ($path == PUN_ROOT.'.')
-			return $this->isWritable(PUN_ROOT);
-
-		$details = array();
-		$name = '';
-
+		$path = str_replace('\\', '/', $path);
 		if (is_dir($path))
 		{
-			$baseName = basename(realpath($path));
-			$fixedPath = $this->relativePath(rtrim($path, '/').'/../');
+			$dir = rtrim($path, '/').'/';
+			$filename = uniqid();
+			$ftpFile = $this->relativePath($dir).'/'.$filename;
+			$this->getFTP()->write($ftpFile, '');
+			$isWritable = file_exists($dir.$filename);
 
-			if (!empty($fixedPath) && substr($fixedPath, -1) != '/')
-				$fixedPath .= '/';
+			if (!$this->delete($ftpFile))
+				throw new Exception('FTP: Cannot delete temporary file ('.$ftpFile.'). Do you have delete permissions?');
 
-			if ($fixedPath == '/')
-				$fixedPath = '';
-
-//			echo $fixedPath.'<br />';
-			$details = @$this->getFTP()->listDetails($fixedPath);
-
-			// Can't read directory contents?
-			if (!is_array($details))
-				return false;
-
-			foreach ($details as $cur_details)
-			{
-				if ($cur_details['name'] == $baseName)
-				{
-					//print_r($cur_details);
-					$rights = $cur_details['rights'];
-					if (substr($rights, 0, 1) == 'd' && substr($rights, 2, 1) == 'w')
-						return true;
-					else
-						return false;
-				}
-			}
+			return $isWritable;
 		}
 		else
 		{
@@ -295,8 +267,6 @@ class Patcher_FileSystem_FTP extends Patcher_FileSystem
 			if (substr($rights, 2, 1) == 'w')
 				return true;
 		}
-
-		return false;
 	}
 }
 
