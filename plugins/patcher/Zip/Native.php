@@ -13,6 +13,15 @@
 class Patcher_Zip_Native
 {
 	/**
+	 * Constructor (checking for class existence)
+	 */
+	function __construct()
+	{
+		if (!class_exists('ZipArchive'))
+			throw new Exception('Class ZipArchive not found. Make sure you have zip extension installed and enabled.');
+	}
+
+	/**
 	 * Open specified ZIP file
 	 *
 	 * @param type $file
