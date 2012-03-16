@@ -63,7 +63,7 @@ class Patcher_Action_Install
 	/**
 	 * @var array Commands that are modifying current file
 	 */
-	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD'); // TODO: other commands
+	public $modifyFileCommands = array('FIND', 'REPLACE', 'BEFORE ADD', 'AFTER ADD', 'AT THE END OF FILE ADD', 'ADD NEW ELEMENTS OF ARRAY');
 
 	/**
 	 * @var bool Only validate modification (without writing changes to the files)
