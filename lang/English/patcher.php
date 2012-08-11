@@ -146,6 +146,7 @@ return array(
 'No mods to download'			=> 'List of mods available to download is empty.',
 
 'Modifications'					=> 'Modifications',
+'Repository'					=> 'Repository',
 'Mod title'						=> 'Mod title',
 'by'							=> 'by',
 'Version'						=> 'Version',

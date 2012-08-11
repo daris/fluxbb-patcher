@@ -750,6 +750,8 @@ elseif (isset($_GET['show_log']))
 // Show modification list
 else
 {
+	$tab = isset($_GET['tab']) && $_GET['tab'] == 'repo' ? 'repo' : 'main';
+
 	generate_admin_menu($plugin);
 	echo $warning;
 ?>
@@ -855,44 +857,51 @@ function toogleAll(form, field)
 </script>
 
 	<div class="plugin blockform">
-		<h2><span><?php echo $langPatcher['Modifications'] ?></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&amp;check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
+		<h2><span><?php if ($tab != 'main') echo '<a href="'.PLUGIN_URL.'">'; ?><?php echo $langPatcher['Modifications'] ?><?php if ($tab != 'main') echo '</a>'; ?> | <?php if ($tab != 'repo') echo '<a href="'.PLUGIN_URL.'&amp;tab=repo">'; ?><?php echo $langPatcher['Repository'] ?><?php if ($tab != 'repo') echo '</a>'; ?></a></span><span style="float: right; font-size: 12px"><a href="<?php echo PLUGIN_URL ?>&amp;check_for_updates"><?php echo $langPatcher['Check for updates'] ?></a> <?php echo $langPatcher['Check for updates info'] ?></span></h2>
 		<div class="box">
 
 <?php
 
 	$patcherConfig = loadPatcherConfig();
 
-	$modList = array('Mods failed to uninstall' => array(), 'Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array(), 'Mods to download' => array());
+	$modList = array();
 
-	// Get the mod list from mods directory
-	$dir = dir(MODS_DIR);
-	while ($modId = $dir->read())
+	if ($tab == 'main')
 	{
-		if (substr($modId, 0, 1) == '.' || !is_dir(MODS_DIR.$modId) || $fs->isEmptyDir(MODS_DIR.$modId))
-			continue;
+		$modList = array('Mods failed to uninstall' => array(), 'Mods to update' => array(), 'Installed mods' => array(), 'Mods not installed' => array());
+		// Get the mod list from mods directory
+		$dir = dir(MODS_DIR);
+		while ($modId = $dir->read())
+		{
+			if (substr($modId, 0, 1) == '.' || !is_dir(MODS_DIR.$modId) || $fs->isEmptyDir(MODS_DIR.$modId))
+				continue;
 
-		$mod = new Patcher_Mod($modId);
-		if (!$mod)
-			continue;
+			$mod = new Patcher_Mod($modId);
+			if (!$mod)
+				continue;
 
-		$section = $mod->isInstalled ? 'Installed mods' : 'Mods not installed';
+			$section = $mod->isInstalled ? 'Installed mods' : 'Mods not installed';
 
-		if (isset($patcherConfig['installed_mods'][$mod->id]['uninstall_failed']))
-			$section = 'Mods failed to uninstall';
+			if (isset($patcherConfig['installed_mods'][$mod->id]['uninstall_failed']))
+				$section = 'Mods failed to uninstall';
 
-		// Look for updates
-		if ($mod->isInstalled && $mod->canUpdate)
-			$modList['Mods to update'][$modId] = new Patcher_Mod($modId, $mod->canUpdate);
+			// Look for updates
+			if ($mod->isInstalled && $mod->canUpdate)
+				$modList['Mods to update'][$modId] = new Patcher_Mod($modId, $mod->canUpdate);
 
-		$modList[$section][$modId] = $mod;
+			$modList[$section][$modId] = $mod;
+		}
 	}
+	else if ($tab == 'repo')
+	{
+		$modList = array('Mods to download' => array());
 
-	// Get the mod list from the FluxBB repo
-	if (isset($modRepo['mods']))
-		foreach ($modRepo['mods'] as $curModId => $curMod)
-			if ($curModId != 'patcher' && !isset($modList['Installed mods'][$curModId]) && !isset($modList['Mods not installed'][$curModId]))
-				$modList['Mods to download'][$curModId] = new Patcher_RepoMod($curModId, $curMod);
-
+		// Get the mod list from the FluxBB repo
+		if (isset($modRepo['mods']))
+			foreach ($modRepo['mods'] as $curModId => $curMod)
+				if ($curModId != 'patcher' && !is_dir(MODS_DIR.$curModId))
+					$modList['Mods to download'][$curModId] = new Patcher_RepoMod($curModId, $curMod);
+	}
 
 	foreach ($modList as $section => $mods)
 	{
