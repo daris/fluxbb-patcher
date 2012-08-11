@@ -406,7 +406,7 @@ function createBackup($backup)
 	$files['style/Air.css'] = PUN_ROOT.'style/Air.css';
 
 	$zip = Patcher_Zip::load($config['zip']['type'], $config['zip']['options']);
-	$zip->create($fs->tmpname());
+	$zip->create($fs->tmpname().'.zip');
 
 	if (!$zip->add($files))
 		message('Cannot add files to archive');

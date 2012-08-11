@@ -17,6 +17,10 @@ class Patcher_FileSystem_Native extends Patcher_FileSystem
 	 */
 	function mkdir($dir)
 	{
+		$parentDir = dirname($dir);
+		if (!is_dir($parentDir))
+			$this->mkdir($parentDir);
+
 		return mkdir($dir);
 	}
 
